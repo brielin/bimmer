@@ -60,3 +60,11 @@ test_that("fit_direct_works", {
   expect_equal(dim(res$R_hat), c(3, 3))
   expect_equal(dim(res$B_hat), c(3, 3))
 })
+
+test_that("fit_ind_level_works", {
+  res <- fit_ind_level(dataset$X, dataset$Y, sumstats)
+  expect_is(res$R_hat, "matrix")
+  expect_is(res$B_hat, "matrix")
+  expect_equal(dim(res$R_hat), c(3, 3))
+  expect_equal(dim(res$B_hat), c(3, 3))
+})
