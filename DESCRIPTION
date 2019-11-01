@@ -1,0 +1,19 @@
+Package: MrNo
+Type: Package
+Title: Mendelian Randomization Network Optimization
+Version: 0.1.0
+Author: Brielin C. Brown
+Maintainer: Brielin C. Brown <brielin.b@columbia.edu>
+Description: Mediation analysis for networks of causes with genetic instruments.
+License: file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports:
+    Matrix,
+    stats,
+    methods,
+    mr.raps,
+    glmnet
+Suggests: 
+    testthat (>= 2.1.0)
+RoxygenNote: 6.1.1

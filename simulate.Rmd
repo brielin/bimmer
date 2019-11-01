@@ -1,0 +1,30 @@
+---
+title: "simulate"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load packages
+```{r}
+require(MrNo)
+```
+
+# Generate data
+```{r}
+N = 2000
+M = 100
+D = 10
+dataset = generate_dataset(N, M, D)
+R_obs = get_observed(dataset$R)
+R_tce = get_tce(R_obs)
+sample <- sample.int(n = N, size = floor(N/2), replace=FALSE)
+X_select = dataset$X[sample, ]
+Y_select = dataset$Y[sample, ]
+X_fit = dataset$X[-sample, ]
+Y_fit = dataset$Y[-sample, ]
+sumstats_select = generate_sumstats(X_select, Y_select)
+sumstats_fit = generate_sumstats(X_fit, Y_fit)
+```
