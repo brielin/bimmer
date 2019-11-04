@@ -15,10 +15,12 @@ dataset. Must include "p-value" and "r-squared".}
 dataset. Must include entries "beta_hat" and "se_hat".}
 
 \item{mr_method}{String, one of c("mean", "raps"). Method to use for TCE
-estimate between every pair.}
+estimate between every pair. Note that this will be called with default
+arguments. For more detailed control, call fit_tce() directly.}
 
 \item{fit_method}{String, one of c("exact", "regularized"). Method to use for
-network optimization.}
+network optimization. Note that this will  be called with the default
+arguments. For more detailed control, call the fit method directly.}
 
 \item{p_thresh}{Float. p-value threshold for inclusion.}
 }

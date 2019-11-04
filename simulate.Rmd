@@ -10,21 +10,82 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load packages
 ```{r}
 require(MrNo)
+require(foreach)
+require(tibble)
+require(dplyr)
+require(Matrix)
+require(ggplot2)
 ```
 
 # Generate data
 ```{r}
-N = 2000
-M = 100
+N = 5000
+M = 1000
 D = 10
-dataset = generate_dataset(N, M, D)
-R_obs = get_observed(dataset$R)
-R_tce = get_tce(R_obs)
-sample <- sample.int(n = N, size = floor(N/2), replace=FALSE)
-X_select = dataset$X[sample, ]
-Y_select = dataset$Y[sample, ]
-X_fit = dataset$X[-sample, ]
-Y_fit = dataset$Y[-sample, ]
-sumstats_select = generate_sumstats(X_select, Y_select)
-sumstats_fit = generate_sumstats(X_fit, Y_fit)
+p_beta = 0.15
+p_network = 0.15
+niter = 100
+
+plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
+  noise <- runif(1)
+  pleiotropy <- as.logical(rbinom(1, 1, 0.5))
+  dataset <- generate_dataset(N, M, D, pleiotropy = pleiotropy, noise = noise)
+
+  R_obs = get_observed(dataset$R)
+  R_tce = get_tce(R_obs)
+  sample <- sample.int(n = N, size = floor(N/2), replace=FALSE)
+  X_select = dataset$X[sample, ]
+  Y_select = dataset$Y[sample, ]
+  X_fit = dataset$X[-sample, ]
+  Y_fit = dataset$Y[-sample, ]
+  sumstats_select = generate_sumstats(X_select, Y_select)
+  sumstats_fit = generate_sumstats(X_fit, Y_fit)
+
+  R_tce_hat <- fit_tce(sumstats_select, sumstats_fit, mr_method="mean")
+  tce_mae <- mean(abs(R_tce - R_tce_hat))
+
+  R_hat_exact <- tryCatch(
+    fit_exact(R_tce_hat),
+    error=function(cond){return(NA)},
+    warning=function(cond){return(NA)})
+  exact_mae <- mean(abs(dataset$R - R_hat_exact))
+  
+  reg_mae <- Inf
+  for(lambda in c(0.0, 0.0001, 0.001, 0.01, 0.1)){
+    R_hat_reg <- tryCatch(
+      fit_regularized(R_tce_hat, lambda),
+      error=function(cond){return(NA)},
+      warning=function(cond){return(NA)})
+    lam_reg_mae <- mean(abs(dataset$R - R_hat_reg))
+    if(is.na(lam_reg_mae)){
+      lam_reg_mae <- Inf
+    }
+    if(lam_reg_mae < reg_mae){
+      reg_mae <- lam_reg_mae
+    }
+  }
+
+  ind_mae <- Inf
+  for(lambda in c(0.0, 0.001, 0.01, 0.1, 1.0)){
+    R_hat_ind <- tryCatch(
+      fit_ind_level(X_fit, Y_fit, sumstats_select, lambda = lambda),
+      error=function(cond){return(list(R_hat = NA))})
+    lam_ind_mae <- mean(abs(dataset$R - R_hat_ind$R_hat))
+    if(is.na(lam_ind_mae)){
+      lam_ind_mae <- Inf
+    }
+    if(lam_ind_mae < ind_mae){
+      ind_mae <- lam_ind_mae
+    }
+  }
+  
+  tibble(mae = c(tce_mae, exact_mae, reg_mae, ind_mae),
+         method = c("tce", "exact", "regularized", "ind_level"),
+         noise = rep(noise, 4),
+         pleiotropy = rep(pleiotropy, 4))
+}
+```
+
+```{r}
+ggplot(plot_tibble, aes(noise, mae, colour = method)) + geom_point()
 ```

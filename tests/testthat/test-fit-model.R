@@ -29,14 +29,20 @@ test_that("naive_ma_works", {
   se_tce <- 0.144337
 
   res <- naive_ma(beta_exp, beta_out, se_exp, se_out)
-  expect_equal(res$tce_hat, tce_hat)
-  expect_equal(res$se_tce, se_tce, tolerance = 1e-6)
+  expect_equal(res$beta.hat, tce_hat)
+  expect_equal(res$beta.se, se_tce, tolerance = 1e-6)
 })
 
 test_that("fit_tce_mean_works", {
   R_tce_hat <- fit_tce(sumstats, sumstats, "mean")
   expect_is(R_tce_hat, "matrix")
   expect_equal(R_tce_expected, unname(R_tce_hat), tolerance = 1e-6)
+})
+
+test_that("fit_tce_raps_works", {
+  R_tce_hat <- fit_tce(sumstats, sumstats, "raps")
+  expect_is(R_tce_hat, "matrix")
+  expect_equal(R_tce_expected, unname(R_tce_hat), tolerance = 0.01)
 })
 
 test_that("select_snps_works", {

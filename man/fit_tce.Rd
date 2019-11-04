@@ -5,7 +5,7 @@
 \title{Calculates matrix of total causal effects using a specified method.}
 \usage{
 fit_tce(sumstats_select, sumstats_fit, mr_method = c("mean", "raps"),
-  p_thresh = 1e-05)
+  p_thresh = 1e-05, ...)
 }
 \arguments{
 \item{sumstats_select}{List representing summary statistics from the first
@@ -18,6 +18,8 @@ dataset. Must include entries "beta_hat" and "se_hat".}
 estimate between every pair.}
 
 \item{p_thresh}{Float. p-value threshold for inclusion.}
+
+\item{...}{Additional parameters to pass to mr_method.}
 }
 \description{
 Calculates matrix of total causal effects using a specified method.

@@ -12,7 +12,7 @@ fit_exact <- function(R_tce) {
 #'
 #' @param R_tce D x D matrix of "total causal effects".
 #' @param lambda Float. Regularization strength.
-fit_regularized <- function(R_tce, lambda = 0.1) {
+fit_regularized <- function(R_tce, lambda = 0.01) {
   D <- dim(R_tce)[1]
   resp <- diag(D)
   R_tce_inv <- matrix(0L, nrow = D, ncol = D)
@@ -36,6 +36,8 @@ fit_regularized <- function(R_tce, lambda = 0.1) {
 #'   R_hat: D x D matrix of deconvoluted direct effects.
 #'   B_hat: M x D matrix of inferred genotype effect sizes.
 #'   progress_tibble: A tible containing information on convergence.
+#'
+#' TODO(brielin): Figure out what to do with the progress of this.
 fit_direct <- function(X, Y, lambda = 1., niter = 20, true_R = NULL, true_B = NULL) {
   N <- nrow(X)
   P <- ncol(X)
@@ -131,7 +133,7 @@ get_direct <- function(R_obs) {
 naive_ma <- function(beta_exp, beta_out, se_exp, se_out) {
   tce_hat <- mean(beta_out / beta_exp)
   se_tce <- stats::sd(beta_out / beta_exp) / sqrt(length(beta_exp))
-  list("tce_hat" = tce_hat, "se_tce" = se_tce)
+  list("beta.hat" = tce_hat, "beta.se" = se_tce)
 }
 
 #' Selects SNP sets for each phenotype.
@@ -163,15 +165,17 @@ select_snps <- function(sumstats_select, p_thresh = 1e-5) {
 #'   dataset. Must include "p-value" and "r-squared".
 #' @param sumstats_fit List representing summary statistics from the second
 #'   dataset. Must include entries "beta_hat" and "se_hat".
+#' @param p_thresh Float. p-value threshold for inclusion.
 #' @param mr_method String, one of c("mean", "raps"). Method to use for TCE
 #'   estimate between every pair.
-#' @param p_thresh Float. p-value threshold for inclusion.
+#' @param ... Additional parameters to pass to mr_method.
 #' @returns A modified version of sumtats_fit or dataset_fit with only SNPs
 #'   that are selected for further analysis.
 fit_tce <- function(sumstats_select,
                     sumstats_fit,
                     mr_method = c("mean", "raps"),
-                    p_thresh = 1e-5) {
+                    p_thresh = 1e-5,
+                    ...) {
   mr_method_func <- switch(mr_method,
     mean = naive_ma,
     raps = mr.raps::mr.raps
@@ -184,6 +188,9 @@ fit_tce <- function(sumstats_select,
   run_mr_method_on_exp <- function(exp_name) {
     exp_snps <- get(exp_name, selected)
     run_mr_method <- function(out_name) {
+      if(out_name == exp_name){
+        return(1.0)
+      }
       out_snps <- get(out_name, selected)
       # Use only SNPs that explain more variance in exposure than outcome.
       # TODO(brielin): Consider ways to force that this difference be large, or
@@ -196,10 +203,9 @@ fit_tce <- function(sumstats_select,
       beta_out <- sumstats_fit$beta_hat[snps_to_use, out_name, drop = FALSE]
       se_out <- sumstats_fit$se_hat[snps_to_use, out_name, drop = FALSE]
       # TODO(brielin): Do something with the SE of this estimate
-      mr_method_func(beta_exp, beta_out, se_exp, se_out)$tce_hat
+      mr_method_func(beta_exp, beta_out, se_exp, se_out, ...)$beta.hat
     }
     row_res <- sapply(pheno_names, run_mr_method)
-    row_res[exp_name] <- 1
     return(row_res)
   }
   t(sapply(pheno_names, run_mr_method_on_exp))
@@ -212,9 +218,11 @@ fit_tce <- function(sumstats_select,
 #' @param sumstats_fit List representing summary statistics from the second
 #'   dataset. Must include entries "beta_hat" and "se_hat".
 #' @param mr_method String, one of c("mean", "raps"). Method to use for TCE
-#'   estimate between every pair.
+#'   estimate between every pair. Note that this will be called with default
+#'   arguments. For more detailed control, call fit_tce() directly.
 #' @param fit_method String, one of c("exact", "regularized"). Method to use for
-#'   network optimization.
+#'   network optimization. Note that this will  be called with the default
+#'   arguments. For more detailed control, call the fit method directly.
 #' @param p_thresh Float. p-value threshold for inclusion.
 #' @returns A modified version of sumtats_fit or dataset_fit with only SNPs
 #'   that are selected for further analysis.
@@ -241,7 +249,7 @@ fit_sumstats <- function(sumstats_select,
 #' @param lambda Regularization strength.
 #' @param niter Number of iterations.
 fit_ind_level <- function(X, Y, sumstats_select, p_thresh = 1e-5,
-                          lambda = 0.1, niter = 20) {
+                          lambda = 0.1, niter = 5) {
   selected <- select_snps(sumstats_select, p_thresh)
   snps_to_use <- unique(unlist(lapply(selected, names), use.names = FALSE))
   fit_direct(X[, snps_to_use], Y, lambda = lambda, niter = niter)

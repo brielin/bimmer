@@ -5,7 +5,7 @@
 \title{Fits model using individual level genotypes and sumstats for SNP selection.}
 \usage{
 fit_ind_level(X, Y, sumstats_select, p_thresh = 1e-05, lambda = 0.1,
-  niter = 20)
+  niter = 5)
 }
 \arguments{
 \item{X}{N x M matrix of genotypes.}

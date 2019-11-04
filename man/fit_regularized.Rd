@@ -4,7 +4,7 @@
 \alias{fit_regularized}
 \title{Fits L1-regularized approximate inverse model.}
 \usage{
-fit_regularized(R_tce, lambda = 0.1)
+fit_regularized(R_tce, lambda = 0.01)
 }
 \arguments{
 \item{R_tce}{D x D matrix of "total causal effects".}
