@@ -19,31 +19,36 @@ require(ggplot2)
 
 # Generate data. First looking only at TCE.
 ```{r warning=FALSE}
+# Basic set-up for simulation.
 N = 5000
 M = 1000
 D = 10
 p_beta = 0.15
 p_network = 0.15
-niter = 200
+niter = 100
 
 plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
-  noise <- runif(1, 0, 0.7)
-  pleiotropy <- FALSE # as.logical(rbinom(1, 1, 0.5))
-  whiten <- FALSE
-  dataset <- generate_dataset(N, M, D, pleiotropy = pleiotropy, noise = noise, whiten = whiten, symmetric = FALSE)
+  # Randomly choose noise proportion.
+  noise <- runif(1, 0, 1.0)
+  dataset <- generate_dataset(N, M, D, noise = noise)
   Y_sds <- apply(dataset$Y, 2, sd)
 
+  # Calculate the rank of R to track during simulations.
   eigenv_R <- eigen(dataset$R, only.values = TRUE)$values
   rank_R <- sum(abs(eigenv_R) > 1e-10)
 
+  # Calculate the self-influence of each nose to track during simulations.
   R_obs = get_observed(dataset$R)
   self_norm = 1 + diag(R_obs)
   min_abs_self = min(abs(self_norm))
   min_self = min(self_norm)
   max_self = max(self_norm)
 
+  # All calculations happen on per-normalized scale, so convert R here.
   R_tce = get_tce(R_obs, normalize=Y_sds)
   R_normed <- fit_exact(R_tce)
+
+  # Split dataset into SNP selection and fitting.
   sample <- sample.int(n = N, size = floor(N/2), replace = FALSE)
   X_select = dataset$X[sample, ]
   Y_select = dataset$Y[sample, ]
@@ -51,127 +56,60 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   Y_fit = dataset$Y[-sample, ]
   sumstats_select = generate_sumstats(X_select, Y_select, normalize = TRUE)
   sumstats_fit = generate_sumstats(X_fit, Y_fit, normalize = TRUE)
-  sumstats = generate_sumstats(dataset$X, dataset$Y, normalize = TRUE)
 
+  # Select SNPs via sumstats and by cheating.
   selected <- select_snps(sumstats_select)
-  selected_oracle <- select_snps_oracle(dataset$beta, sumstats$p_value)
-  tryCatch(
-    {
-      R_tce_cheat <- fit_tce(sumstats_fit, selected_oracle, mr_method="mean")
-      R_tce_mean <- fit_tce(sumstats_fit, selected, mr_method="mean")
-      R_tce_ps <- fit_tce(sumstats_select, selected, mr_method="ps")
-      R_tce_aps <- fit_tce(sumstats_select, selected, mr_method="aps")
-      R_tce_raps <- fit_tce(sumstats_select, selected, mr_method="raps")
+  selected_oracle <- select_snps_oracle(dataset$beta, sumstats_fit$p_value)
   
-      cheat_mae <- mean(as.matrix(abs(R_tce - R_tce_cheat)), na.rm=TRUE)
-      mean_mae <- mean(as.matrix(abs(R_tce - R_tce_mean)), na.rm=TRUE)
-      ps_mae <- mean(as.matrix(abs(R_tce - R_tce_ps)), na.rm=TRUE)
-      aps_mae <- mean(as.matrix(abs(R_tce - R_tce_aps)), na.rm=TRUE)
-      raps_mae <- mean(as.matrix(abs(R_tce - R_tce_raps)), na.rm=TRUE)
-
-      # print(c(noise, min_abs_self, rank_R, cheat_mae, mean_mae, ps_mae, aps_mae, raps_mae))
+  # Run all combinations of MR method and fit method.
+  foreach(mr_method = c("cheat", "mean", "ps", "aps", "raps"),
+          .combine = bind_rows) %do% {
+    foreach(fit_method = c("exact", "regularized"),
+            .combine = bind_rows) %do% {
+      tryCatch(
+        {
+          # For cheat, use oracle SNPs and profile score.
+          if(mr_method == "cheat"){
+            R_tce_hat <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps")
+          }
+          else{
+            R_tce_hat <- fit_tce(sumstats_fit, selected, mr_method=mr_method)
+          }
+          mae_tce <- mean(as.matrix(abs(R_tce - R_tce_hat)), na.rm=TRUE)
       
-      # Impute with true value + noise for now
-      R_tce_cheat[is.na(R_tce_cheat)] = R_tce[is.na(R_tce_cheat)] + rnorm(sum(is.na(R_tce_cheat)), sd = 1.5*cheat_mae)
-      R_tce_mean[is.na(R_tce_mean)] = R_tce[is.na(R_tce_mean)] + rnorm(sum(is.na(R_tce_mean)), sd = 1.5*mean_mae)
-      R_tce_ps[is.na(R_tce_ps)] = R_tce[is.na(R_tce_ps)] + rnorm(sum(is.na(R_tce_ps)), sd = 1.5*ps_mae)
-      R_tce_aps[is.na(R_tce_aps)] = R_tce[is.na(R_tce_aps)] + rnorm(sum(is.na(R_tce_aps)), sd = 1.5*aps_mae)
-      R_tce_raps[is.na(R_tce_raps)] = R_tce[is.na(R_tce_raps)] + rnorm(sum(is.na(R_tce_raps)), sd = 1.5*raps_mae)
-
-      R_exact_cheat <- tryCatch(
-        fit_exact(R_tce_cheat),
-        error=function(cond){return(NA)})
-      exact_cheat_mae <- mean(abs(R_normed - R_exact_cheat))
-
-      R_exact_ps <- tryCatch(
-        fit_exact(R_tce_ps),
-        error=function(cond){return(NA)})
-      exact_ps_mae <- mean(abs(R_normed - R_exact_ps))
-  
-        
-      reg_cheat_mae <- Inf
-      for(lambda in c(0.0, 0.0001, 0.001, 0.01, 0.1)){
-        R_reg_cheat <- tryCatch(
-          fit_regularized(R_tce_cheat, lambda),
-          error=function(cond){return(NA)},
-          warning=function(cond){return(NA)})
-        lam_reg_mae <- mean(abs(R_normed - R_reg_cheat))
-        if(is.na(lam_reg_mae)){
-          lam_reg_mae <- Inf
-        }
-        if(lam_reg_mae < reg_cheat_mae){
-          reg_cheat_mae <- lam_reg_mae
-        }
-      }
-
-      reg_ps_mae <- Inf
-      for(lambda in c(0.0, 0.0001, 0.001, 0.01, 0.1)){
-        R_reg_ps <- tryCatch(
-          fit_regularized(R_tce_ps, lambda),
-          error=function(cond){return(NA)},
-          warning=function(cond){return(NA)})
-        lam_reg_mae <- mean(abs(R_normed - R_reg_ps))
-        if(is.na(lam_reg_mae)){
-          lam_reg_mae <- Inf
-        }
-        if(lam_reg_mae < reg_ps_mae){
-          reg_ps_mae <- lam_reg_mae
-        }
-      }
+          # We might have some missing values, for now impute with true + noise.
+          R_tce_hat[is.na(R_tce_hat)] = R_tce[is.na(R_tce_hat)] + 
+            rnorm(sum(is.na(R_tce_hat)), sd = 1.5*mae_tce)
       
-      ind_mae <- Inf
-      snps_to_use <- apply(do.call(rbind, unlist(selected, recursive = FALSE)), 2, any)
-      for(lambda in c(0.0, 0.001, 0.01, 0.1, 1.0)){
-        R_hat_ind <- tryCatch(
-          fit_ind_level(X_fit[, snps_to_use], Y_fit, lambda = lambda),
-          error=function(cond){return(list(R_hat = NA))})
-        lam_ind_mae <- mean(abs(R_normed - R_hat_ind$R_hat))
-        if(is.na(lam_ind_mae)){
-          lam_ind_mae <- Inf
-        }
-        if(lam_ind_mae < ind_mae){
-          ind_mae <- lam_ind_mae
-        }
-      }
-      
-      rep_len=5
-      tibble(tce_mae = c(cheat_mae, mean_mae, ps_mae, aps_mae, raps_mae),
-             cde_mae = c(exact_cheat_mae, exact_ps_mae, reg_cheat_mae, reg_ps_mae, ind_mae),
-             tce_method = c("cheat", "mean", "ps", "aps", "raps"),
-             cde_method = c("cheat_exact", "ps_exact", "cheat_reg", "ps_reg", "ind_level"),
-             noise = rep(noise, rep_len),
-             rank_R = rep(rank_R, rep_len),
-             min_abs_self = rep(min_abs_self, rep_len),
-             min_self = rep(min_self, rep_len),
-             max_self = rep(max_self, rep_len))},
-    error = function(cond){
-        tibble(tce_mae = rep(NA, rep_len),
-          tce_method = c("cheat", "mean", "ps", "aps", "raps"),
-          noise = rep(noise, rep_len),
-          rank_R = rep(rank_R, rep_len),
-          min_abs_self = rep(min_abs_self, rep_len),
-          min_self = rep(min_self, rep_len),
-          max_self = rep(max_self, rep_len))}
-  )
+          fit_method_func <- switch(fit_method,
+            exact = fit_exact,
+            regularized = function(R_tce){
+              fit_regularized_over_lambda(R_tce, R_normed)}
+          )
+          R_hat = fit_method_func(R_tce = R_tce_hat)
+          mae_cde <- mean(as.matrix(abs(R_hat - R_normed)))
+          tibble(noise = noise, min_abs_self = min_abs_self, rank_R = rank_R,
+            mr_method = mr_method, fit_method = fit_method,
+            mae_tce = mae_tce, mae_cde = mae_cde)
+        },
+        error = function(cond){
+          tibble(noise = noise, min_abs_self = min_abs_self, rank_R = rank_R,
+            mr_method = mr_method, fit_method = fit_method,
+            mae_tce = NA, mae_cde = NA)
+        })
+
+    }
+  }
 }
+plot_tibble = unite(plot_tibble, "mr_fit", c("mr_method", "fit_method"), sep = "_", remove = FALSE)
 ```
 
 
 ```{r}
 well_cond = plot_tibble[plot_tibble[,"min_abs_self"] > 0.5,]
-ggplot(well_cond, aes(noise, tce_mae, colour = tce_method)) + geom_point() + ylim(0, 0.5)
-ggplot(well_cond, aes(noise, cde_mae, colour = cde_method)) + geom_point() + ylim(0, 0.5)
-tce_err_means = sapply(c("aps", "cheat", "mean", "ps", "raps"),
-       function(x){mean(as.matrix(well_cond[well_cond[,"tce_method"] == x, "tce_mae"]))})
-cde_err_means = sapply(c("cheat_exact", "cheat_reg", "ind_level", "ps_exact", "ps_reg"), function(x){vals = as.matrix(well_cond[well_cond[,"cde_method"] == x, "cde_mae"]); vals[is.infinite(vals)] = NA; mean(vals, na.rm=TRUE)})
-# ggplot(plot_tibble, aes(min_abs_self, mae, colour = method)) + geom_point() + ylim(0, 2)
-```
+ggplot(well_cond, aes(noise, mae_tce, colour = mr_method)) + geom_point() + ylim(0, 0.5)
+ggplot(well_cond, aes(noise, mae_cde, colour = mr_fit)) + geom_point() + ylim(0, 0.5)
 
-
-```{r}
-
-
-
-
-  
+ggplot(well_cond, aes(mr_method, mae_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1) + ylim(0, 0.5)
+ggplot(well_cond, aes(mr_fit, mae_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1) + ylim(0, 0.5)
 ```
