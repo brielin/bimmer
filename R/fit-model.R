@@ -29,6 +29,29 @@ fit_regularized <- function(R_tce, lambda = 0.01) {
   return(R_hat)
 }
 
+#' Fits L1-regularized approximate inverse while finding best lambda.
+#'
+#' @param R_tce DxD matrix of "total causal effects".
+#' @param R DxD matrix of true "causal direct effects".
+fit_regularized_over_lambda <- function(R_tce, R){
+  mae <- Inf
+  best_R <- NULL
+  for(lambda in c(0.0, 0.0001, 0.001, 0.01, 0.1)){
+    R_hat <- tryCatch(
+      fit_regularized(R_tce, lambda),
+      error=function(cond){return(NA)})
+    lam_mae <- mean(abs(R - R_hat))
+    if(is.na(lam_mae)){
+      lam_mae <- Inf
+    }
+    if(lam_mae < mae){
+      mae <- lam_mae
+      best_R <- R_hat
+    }
+  }
+  return(best_R)
+}
+
 #' Fit simple inspre model
 #'
 #' @param X N x M matrix of genotypes.
