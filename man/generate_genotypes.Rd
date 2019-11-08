@@ -4,12 +4,15 @@
 \alias{generate_genotypes}
 \title{Generates genotypes.}
 \usage{
-generate_genotypes(N, M)
+generate_genotypes(N, M, whiten = FALSE)
 }
 \arguments{
 \item{N}{Integer. Number of individuals to simulate.}
 
 \item{M}{Integer. Number of SNPs to simulate.}
+
+\item{whiten}{Bool. TRUE to whiten such that the observed covariance is
+exactly 0. This should only be used for testing.}
 }
 \value{
 and NxM matrix of simulated genotypes.

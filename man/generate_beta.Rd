@@ -4,7 +4,7 @@
 \alias{generate_beta}
 \title{Generates sparse effects and Mendelian randomization conditioning statistic.}
 \usage{
-generate_beta(M, D, p = 0.1, pleiotropy = FALSE)
+generate_beta(M, D, p = 0.1, sd = 1, pleiotropy = FALSE)
 }
 \arguments{
 \item{M}{Integer. Number of SNPs to simulate.}
@@ -12,6 +12,8 @@ generate_beta(M, D, p = 0.1, pleiotropy = FALSE)
 \item{D}{Integer. Number of phenotypes to simulate.}
 
 \item{p}{Float. Proportion of non-zero effects.}
+
+\item{sd}{Float. Standard deviation normal distribution of effect sizes.}
 
 \item{pleiotropy}{Bool. TRUE to allow for SNPs to effect multiple phenotypes.}
 }

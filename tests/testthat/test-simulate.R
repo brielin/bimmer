@@ -103,13 +103,12 @@ test_that("select_snps_oracle_works", {
   M <- 2
   p_beta <- 1.0
   p_network <- 0.5
-  dataset <- generate_dataset(N, M, D, p_beta, p_network, pleiotropy = TRUE)
+  dataset <- generate_dataset(N, M, D, p_beta, p_network, pleiotropy = FALSE)
   sumstats <- generate_sumstats(dataset$X, dataset$Y, normalize = FALSE)
   snps_to_use <- select_snps_oracle(dataset$beta, sumstats$p_value)
-  print(snps_to_use)
   expected <- list(
-    "P1" = list("P1" = c(FALSE, TRUE), "P2" = c(FALSE, TRUE)),
-    "P2" = list("P1" = c(TRUE, FALSE), "P2" = c(TRUE, FALSE))
+    "P1" = list("P1" = c(FALSE, FALSE), "P2" = c(FALSE, FALSE)),
+    "P2" = list("P1" = c(FALSE, FALSE), "P2" = c(FALSE, FALSE))
   )
   expect_equal(snps_to_use, expected)
 })

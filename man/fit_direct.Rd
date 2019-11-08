@@ -21,6 +21,9 @@ A list:
   R_hat: D x D matrix of deconvoluted direct effects.
   B_hat: M x D matrix of inferred genotype effect sizes.
   progress_tibble: A tible containing information on convergence.
+
+TODO(brielin): Figure out what to do with the progress of this and why it's
+  performance is so poor.
 }
 \description{
 Fit simple inspre model

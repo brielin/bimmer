@@ -5,7 +5,8 @@
 \title{Generates dataset.}
 \usage{
 generate_dataset(N, M, D, p_beta = 0.2, p_net = 0.2, noise = 0,
-  pleiotropy = FALSE)
+  pleiotropy = FALSE, whiten = FALSE, symmetric = NULL, sd_net = 1,
+  sd_beta = 1)
 }
 \arguments{
 \item{N}{Integer. Number of individuals to simulate.}
@@ -22,6 +23,23 @@ generate_dataset(N, M, D, p_beta = 0.2, p_net = 0.2, noise = 0,
 noise. 0 for no noise, 1 for all noise with no genetic/network component.}
 
 \item{pleiotropy}{Bool. TRUE to allow for SNPs to effect multiple phenotypes.}
+
+\item{whiten}{Bool. TRUE to whiten generated genotypes. See
+generate_genotypes for more information.}
+
+\item{symmetric}{Bool or NULL. Whether to enforce a symmetry constraint on
+generated network. See generate_network for more.}
+
+\item{sd_net}{Float. Standard deviation of network edge weights.}
+
+\item{sd_beta}{Float. Standard deviation of SNP effect sizes.}
+}
+\value{
+A list:
+  Y: N x D matrix of observed phenotypes.
+  X: N x M matrix of genotypes.
+  beta: M x D matrix of genotype effect sizes.
+  R: D x D network effect matrix.
 }
 \description{
 Generates a network mendelian randomization dataset with observed phenotypes,

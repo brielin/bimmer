@@ -238,11 +238,14 @@ select_snps <- function(sumstats_select, p_thresh = 1e-5, welch_thresh = 0.01) {
 #'
 #' @param sumstats_fit List representing summary statistics from the second
 #'   dataset. Must include entries "beta_hat" and "se_hat".
-#' @param selected A list of lists with names of each equal to the phenotype
-#'   names.
+#' @param selected_snps A list of lists with names of each equal to the
+#'   phenotype names. The inner lists are boolean vectors of length equal to
+#'   the number of SNPs and TRUE indicating to use that SNP.
 #' @param p_thresh Float. p-value threshold for inclusion.
 #' @param mr_method String, one of c("mean", "raps"). Method to use for TCE
 #'   estimate between every pair.
+#' @param min_instruments Integer. Return NA if there are less than
+#'   this many instruments for a pair of phenotypes.
 #' @param ... Additional parameters to pass to mr_method.
 #' @returns
 fit_tce <- function(sumstats_fit,
@@ -308,6 +311,8 @@ fit_tce <- function(sumstats_fit,
 #'   network optimization. Note that this will  be called with the default
 #'   arguments. For more detailed control, call the fit method directly.
 #' @param p_thresh Float. p-value threshold for inclusion.
+#' @param min_instruments Integer. Return NA if there are less than
+#'   this many instruments for a pair of phenotypes.
 #' @returns A modified version of sumtats_fit or dataset_fit with only SNPs
 #'   that are selected for further analysis.
 fit_sumstats <- function(sumstats_select,

@@ -52,6 +52,7 @@ generate_beta <- function(M, D, p = 0.1, sd = 1.0, pleiotropy = FALSE) {
 #'   normalization.
 #' @param symmetric Bool. TRUE to force the returned matrix to be
 #'   symmetric, false for anti-symmetric, and NULL for no symmetry enforcement.
+#' @param sd Float. Standard deviation of network edge weights.
 #' @return A DxD sparse matrix.
 #' @example generate_network(10, 0.2)
 generate_network <- function(D, p = 0.1, normalize = TRUE, epsilon = 0.1,
@@ -123,6 +124,8 @@ generate_genotypes <- function(N, M, whiten = FALSE) {
 #'   generate_genotypes for more information.
 #' @param symmetric Bool or NULL. Whether to enforce a symmetry constraint on
 #'   generated network. See generate_network for more.
+#' @param sd_net Float. Standard deviation of network edge weights.
+#' @param sd_beta Float. Standard deviation of SNP effect sizes.
 #' @return A list:
 #'   Y: N x D matrix of observed phenotypes.
 #'   X: N x M matrix of genotypes.

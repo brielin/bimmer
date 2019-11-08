@@ -4,7 +4,8 @@
 \alias{generate_network}
 \title{Generates and optionally normalizes causal graph.}
 \usage{
-generate_network(D, p = 0.1, normalize = TRUE, epsilon = 0.1)
+generate_network(D, p = 0.1, normalize = TRUE, epsilon = 0.1,
+  symmetric = NULL, sd = 1)
 }
 \arguments{
 \item{D}{Integer. Number of phenotypes to simulate.}
@@ -16,6 +17,11 @@ eigenvalues with modulus between -1 and 1.}
 
 \item{epsilon}{Float. Number to add to maximum eigenvalue to better-condition
 normalization.}
+
+\item{symmetric}{Bool. TRUE to force the returned matrix to be
+symmetric, false for anti-symmetric, and NULL for no symmetry enforcement.}
+
+\item{sd}{Float. Standard deviation of network edge weights.}
 }
 \value{
 A DxD sparse matrix.

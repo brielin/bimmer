@@ -4,8 +4,9 @@
 \alias{fit_sumstats}
 \title{Fits network mendelian randomization model to data.}
 \usage{
-fit_sumstats(sumstats_select, sumstats_fit, mr_method = c("mean",
-  "raps"), fit_method = c("exact", "regularized"), p_thresh = 1e-05)
+fit_sumstats(sumstats_select, sumstats_fit, mr_method = c("mean", "ps",
+  "aps", "raps"), fit_method = c("exact", "regularized"),
+  p_thresh = 1e-05, min_instruments = 5)
 }
 \arguments{
 \item{sumstats_select}{List representing summary statistics from the first
@@ -23,6 +24,9 @@ network optimization. Note that this will  be called with the default
 arguments. For more detailed control, call the fit method directly.}
 
 \item{p_thresh}{Float. p-value threshold for inclusion.}
+
+\item{min_instruments}{Integer. Return NA if there are less than
+this many instruments for a pair of phenotypes.}
 }
 \description{
 Fits network mendelian randomization model to data.

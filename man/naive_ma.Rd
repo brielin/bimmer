@@ -4,12 +4,12 @@
 \alias{naive_ma}
 \title{Uses naive meta analysis method for TCE estimation with multiple SNPs.}
 \usage{
-naive_ma(beta_exp, beta_out, se_exp, se_out)
+naive_ma(b_exp, b_out, se_exp, se_out)
 }
 \arguments{
-\item{beta_exp}{Vector of SNP effects on exposure variable.}
+\item{b_exp}{Vector of SNP effects on exposure variable.}
 
-\item{beta_out}{Vector of SNP effects on outcome variable.}
+\item{b_out}{Vector of SNP effects on outcome variable.}
 
 \item{se_exp}{Vector of SNP effects on exposure variable.}
 

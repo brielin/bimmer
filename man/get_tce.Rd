@@ -4,10 +4,14 @@
 \alias{get_tce}
 \title{Gets matrix of TCE from observed network.}
 \usage{
-get_tce(R_obs)
+get_tce(R_obs, normalize = NULL)
 }
 \arguments{
 \item{R_obs}{D x D matrix of observed effects.}
+
+\item{normalize}{A length D vector which is used to convert R_tce from the
+per-allele to the per-variance scale. Each entry should be the
+std dev of the corresponding phenotype. Set to NULL for no normalization.}
 }
 \value{
 D x D matrix of total causal effects.

@@ -2,22 +2,25 @@
 % Please edit documentation in R/fit-model.R
 \name{select_snps}
 \alias{select_snps}
-\title{Selects SNP sets for each phenotype.}
+\title{Selects SNPs for inclusion in MR by comparing per-variance effect sizes.}
 \usage{
-select_snps(sumstats_select, p_thresh = 1e-05)
+select_snps(sumstats_select, p_thresh = 1e-05, welch_thresh = 0.01)
 }
 \arguments{
-\item{sumstats_select}{List with elements "r_squared" and "p_value", each
-M x D matrices.}
+\item{sumstats_select}{List with elements "beta_hat", "se_hat", "n_mat", and
+"p_value", each M x D matrices.}
 
 \item{p_thresh}{Float, p-value threshold to use for SNP inclusion.}
+
+\item{welch_thresh}{FLOAT, p-value threshold for Welch test of equal betas.}
 }
 \value{
-A list with names from the columns of r_squared (phenotypes), where
-  each entry is a vector with names from the rows (SNPs) consististing of the
-  r_squared value for each SNP that has a significant effect on that
-  phenotype accoring to p_thresh.
+A list of lists. The outer list is indexed by the phenotype names.
+  Each inner list is also indexed by the phenotype names, and the value of
+  result$P1$P2 is a boolean vector of length M corresponding to the SNPs to
+  use in the estimation of TCE of P1 on P2.
 }
 \description{
-Selects SNP sets for each phenotype.
+Notes: sumstats passed to this function must be computed on the per-variance
+scale. This function does twice as much work as necessary.
 }

@@ -4,20 +4,24 @@
 \alias{fit_tce}
 \title{Calculates matrix of total causal effects using a specified method.}
 \usage{
-fit_tce(sumstats_select, sumstats_fit, mr_method = c("mean", "raps"),
-  p_thresh = 1e-05, ...)
+fit_tce(sumstats_fit, selected_snps, mr_method = c("mean", "ps", "aps",
+  "raps"), p_thresh = 1e-05, min_instruments = 5, ...)
 }
 \arguments{
-\item{sumstats_select}{List representing summary statistics from the first
-dataset. Must include "p-value" and "r-squared".}
-
 \item{sumstats_fit}{List representing summary statistics from the second
 dataset. Must include entries "beta_hat" and "se_hat".}
+
+\item{selected_snps}{A list of lists with names of each equal to the
+phenotype names. The inner lists are boolean vectors of length equal to
+the number of SNPs and TRUE indicating to use that SNP.}
 
 \item{mr_method}{String, one of c("mean", "raps"). Method to use for TCE
 estimate between every pair.}
 
 \item{p_thresh}{Float. p-value threshold for inclusion.}
+
+\item{min_instruments}{Integer. Return NA if there are less than
+this many instruments for a pair of phenotypes.}
 
 \item{...}{Additional parameters to pass to mr_method.}
 }
