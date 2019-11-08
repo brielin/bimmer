@@ -23,7 +23,10 @@ fit_regularized <- function(R_tce, lambda = 0.01) {
     )
     R_tce_inv[, d] <- matrix(fit$beta)
   }
-  diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
+  R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
+  colnames(R_hat) <- colnames(R_tce)
+  rownames(R_hat) <- rownames(R_tce)
+  return(R_hat)
 }
 
 #' Fit simple inspre model
@@ -37,10 +40,11 @@ fit_regularized <- function(R_tce, lambda = 0.01) {
 #'   B_hat: M x D matrix of inferred genotype effect sizes.
 #'   progress_tibble: A tible containing information on convergence.
 #'
-#' TODO(brielin): Figure out what to do with the progress of this.
+#' TODO(brielin): Figure out what to do with the progress of this and why it's
+#'   performance is so poor.
 fit_direct <- function(X, Y, lambda = 1., niter = 20, true_R = NULL, true_B = NULL) {
   N <- nrow(X)
-  P <- ncol(X)
+  M <- ncol(X)
   D <- ncol(Y)
   Y_hat <- matrix(0L, nrow = N, ncol = D)
   R_hat <- matrix(0L, nrow = D, ncol = D)
@@ -56,11 +60,12 @@ fit_direct <- function(X, Y, lambda = 1., niter = 20, true_R = NULL, true_B = NU
   progress_tibble <- foreach::foreach(i = 1:niter, .combine = dplyr::bind_rows) %do% {
     R_hat_next <- matrix(0L, nrow = D, ncol = D)
     Y_hat_next <- matrix(0L, nrow = N, ncol = D)
-    B_hat <- matrix(0L, nrow = P, ncol = D)
+    B_hat <- matrix(0L, nrow = M, ncol = D)
     for (d in 1:D) {
       fit <- glmnet::glmnet(cbind(Y_hat[, -d], X), Y[, d],
-        alpha = 1.0, lambda = lambda,
-        standardize = FALSE, intercept = FALSE
+        alpha = 1.0,
+        lambda = lambda, standardize = FALSE,
+        intercept = FALSE
       )
       Y_hat_next[, d] <- glmnet::predict.glmnet(fit, cbind(Y_hat[, -d], X))
       if (d == 1) { # I fucking hate R.
@@ -72,7 +77,7 @@ fit_direct <- function(X, Y, lambda = 1., niter = 20, true_R = NULL, true_B = NU
         Rdnext <- c(fit$beta[1:(d - 1)], 0, fit$beta[d:(D - 1)])
       }
       R_hat_next[, d] <- Rdnext
-      B_hat[, d] <- fit$beta[D:(D + P - 1)]
+      B_hat[, d] <- fit$beta[D:(D + M - 1)]
     }
     delta_Y <- sum((Y_hat - Y_hat_next)^2)
     delta_R <- sum((R_hat - R_hat_next)^2)
@@ -95,11 +100,17 @@ fit_direct <- function(X, Y, lambda = 1., niter = 20, true_R = NULL, true_B = NU
 #' Gets matrix of TCE from observed network.
 #'
 #' @param R_obs D x D matrix of observed effects.
+#' @param normalize A length D vector which is used to convert R_tce from the
+#'   per-allele to the per-variance scale. Each entry should be the
+#'   std dev of the corresponding phenotype. Set to NULL for no normalization.
 #' @return D x D matrix of total causal effects.
-get_tce <- function(R_obs) {
+get_tce <- function(R_obs, normalize = NULL) {
   diag_R_obs <- Matrix::diag(R_obs)
   R_tce <- (1 / (1 + diag_R_obs)) * R_obs
   Matrix::diag(R_tce) <- 1
+  if (!is.null(normalize)) {
+    R_tce <- R_tce * outer(normalize, 1 / normalize)
+  }
   return(R_tce)
 }
 
@@ -123,92 +134,142 @@ get_direct <- function(R_obs) {
 
 #' Uses naive meta analysis method for TCE estimation with multiple SNPs.
 #'
-#' @param beta_exp Vector of SNP effects on exposure variable.
-#' @param beta_out Vector of SNP effects on outcome variable.
+#' @param b_exp Vector of SNP effects on exposure variable.
+#' @param b_out Vector of SNP effects on outcome variable.
 #' @param se_exp Vector of SNP effects on exposure variable.
 #' @param se_out Vector of SNP effects on outcome variable.
 #' @return A list with two elements.
 #'   tce_hat: The total causal efffect estimate.
 #'   se_tce: The standard error of the estimate.
-naive_ma <- function(beta_exp, beta_out, se_exp, se_out) {
-  tce_hat <- mean(beta_out / beta_exp)
-  se_tce <- stats::sd(beta_out / beta_exp) / sqrt(length(beta_exp))
+naive_ma <- function(b_exp, b_out, se_exp, se_out) {
+  tce_hat <- mean(b_out / b_exp)
+  se_tce <- stats::sd(b_out / b_exp) / sqrt(length(b_exp))
   list("beta.hat" = tce_hat, "beta.se" = se_tce)
 }
 
-#' Selects SNP sets for each phenotype.
+#' Simple implementation of a welch test.
 #'
-#' @param sumstats_select List with elements "r_squared" and "p_value", each
-#'   M x D matrices.
+#' This tests the null hypothesis mu1 = mu2 against the one-sided alternative
+#' mu1 > mu2.
+#'
+#' @param mu1 Float, mean of the first sample.
+#' @param mu2 Float, mean of the second sample.
+#' @param s1 Float, SD of estimate of mu1.
+#' @param s2 Float, SD of estimate of mu2.
+#' @param n1 Integer, number of samples in dataset 1.
+#' @param n2 Integer, number of samples in dataset 2.
+#' @returns Float, the p-value corresponding to the test.
+welch_test <- function(mu1, mu2, s1, s2, n1, n2) {
+  t_val <- (mu2 - mu1) / sqrt(s1^2 + s2^2)
+  nu <- (s1^2 + s2^2)^2 / (s1^4 / ((n1 - 1)) + s2^4 / ((n2 - 1)))
+  stats::pt(t_val, round(nu))
+}
+
+#' Selects SNPs for inclusion in MR by comparing per-variance effect sizes.
+#'
+#' Notes: sumstats passed to this function must be computed on the per-variance
+#' scale. This function does twice as much work as necessary.
+#'
+#' @param sumstats_select List with elements "beta_hat", "se_hat", "n_mat", and
+#'   "p_value", each M x D matrices.
 #' @param p_thresh Float, p-value threshold to use for SNP inclusion.
-#' @return A list with names from the columns of r_squared (phenotypes), where
-#'   each entry is a vector with names from the rows (SNPs) consististing of the
-#'   r_squared value for each SNP that has a significant effect on that
-#'   phenotype accoring to p_thresh.
-select_snps <- function(sumstats_select, p_thresh = 1e-5) {
-  snp_names <- rownames(sumstats_select$r_squared)
-  select_one_pheno <- function(p_value, r_squared) {
-    sig_index <- p_value < p_thresh
-    names(r_squared) <- snp_names
-    r_squared[sig_index]
+#' @param welch_thresh FLOAT, p-value threshold for Welch test of equal betas.
+#' @return A list of lists. The outer list is indexed by the phenotype names.
+#'   Each inner list is also indexed by the phenotype names, and the value of
+#'   result$P1$P2 is a boolean vector of length M corresponding to the SNPs to
+#'   use in the estimation of TCE of P1 on P2.
+select_snps <- function(sumstats_select, p_thresh = 1e-5, welch_thresh = 0.01) {
+  select_function <- function(beta, se, p_val, n_val) {
+    run_test <- function(beta_other, se_other, n_other) {
+      index <- p_val < p_thresh
+      welch_res <- mapply(
+        welch_test,
+        abs(beta[index]),
+        abs(beta_other[index]),
+        se[index],
+        se_other[index],
+        n_val[index],
+        n_other[index]
+      )
+      index[index == TRUE][welch_res > welch_thresh] <- FALSE
+      return(index)
+    }
+    mapply(run_test,
+      data.frame(sumstats_select$beta_hat),
+      data.frame(sumstats_select$se_hat),
+      data.frame(sumstats_select$n_mat),
+      SIMPLIFY = FALSE
+    )
   }
-  mapply(select_one_pheno,
+  result <- mapply(select_function,
+    data.frame(sumstats_select$beta_hat),
+    data.frame(sumstats_select$se_hat),
     data.frame(sumstats_select$p_value),
-    data.frame(sumstats_select$r_squared),
+    data.frame(sumstats_select$n_mat),
     SIMPLIFY = FALSE
   )
+  result
 }
 
 #' Calculates matrix of total causal effects using a specified method.
 #'
-#' @param sumstats_select List representing summary statistics from the first
-#'   dataset. Must include "p-value" and "r-squared".
 #' @param sumstats_fit List representing summary statistics from the second
 #'   dataset. Must include entries "beta_hat" and "se_hat".
+#' @param selected A list of lists with names of each equal to the phenotype
+#'   names.
 #' @param p_thresh Float. p-value threshold for inclusion.
 #' @param mr_method String, one of c("mean", "raps"). Method to use for TCE
 #'   estimate between every pair.
 #' @param ... Additional parameters to pass to mr_method.
-#' @returns A modified version of sumtats_fit or dataset_fit with only SNPs
-#'   that are selected for further analysis.
-fit_tce <- function(sumstats_select,
-                    sumstats_fit,
-                    mr_method = c("mean", "raps"),
+#' @returns
+fit_tce <- function(sumstats_fit,
+                    selected_snps,
+                    mr_method = c("mean", "ps", "aps", "raps"),
                     p_thresh = 1e-5,
+                    min_instruments = 5,
                     ...) {
   mr_method_func <- switch(mr_method,
     mean = naive_ma,
-    raps = mr.raps::mr.raps
+    ps = mr.raps::mr.raps,
+    aps = function(...) {
+      mr.raps::mr.raps(over.dispersion = TRUE, ...)
+    },
+    raps = function(...) {
+      mr.raps::mr.raps(over.dispersion = TRUE, loss.function = "huber", ...)
+    }
   )
 
-  # Get SNP list and corresponding r-squareds.
-  selected <- select_snps(sumstats_select, p_thresh)
-  pheno_names <- colnames(sumstats_select$beta_hat)
-
-  run_mr_method_on_exp <- function(exp_name) {
-    exp_snps <- get(exp_name, selected)
-    run_mr_method <- function(out_name) {
-      if(out_name == exp_name){
-        return(1.0)
-      }
-      out_snps <- get(out_name, selected)
-      # Use only SNPs that explain more variance in exposure than outcome.
-      # TODO(brielin): Consider ways to force that this difference be large, or
-      #   do some weighting based on the difference, or have an exclusion set.
-      snps_to_use <- exp_snps > out_snps[names(exp_snps)]
-      snps_to_use[is.na(snps_to_use)] <- TRUE # Use any SNPs not in out_snps.
-      snps_to_use <- names(snps_to_use[snps_to_use])
-      beta_exp <- sumstats_fit$beta_hat[snps_to_use, exp_name, drop = FALSE]
-      se_exp <- sumstats_fit$se_hat[snps_to_use, exp_name, drop = FALSE]
-      beta_out <- sumstats_fit$beta_hat[snps_to_use, out_name, drop = FALSE]
-      se_out <- sumstats_fit$se_hat[snps_to_use, out_name, drop = FALSE]
+  run_one_pheno <- function(snp_list, beta_exp, stderr_exp) {
+    run_paired_pheno <- function(snps_to_use, beta_out, stderr_out) {
       # TODO(brielin): Do something with the SE of this estimate
-      mr_method_func(beta_exp, beta_out, se_exp, se_out, ...)$beta.hat
+      if (sum(snps_to_use) < min_instruments) {
+        return(NA)
+      }
+      else {
+        mr_method_func(
+          b_exp = beta_exp[snps_to_use],
+          b_out = beta_out[snps_to_use],
+          se_exp = stderr_exp[snps_to_use],
+          se_out = stderr_out[snps_to_use],
+          ...
+        )$beta.hat
+      }
     }
-    row_res <- sapply(pheno_names, run_mr_method)
-    return(row_res)
+    mapply(
+      run_paired_pheno,
+      snp_list,
+      data.frame(sumstats_fit$beta_hat),
+      data.frame(sumstats_fit$se_hat)
+    )
   }
-  t(sapply(pheno_names, run_mr_method_on_exp))
+  R_tce <- t(mapply(
+    run_one_pheno,
+    selected_snps,
+    data.frame(sumstats_fit$beta_hat),
+    data.frame(sumstats_fit$se_hat)
+  ))
+  diag(R_tce) <- 1.0
+  return(R_tce)
 }
 
 #' Fits network mendelian randomization model to data.
@@ -228,29 +289,18 @@ fit_tce <- function(sumstats_select,
 #'   that are selected for further analysis.
 fit_sumstats <- function(sumstats_select,
                          sumstats_fit,
-                         mr_method = c("mean", "raps"),
+                         mr_method = c("mean", "ps", "aps", "raps"),
                          fit_method = c("exact", "regularized"),
-                         p_thresh = 1e-5) {
+                         p_thresh = 1e-5,
+                         min_instruments = 5) {
   fit_method_func <- switch(fit_method,
     exact = fit_exact,
     regularized = fit_regularized
   )
-  R_tce_hat <- fit_tce(sumstats_select, sumstats_fit, mr_method, p_thresh)
+  selected <- select_snps(sumstats_select)
+  R_tce_hat <- fit_tce(
+    sumstats_fit, selected, mr_method, p_thresh,
+    min_instruments
+  )
   fit_method_func(R_tce_hat)
-}
-
-#' Fits model using individual level genotypes and sumstats for SNP selection.
-#'
-#' @param X N x M matrix of genotypes.
-#' @param Y N x D matrix of phenotypes.
-#' @param sumstats_select List with elements "r_squared" and "p_value", each
-#'   M x D matrices.
-#' @param p_thresh p-value threshold for inclusion of a SNP in the fit.
-#' @param lambda Regularization strength.
-#' @param niter Number of iterations.
-fit_ind_level <- function(X, Y, sumstats_select, p_thresh = 1e-5,
-                          lambda = 0.1, niter = 5) {
-  selected <- select_snps(sumstats_select, p_thresh)
-  snps_to_use <- unique(unlist(lapply(selected, names), use.names = FALSE))
-  fit_direct(X[, snps_to_use], Y, lambda = lambda, niter = niter)
 }

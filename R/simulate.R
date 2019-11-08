@@ -130,10 +130,10 @@ generate_genotypes <- function(N, M, whiten = FALSE) {
 #'   R: D x D network effect matrix.
 generate_dataset <- function(N, M, D, p_beta = 0.2, p_net = 0.2, noise = 0.0,
                              pleiotropy = FALSE, whiten = FALSE,
-                             symmetric = NULL) {
+                             symmetric = NULL, sd_net = 1.0, sd_beta = 1.0) {
   X <- generate_genotypes(N, M, whiten = whiten)
-  beta_res <- generate_beta(M, D, p_beta, pleiotropy)
-  R <- generate_network(D, p_net, symmetric = symmetric)
+  beta_res <- generate_beta(M, D, p_beta, pleiotropy = pleiotropy, sd = sd_beta)
+  R <- generate_network(D, p_net, symmetric = symmetric, sd = sd_net)
   network <- X %*% beta_res$beta %*% solve(diag(D) - R)
   network_var <- apply(network, 2, stats::var)
   epsilon <- t(t(matrix(stats::rnorm(N * D), N, D)) * sqrt(network_var))
