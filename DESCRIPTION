@@ -16,7 +16,9 @@ Imports:
     glmnet,
     dplyr,
     foreach,
-    tibble
+    tibble,
+    ppcor,
+    corpcor
 Suggests: 
     testthat (>= 2.1.0)
 RoxygenNote: 6.1.1

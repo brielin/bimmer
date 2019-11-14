@@ -43,6 +43,21 @@ test_that("generate_network_symmetry", {
   expect_false(any((R > 0) & (t(R) > 0)))
 })
 
+test_that("generate_genotypes_runs", {
+  N <- 10
+  M <- 5
+  X <- generate_genotypes(N, M)
+  expect_is(X, "matrix")
+  expect_equal(dim(X), c(N, M))
+})
+
+test_that("generate_genotypes_whitens", {
+  N <- 10
+  M <- 5
+  X <- generate_genotypes(N, M, whiten = TRUE)
+  expect_equal(unname(cov(X)), diag(M))
+})
+
 test_that("generate_dataset_runs", {
   N <- 10
   D <- 5
@@ -107,7 +122,7 @@ test_that("select_snps_oracle_works", {
   sumstats <- generate_sumstats(dataset$X, dataset$Y, normalize = FALSE)
   snps_to_use <- select_snps_oracle(dataset$beta, sumstats$p_value)
   expected <- list(
-    "P1" = list("P1" = c(FALSE, FALSE), "P2" = c(FALSE, FALSE)),
+    "P1" = list("P1" = c(FALSE, TRUE), "P2" = c(FALSE, TRUE)),
     "P2" = list("P1" = c(FALSE, FALSE), "P2" = c(FALSE, FALSE))
   )
   expect_equal(snps_to_use, expected)

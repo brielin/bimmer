@@ -52,12 +52,17 @@ generate_beta <- function(M, D, p = 0.1, sd = 1.0, pleiotropy = FALSE) {
 #'   normalization.
 #' @param symmetric Bool. TRUE to force the returned matrix to be
 #'   symmetric, false for anti-symmetric, and NULL for no symmetry enforcement.
-#' @param sd Float. Standard deviation of network edge weights.
+#' @param sd Float. Standard deviation of network edge weights. NA for binary
+#'   matrices with equal probability of
 #' @return A DxD sparse matrix.
 #' @example generate_network(10, 0.2)
 generate_network <- function(D, p = 0.1, normalize = TRUE, epsilon = 0.1,
                              symmetric = NULL, sd = 1.0) {
-  R <- matrix(stats::rnorm(D * D, sd = sd) * (stats::runif(D * D) < p), D, D)
+  if (is.na(sd)) {
+    R <- matrix((2 * rbinom(D * D, 1, 0.5) - 1) * (stats::runif(D * D) < p), D, D)
+  } else {
+    R <- matrix(stats::rnorm(D * D, sd = sd) * (stats::runif(D * D) < p), D, D)
+  }
   diag(R) <- 0.0
   if (!is.null(symmetric)) {
     if (symmetric) {

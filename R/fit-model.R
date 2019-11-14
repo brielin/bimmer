@@ -33,18 +33,21 @@ fit_regularized <- function(R_tce, lambda = 0.01) {
 #'
 #' @param R_tce DxD matrix of "total causal effects".
 #' @param R DxD matrix of true "causal direct effects".
-fit_regularized_over_lambda <- function(R_tce, R){
+fit_regularized_over_lambda <- function(R_tce, R) {
   mae <- Inf
   best_R <- NULL
-  for(lambda in c(0.0, 0.0001, 0.001, 0.01, 0.1)){
+  for (lambda in c(0.0, 0.0001, 0.001, 0.01, 0.1)) {
     R_hat <- tryCatch(
       fit_regularized(R_tce, lambda),
-      error=function(cond){return(NA)})
+      error = function(cond) {
+        return(NA)
+      }
+    )
     lam_mae <- mean(abs(R - R_hat))
-    if(is.na(lam_mae)){
+    if (is.na(lam_mae)) {
       lam_mae <- Inf
     }
-    if(lam_mae < mae){
+    if (lam_mae < mae) {
       mae <- lam_mae
       best_R <- R_hat
     }
@@ -64,7 +67,7 @@ fit_regularized_over_lambda <- function(R_tce, R){
 #'   progress_tibble: A tible containing information on convergence.
 #'
 #' TODO(brielin): Figure out what to do with the progress of this and why it's
-#'   performance is so poor.
+#'   performance is so poor OR remove this method.
 fit_direct <- function(X, Y, lambda = 1., niter = 20, true_R = NULL, true_B = NULL) {
   N <- nrow(X)
   M <- ncol(X)
@@ -234,6 +237,26 @@ select_snps <- function(sumstats_select, p_thresh = 1e-5, welch_thresh = 0.01) {
   result
 }
 
+#' Shrinks the estimate of the total causal effect matrix.
+#'
+#' @param R_tce A matrix of floats with diagonals equal to 1.0. The estimate
+#'   of R_tce to be shunk.
+#' @param SE_tce A matrix of floats with diagonals equal to 0.0. Standard errors
+#'   of the entries in R_tce.
+#' @param N_obs A matrix of ints with diagonals equal to 0.0. The number of
+#'   samples (instruments) used in the estimate of R_tce for each entry.
+shrink_R <- function(R_tce, SE_tce, N_obs) {
+  # Diagonal of SE_tce should be 0.
+  var_tce <- N_obs * (SE_tce)^2
+  numerator <- sum(var_tce, na.rm = TRUE)
+  # Diagonal of R_tce should be 1.
+  denominator <- sum(R_tce^2, na.rm = TRUE) - nrow(R_tce)
+  lambda <- numerator / denominator
+  R_tce <- (1 - lambda) * R_tce
+  diag(R_tce) <- 1.0
+  return(R_tce)
+}
+
 #' Calculates matrix of total causal effects using a specified method.
 #'
 #' @param sumstats_fit List representing summary statistics from the second
@@ -253,6 +276,7 @@ fit_tce <- function(sumstats_fit,
                     mr_method = c("mean", "ps", "aps", "raps"),
                     p_thresh = 1e-5,
                     min_instruments = 5,
+                    shrink = FALSE,
                     ...) {
   mr_method_func <- switch(mr_method,
     mean = naive_ma,
@@ -268,17 +292,19 @@ fit_tce <- function(sumstats_fit,
   run_one_pheno <- function(snp_list, beta_exp, stderr_exp) {
     run_paired_pheno <- function(snps_to_use, beta_out, stderr_out) {
       # TODO(brielin): Do something with the SE of this estimate
-      if (sum(snps_to_use) < min_instruments) {
-        return(NA)
+      n_instruments <- sum(snps_to_use)
+      if (n_instruments < min_instruments) {
+        list(NA, NA, n_instruments)
       }
       else {
-        mr_method_func(
+        mr_res <- mr_method_func(
           b_exp = beta_exp[snps_to_use],
           b_out = beta_out[snps_to_use],
           se_exp = stderr_exp[snps_to_use],
           se_out = stderr_out[snps_to_use],
           ...
-        )$beta.hat
+        )
+        list(mr_res$beta.hat, mr_res$beta.se, n_instruments)
       }
     }
     mapply(
@@ -288,14 +314,32 @@ fit_tce <- function(sumstats_fit,
       data.frame(sumstats_fit$se_hat)
     )
   }
-  R_tce <- t(mapply(
+  res <- t(mapply(
     run_one_pheno,
     selected_snps,
     data.frame(sumstats_fit$beta_hat),
     data.frame(sumstats_fit$se_hat)
   ))
+  # Fuck this garbage programming language.
+  R_tce <- matrix(as.numeric(res[, c(TRUE, FALSE, FALSE)]),
+    nrow = nrow(res),
+    dimnames = list(rownames(res), rownames(res))
+  )
+  SE_tce <- matrix(as.numeric(res[, c(FALSE, TRUE, FALSE)]),
+    nrow = nrow(res),
+    dimnames = list(rownames(res), rownames(res))
+  )
+  N_obs <- matrix(as.numeric(res[, c(FALSE, FALSE, TRUE)]),
+    nrow = nrow(res),
+    dimnames = list(rownames(res), rownames(res))
+  )
   diag(R_tce) <- 1.0
-  return(R_tce)
+  diag(SE_tce) <- 0.0
+  diag(N_obs) <- 0.0
+  if (shrink) {
+    R_tce <- shrink_R(R_tce, SE_tce, N_obs)
+  }
+  list("R_tce" = R_tce, "SE_tce" = SE_tce, "N_obs" = N_obs)
 }
 
 #' Fits network mendelian randomization model to data.
@@ -320,15 +364,17 @@ fit_sumstats <- function(sumstats_select,
                          mr_method = c("mean", "ps", "aps", "raps"),
                          fit_method = c("exact", "regularized"),
                          p_thresh = 1e-5,
+                         shrink = FALSE,
                          min_instruments = 5) {
   fit_method_func <- switch(fit_method,
     exact = fit_exact,
     regularized = fit_regularized
   )
   selected <- select_snps(sumstats_select)
-  R_tce_hat <- fit_tce(
+  tce_res <- fit_tce(
     sumstats_fit, selected, mr_method, p_thresh,
-    min_instruments
+    min_instruments,
+    shrink = shrink
   )
-  fit_method_func(R_tce_hat)
+  fit_method_func(tce_res$R_tce)
 }

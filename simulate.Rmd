@@ -10,11 +10,13 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load packages
 ```{r}
 require(MrNo)
+require(tidyverse)
 require(foreach)
 require(tibble)
 require(dplyr)
 require(Matrix)
 require(ggplot2)
+require(corpcor)
 ```
 
 # Generate data. First looking only at TCE.
@@ -23,14 +25,16 @@ require(ggplot2)
 N = 5000
 M = 1000
 D = 10
+sd_net = 0.5
 p_beta = 0.15
 p_network = 0.15
+symmetric = TRUE
 niter = 100
 
 plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   # Randomly choose noise proportion.
-  noise <- runif(1, 0, 1.0)
-  dataset <- generate_dataset(N, M, D, noise = noise)
+  noise <- runif(1, 0, 0.5)
+  dataset <- generate_dataset(N, M, D, noise = noise, sd_net = sd_net, symmetric = symmetric)
   Y_sds <- apply(dataset$Y, 2, sd)
 
   # Calculate the rank of R to track during simulations.
@@ -62,42 +66,56 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   selected_oracle <- select_snps_oracle(dataset$beta, sumstats_fit$p_value)
   
   # Run all combinations of MR method and fit method.
-  foreach(mr_method = c("cheat", "mean", "ps", "aps", "raps"),
+  foreach(mr_method = c("cheat", "ps", "ps_shrunk", "cor"),
           .combine = bind_rows) %do% {
-    foreach(fit_method = c("exact", "regularized"),
+    foreach(fit_method = c("exact", "regularized", "pcor"),
             .combine = bind_rows) %do% {
       tryCatch(
         {
           # For cheat, use oracle SNPs and profile score.
           if(mr_method == "cheat"){
-            R_tce_hat <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps")
+            tce_res <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps")
+          }
+          else if(mr_method == "ps_shrunk"){
+            tce_res <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps", shrink = TRUE)
+          }
+          else if(mr_method == "cor"){
+            tce_res <- list("R_tce" = cor.shrink(Y_fit, verbose = FALSE))
           }
           else{
-            R_tce_hat <- fit_tce(sumstats_fit, selected, mr_method=mr_method)
+            tce_res <- fit_tce(sumstats_fit, selected, mr_method=mr_method)
           }
+          R_tce_hat <- tce_res$R_tce
+
           mae_tce <- mean(as.matrix(abs(R_tce - R_tce_hat)), na.rm=TRUE)
       
           # We might have some missing values, for now impute with true + noise.
+          n_tce_nans = sum(is.na(R_tce_hat))
           R_tce_hat[is.na(R_tce_hat)] = R_tce[is.na(R_tce_hat)] + 
             rnorm(sum(is.na(R_tce_hat)), sd = 1.5*mae_tce)
       
           fit_method_func <- switch(fit_method,
             exact = fit_exact,
             regularized = function(R_tce){
-              fit_regularized_over_lambda(R_tce, R_normed)}
+              fit_regularized_over_lambda(R_tce, R_normed)},
+            pcor = function(R_tce){
+              cor2pcor(m = R_tce)
+            }
           )
           R_hat = fit_method_func(R_tce = R_tce_hat)
           mae_cde <- mean(as.matrix(abs(R_hat - R_normed)))
           tibble(noise = noise, min_abs_self = min_abs_self, rank_R = rank_R,
-            mr_method = mr_method, fit_method = fit_method,
-            mae_tce = mae_tce, mae_cde = mae_cde)
+                 n_tce_nans = n_tce_nans, mr_method = mr_method,
+                 fit_method = fit_method, mae_tce = mae_tce, mae_cde = mae_cde)
         },
         error = function(cond){
+          print(mr_method)
+          print(fit_method)
+          print(cond)
           tibble(noise = noise, min_abs_self = min_abs_self, rank_R = rank_R,
-            mr_method = mr_method, fit_method = fit_method,
+            n_tce_nans = NA, mr_method = mr_method, fit_method = fit_method,
             mae_tce = NA, mae_cde = NA)
         })
-
     }
   }
 }
@@ -106,10 +124,10 @@ plot_tibble = unite(plot_tibble, "mr_fit", c("mr_method", "fit_method"), sep = "
 
 
 ```{r}
-well_cond = plot_tibble[plot_tibble[,"min_abs_self"] > 0.5,]
+well_cond = plot_tibble[(plot_tibble[,"min_abs_self"] > 0.5) & (plot_tibble[,"n_tce_nans"] < 45),]
 ggplot(well_cond, aes(noise, mae_tce, colour = mr_method)) + geom_point() + ylim(0, 0.5)
 ggplot(well_cond, aes(noise, mae_cde, colour = mr_fit)) + geom_point() + ylim(0, 0.5)
 
 ggplot(well_cond, aes(mr_method, mae_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1) + ylim(0, 0.5)
-ggplot(well_cond, aes(mr_fit, mae_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1) + ylim(0, 0.5)
+ggplot(well_cond, aes(mr_fit, mae_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1) + ylim(0, 0.5) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```

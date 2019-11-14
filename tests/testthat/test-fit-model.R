@@ -43,6 +43,17 @@ test_that("naive_ma_works", {
   expect_equal(res$beta.se, se_tce, tolerance = 1e-6)
 })
 
+test_that("welch_test_works", {
+  mu1 <- 0
+  mu2 <- 1
+  s1 <- 0.01
+  s2 <- 0.01
+  n1 <- 1000
+  n2 <- 1000
+  expect_equal(welch_test(mu1, mu2, s1, s2, n1, n2), 1)
+  expect_equal(welch_test(mu2, mu1, s1, s2, n1, n2), 0)
+})
+
 test_that("select_snps_works", {
   snps <- select_snps(sumstats)
   expect_is(snps, "list")
@@ -54,23 +65,37 @@ test_that("select_snps_works", {
   expect_equal(length(get("P2", get("P1", snps))), D)
 })
 
+test_that("shinkage_works", {
+  selected <- select_snps(sumstats)
+  tce_res <- fit_tce(sumstats, selected, "mean", min_instruments = 1)
+  R_shrunk <- shrink_R(tce_res$R_tce, tce_res$SE_tce, tce_res$N_obs)
+  expect_true(all(abs(R_shrunk) <= abs(tce_res$R_tce)))
+})
+
 test_that("fit_tce_min_instruments", {
   selected <- select_snps(sumstats)
-  R_tce_hat <- fit_tce(sumstats, selected, "mean")
+  R_tce_hat <- fit_tce(sumstats, selected, "mean")$R_tce
   expect_is(R_tce_hat, "matrix")
   expect_equal(sum(is.na(R_tce_hat)), D * (D - 1))
 })
 
 test_that("fit_tce_mean_works", {
   selected <- select_snps(sumstats)
-  R_tce_hat <- fit_tce(sumstats, selected, "mean", min_instruments = 1)
+  tce_res <- fit_tce(sumstats, selected, "mean", min_instruments = 1)
+  R_tce_hat <- tce_res$R_tce
+  SE_tce <- tce_res$SE_tce
+  N_obs <- tce_res$N_obs
   expect_is(R_tce_hat, "matrix")
   expect_false(any(is.na(R_tce_hat)))
+  expect_is(SE_tce, "matrix")
+  expect_equal(dim(SE_tce), c(D, D))
+  expect_is(N_obs, "matrix")
+  expect_equal(dim(N_obs), c(D, D))
 })
 
 test_that("fit_tce_raps_works", {
   selected <- select_snps(sumstats)
-  R_tce_hat <- fit_tce(sumstats, selected, "ps", min_instruments = 1)
+  R_tce_hat <- fit_tce(sumstats, selected, "ps", min_instruments = 1)$R_tce
   expect_is(R_tce_hat, "matrix")
   expect_false(any(is.na(R_tce_hat)))
 })
@@ -84,7 +109,7 @@ test_that("fit_sumstats_exact_works", {
 })
 
 test_that("fit_error_exactly_zero", {
-  M <- 10
+  M <- 20
   dataset_exact <- generate_dataset(
     N, M, D,
     p_beta = 1.0, p_net = 0.5, noise = 0.0, pleiotropy = FALSE,
@@ -94,7 +119,7 @@ test_that("fit_error_exactly_zero", {
 
   sumstats_exact <- generate_sumstats(dataset_exact$X, dataset_exact$Y)
   selected <- select_snps_oracle(dataset_exact$beta, sumstats_exact$p_value)
-  R_tce_hat <- fit_tce(sumstats_exact, selected, "mean", min_instruments = 1)
+  R_tce_hat <- fit_tce(sumstats_exact, selected, "mean", min_instruments = 1)$R_tce
   R_tce <- as.matrix(get_tce(get_observed(dataset_exact$R), normalize = Y_sds))
   expect_equal(R_tce_hat, R_tce)
 })
