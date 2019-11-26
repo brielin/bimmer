@@ -6,7 +6,8 @@
 \usage{
 fit_sumstats(sumstats_select, sumstats_fit, mr_method = c("mean", "ps",
   "aps", "raps"), fit_method = c("exact", "regularized"),
-  p_thresh = 1e-05, min_instruments = 5)
+  p_thresh = 1e-05, shrink = FALSE, min_instruments = 5,
+  resample = 0)
 }
 \arguments{
 \item{sumstats_select}{List representing summary statistics from the first
@@ -25,8 +26,12 @@ arguments. For more detailed control, call the fit method directly.}
 
 \item{p_thresh}{Float. p-value threshold for inclusion.}
 
+\item{shrink}{Boolean. True to shrink estimates of R_tce to 0.}
+
 \item{min_instruments}{Integer. Return NA if there are less than
 this many instruments for a pair of phenotypes.}
+
+\item{resample}{Non-negative integer or "delta". The number of resample iterations.}
 }
 \description{
 Fits network mendelian randomization model to data.

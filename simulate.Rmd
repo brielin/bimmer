@@ -19,22 +19,324 @@ require(ggplot2)
 require(corpcor)
 ```
 
-# Generate data. First looking only at TCE.
 ```{r warning=FALSE}
 # Basic set-up for simulation.
 N = 5000
 M = 1000
 D = 10
-sd_net = 0.5
+C = 0
+sd_net = 1.0
 p_beta = 0.15
-p_network = 0.15
-symmetric = TRUE
-niter = 100
+p_net = 0.15
+symmetric = FALSE
+pleiotropy = FALSE
+niter = 10
+sigma_g = matrix(1L, D, D)
 
 plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   # Randomly choose noise proportion.
-  noise <- runif(1, 0, 0.5)
-  dataset <- generate_dataset(N, M, D, noise = noise, sd_net = sd_net, symmetric = symmetric)
+  noise <- runif(1, 0, 0.7)
+  conf_ratio <- 0 # runif(1, 0, 0.5)
+  total_noise <- conf_ratio*(1-noise) + noise
+  print(c(i, noise, conf_ratio, total_noise))
+  dataset <- generate_dataset(N, M, D, C, noise = noise, sd_net = sd_net, p_net = p_net, p_beta = p_beta,
+                              symmetric = symmetric, conf_ratio = conf_ratio, sigma_g = sigma_g, pleiotropy = pleiotropy)
+  Y_sds <- apply(dataset$Y, 2, sd)
+
+  # Calculate the rank of R to track during simulations.
+  eigenv_R <- eigen(dataset$R, only.values = TRUE)$values
+  rank_R <- sum(abs(eigenv_R) > 1e-10)
+
+  # Calculate the self-influence of each nose to track during simulations.
+  R_obs = get_observed(dataset$R)
+  self_norm = 1 + diag(R_obs)
+  min_abs_self = min(abs(self_norm))
+  min_self = min(self_norm)
+  max_self = max(self_norm)
+
+  # All calculations happen on per-normalized scale, so convert R here.
+  R_tce = get_tce(R_obs, normalize=Y_sds)
+  R_normed <- fit_exact(R_tce)
+
+
+  # Split dataset into SNP selection and fitting.
+  sample <- sample.int(n = N, size = floor(N/2), replace = FALSE)
+  X_select = dataset$X[sample, ]
+  Y_select = dataset$Y[sample, ]
+  X_fit = dataset$X[-sample, ]
+  Y_fit = dataset$Y[-sample, ]
+  sumstats_select = generate_sumstats(X_select, Y_select, normalize = TRUE)
+  sumstats_fit = generate_sumstats(X_fit, Y_fit, normalize = TRUE)
+
+  # Select SNPs via sumstats and by cheating.
+  selected <- select_snps(sumstats_select)
+  selected_oracle <- select_snps_oracle(dataset$beta, sumstats_fit$p_value)
+  
+  # Run all combinations of MR method and fit method.
+  foreach(mr_method = c("cheat", "ps", "ps_shrunk"),
+          .combine = bind_rows) %do% {
+    foreach(fit_method = c("exact", "reg_cheat", "reg_auto", "reg_auto_same"),
+            .combine = bind_rows) %do% {
+      tryCatch(
+        {
+          # For cheat, use oracle SNPs and profile score.
+          if(mr_method == "cheat"){
+            tce_res <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps")
+          }
+          else if(mr_method == "ps_shrunk"){
+            tce_res <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps", shrink = TRUE)
+          }
+          else if(mr_method == "cor"){
+            tce_res <- list("R_tce" = cor.shrink(Y_fit, verbose = FALSE))
+          }
+          else{
+            tce_res <- fit_tce(sumstats_fit, selected, mr_method=mr_method)
+          }
+          R_tce_hat <- tce_res$R_tce
+
+          mer_tce <- mean(as.matrix(R_tce - R_tce_hat), na.rm=TRUE)
+          mae_tce <- mean(as.matrix(abs(R_tce - R_tce_hat)), na.rm=TRUE)
+          mse_tce <- mean(as.matrix(abs(R_tce - R_tce_hat)**2), na.rm=TRUE)
+      
+          # We might have some missing values, for now impute with true + noise.
+          n_tce_nans = sum(is.na(R_tce_hat))
+          R_tce_hat[is.na(R_tce_hat)] = R_tce[is.na(R_tce_hat)] + 
+            rnorm(sum(is.na(R_tce_hat)), sd = 1.5*mae_tce)
+      
+          fit_method_func <- switch(fit_method,
+            exact = fit_exact,
+            reg_cheat = function(R_tce){
+              fit_regularized_over_lambda(R_tce, R_normed)
+            },
+            reg_auto = function(R_tce){
+              fit_regularized_auto(R_tce)$R_hat
+            },
+            reg_auto_same = function(R_tce){
+              fit_regularized_auto_same(R_tce)$R_hat
+            },
+            pcor = function(R_tce){
+              cor2pcor(m = R_tce)
+            }
+          )
+          R_hat = fit_method_func(R_tce = R_tce_hat)
+          mer_cde <- mean(as.matrix(R_hat - R_normed))
+          mae_cde <- mean(as.matrix(abs(R_hat - R_normed)))
+          mse_cde <- mean(as.matrix(abs(R_hat - R_normed)**2))
+          tibble(iter = i, noise = noise, conf_ratio = conf_ratio, total_noise = total_noise,
+                 min_abs_self = min_abs_self, rank_R = rank_R,
+                 n_tce_nans = n_tce_nans, mr_method = mr_method,
+                 fit_method = fit_method, mae_tce = mae_tce, mae_cde = mae_cde,
+                 mer_tce = mer_tce, mer_cde = mer_cde, mse_tce = mse_tce, mse_cde = mse_cde)
+        },
+        error = function(cond){
+          print(mr_method)
+          print(fit_method)
+          print(cond)
+          tibble(iter = i, noise = noise, conf_ratio = conf_ratio, total_noise = total_noise,
+                 min_abs_self = min_abs_self, rank_R = rank_R,
+            n_tce_nans = NA, mr_method = mr_method, fit_method = fit_method,
+            mae_tce = NA, mae_cde = NA, mer_tce = NA, mer_cde = NA)
+        })
+    }
+  }
+}
+plot_tibble = unite(plot_tibble, "mr_fit", c("mr_method", "fit_method"), sep = "_", remove = FALSE)
+```
+
+
+```{r}
+well_cond = plot_tibble[(plot_tibble[,"min_abs_self"] > 0.5) & (plot_tibble[,"n_tce_nans"] < 45),]
+ggplot(well_cond, aes(total_noise, mae_tce, colour = mr_method)) + geom_point() # + ylim(0, 0.5)
+ggplot(well_cond, aes(total_noise, mae_cde, colour = mr_fit)) + geom_point() # + ylim(0, 0.5)
+
+ggplot(well_cond, aes(mr_method, mse_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05)#  + ylim(0, 0.5)
+ggplot(well_cond, aes(mr_fit, mse_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05)#  + ylim(0, 0.5) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplot(well_cond, aes(mr_method, mae_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05)#+ ylim(0, 0.5)
+ggplot(well_cond, aes(mr_fit, mae_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05) + theme(axis.text.x = element_text(angle = 90, hjust = 1))# + ylim(0, 0.5)
+
+ggplot(well_cond, aes(mr_method, mer_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05) #+ ylim(-0.25, 0.25)
+ggplot(well_cond, aes(mr_fit, mer_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05) #+ ylim(-0.25, 0.25) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplot(well_cond, aes(conf_ratio, mer_tce, colour = mr_method)) + geom_point()
+ggplot(well_cond[sapply(well_cond["mr_fit"], function(x){x %in% c("cheat_regularized", "ps_regularized", "ps_shrunk_regularized")}),], aes(conf_ratio, mer_cde, colour = mr_fit)) + geom_point()
+```
+
+```{r warning = FALSE}
+# This simulation is for showing the re-sampling works to get the SE.
+# Basic set-up for simulation.
+N = 5000
+M = 1000
+D = 10
+C = 0
+sd_net = 0.5
+sd_beta = 1.0
+p_beta = 0.15
+p_net = 0.15
+symmetric = NULL
+pleiotropy = FALSE
+n_outer = 100
+n_inner = 50
+
+sigma_g = matrix(1L, D, D)
+
+plot_tibble <- foreach(i = 1:n_outer, .combine = bind_rows) %do% {
+  # Randomly choose number of resmamples.
+  n_resample = round(runif(1, 0, 100))
+  # Randomly choose noise proportion.
+  noise <- runif(1, 0, 0.7)
+  conf_ratio <- 0 # runif(1, 0, 0.5)
+  total_noise <- conf_ratio*(1-noise) + noise
+  print(c(i, noise, conf_ratio, total_noise))
+  R = generate_network(D, p_net, symmetric = symmetric, sd = sd_net)
+  beta = generate_beta(M, D, p_beta, pleiotropy = pleiotropy, sd = sd_beta)$beta
+  # Calculate the rank of R to track during simulations.
+  eigenv_R <- eigen(R, only.values = TRUE)$values
+  rank_R <- sum(abs(eigenv_R) > 1e-10)
+  # Calculate the self-influence of each nose to track during simulations.
+  R_obs = get_observed(R)
+  self_norm = 1 + diag(R_obs)
+  min_abs_self = min(abs(self_norm))
+  min_self = min(self_norm)
+  max_self = max(self_norm)
+
+  # Just choose one pair for now, eventually this will be the "chosen" method.
+  foreach(mr_method = c("ps"),
+          .combine = bind_rows) %do% {
+    foreach(fit_method = c("regularized"),
+            .combine = bind_rows) %do% {
+      run_sum_tce = rep(0, length(R))
+      run_sum_sq_tce = rep(0, length(R))
+      run_sum_cde = rep(0, length(R))
+      run_sum_sq_cde = rep(0, length(R))
+      SE_cde_hat = matrix(0L, nrow = D, ncol = D)
+      SE_cde = matrix(0L, nrow = D, ncol = D)
+      SE_tce = matrix(0L, nrow = D, ncol = D)
+      rs_res = NULL
+      n_done = 0
+      for(j in 1:n_inner){
+        tryCatch({
+          dataset <- generate_dataset(N, M, D, C, noise = noise, conf_ratio = conf_ratio,
+                                      sigma_g = sigma_g, fix_R = R, fix_beta = beta)
+          Y_sds <- apply(dataset$Y, 2, sd)
+          # All calculations happen on per-normalized scale, so convert R here.
+          # Technically these will be slightly different on each iter, but for
+          # fixed beta and R Y_sds should have very low variance across runs.
+          R_tce = get_tce(R_obs, normalize=Y_sds)
+          R_normed <- fit_exact(R_tce)
+
+          # Split dataset into SNP selection and fitting.
+          sample <- sample.int(n = N, size = floor(N/2), replace = FALSE)
+          X_select = dataset$X[sample, ]
+          Y_select = dataset$Y[sample, ]
+          X_fit = dataset$X[-sample, ]
+          Y_fit = dataset$Y[-sample, ]
+          sumstats_select = generate_sumstats(X_select, Y_select, normalize = TRUE)
+          sumstats_fit = generate_sumstats(X_fit, Y_fit, normalize = TRUE)
+
+          # Select SNPs via sumstats and by cheating.
+          selected <- select_snps(sumstats_select)
+          selected_oracle <- select_snps_oracle(dataset$beta, sumstats_fit$p_value)
+  
+          if(mr_method == "ps_shrunk"){
+            tce_res <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps", shrink = TRUE)
+          } else{
+            tce_res <- fit_tce(sumstats_fit, selected, mr_method=mr_method)
+          }
+          R_tce_hat <- tce_res$R_tce
+          SE_tce_hat <- tce_res$SE_tce
+          run_sum_tce = run_sum_tce + as.vector(R_tce_hat)
+          run_sum_sq_tce = run_sum_sq_tce + as.vector(R_tce_hat)^2
+
+          
+          # We might have some missing values, for now impute with true + noise.
+          mae_tce <- mean(as.matrix(abs(R_tce - R_tce_hat)), na.rm=TRUE)
+          n_tce_nans = sum(is.na(R_tce_hat))
+          R_tce_hat[is.na(R_tce_hat)] = R_tce[is.na(R_tce_hat)] + 
+            rnorm(sum(is.na(R_tce_hat)), sd = 1.5*mae_tce)
+          SE_tce_hat[is.na(SE_tce_hat)] = 0
+      
+          fit_method_func <- switch(fit_method,
+            exact = fit_exact,
+            regularized = function(R_tce){
+              fit_regularized_over_lambda(R_tce, R_normed)},
+            pcor = function(R_tce){
+              cor2pcor(m = R_tce)
+            }
+          )
+          if(j == 1){
+            rs_res = resample_cde(R_tce_hat, SE_tce_hat, tce_res$N_obs,
+                                   fit_method_func, n_resample)
+            R_hat = rs_res$R_cde
+            SE_cde_hat = rs_res$SE_cde
+          } else {
+            R_hat = fit_method_func(R_tce = R_tce_hat)
+          }
+          run_sum_cde = run_sum_cde + as.vector(R_hat)
+          run_sum_sq_cde = run_sum_sq_cde + as.vector(R_hat)^2
+
+          n_done = n_done + 1
+          R_cde_ave = run_sum_cde/n_done
+          SE_cde_next = matrix(sqrt((run_sum_sq_cde/n_done - R_cde_ave^2) * (n_done/(n_done - 1))), nrow = D)
+          R_tce_ave = run_sum_tce/n_done
+          SE_tce_next = matrix(sqrt((run_sum_sq_tce/n_done - R_tce_ave^2) * (n_done/(n_done - 1))), nrow = D)
+          
+          eps_cde = mean(abs(SE_cde - SE_cde_next))
+          eps_tce = mean(abs(SE_tce - SE_tce_next), na.rm = TRUE)
+          # print(c(j, eps_tce, eps_cde))
+          SE_cde = SE_cde_next
+          SE_tce = SE_tce_next
+        },
+        error = function(cond){
+          print(mr_method)
+          print(fit_method)
+          print(cond)
+        })
+      }
+      R_cde_ave = run_sum_cde/n_inner
+      SE_cde = matrix(sqrt((run_sum_sq_cde/n_inner - R_cde_ave^2) * (n_inner/(n_inner - 1))), nrow = D)
+      R_tce_ave = run_sum_tce/n_inner
+      SE_tce = matrix(sqrt((run_sum_sq_tce/n_inner - R_tce_ave^2) * (n_inner/(n_inner - 1))), nrow = D)
+  
+      mer_tce_se = mean(SE_tce_hat - SE_tce, na.rm = TRUE)
+      mae_tce_se = mean(abs(SE_tce_hat - SE_tce), na.rm = TRUE)
+      mer_cde_se = mean(SE_cde_hat - SE_cde)
+      mae_cde_se = mean(abs(SE_cde_hat - SE_cde))
+      tibble(iter = i, noise = noise, conf_ratio = conf_ratio, total_noise = total_noise,
+            min_abs_self = min_abs_self, rank_R = rank_R,
+            n_tce_nans = n_tce_nans, mr_method = mr_method,
+            fit_method = fit_method, mae_tce_se = mae_tce_se, mae_cde_se = mae_cde_se,
+            mer_tce_se = mer_tce_se, mer_cde_se = mer_cde_se)
+    }
+  }
+}
+plot_tibble = unite(plot_tibble, "mr_fit", c("mr_method", "fit_method"), sep = "_", remove = FALSE)
+```
+
+```{r warning=FALSE}
+# This simulation is for showing the delta method works.
+# Basic set-up for simulation.
+N = 5000
+M = 1000
+D = 10
+C = 0
+sd_net = 0.8
+p_beta = 0.15
+p_net = 0.2
+symmetric = FALSE
+pleiotropy = FALSE
+niter = 1
+sigma_g = matrix(1L, D, D)
+n_resample = 100
+
+plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
+  # Randomly choose noise proportion.
+  noise <- runif(1, 0, 0.7)
+  conf_ratio <- 0 # runif(1, 0, 0.5)
+  total_noise <- conf_ratio*(1-noise) + noise
+  print(c(i, noise, conf_ratio, total_noise))
+  dataset <- generate_dataset(N, M, D, C, noise = noise, sd_net = sd_net, p_net = p_net, p_beta = p_beta,
+                              symmetric = symmetric, conf_ratio = conf_ratio, sigma_g = sigma_g, pleiotropy = pleiotropy)
   Y_sds <- apply(dataset$Y, 2, sd)
 
   # Calculate the rank of R to track during simulations.
@@ -66,68 +368,60 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   selected_oracle <- select_snps_oracle(dataset$beta, sumstats_fit$p_value)
   
   # Run all combinations of MR method and fit method.
-  foreach(mr_method = c("cheat", "ps", "ps_shrunk", "cor"),
-          .combine = bind_rows) %do% {
-    foreach(fit_method = c("exact", "regularized", "pcor"),
-            .combine = bind_rows) %do% {
+  mr_method = "ps"
+  fit_method = "exact"
       tryCatch(
         {
-          # For cheat, use oracle SNPs and profile score.
-          if(mr_method == "cheat"){
-            tce_res <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps")
-          }
-          else if(mr_method == "ps_shrunk"){
-            tce_res <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps", shrink = TRUE)
-          }
-          else if(mr_method == "cor"){
-            tce_res <- list("R_tce" = cor.shrink(Y_fit, verbose = FALSE))
-          }
-          else{
-            tce_res <- fit_tce(sumstats_fit, selected, mr_method=mr_method)
-          }
+          tce_res <- fit_tce(sumstats_fit, selected, mr_method=mr_method)
           R_tce_hat <- tce_res$R_tce
+          SE_tce_hat <- tce_res$SE_tce
 
+          mer_tce <- mean(as.matrix(R_tce - R_tce_hat), na.rm=TRUE)
           mae_tce <- mean(as.matrix(abs(R_tce - R_tce_hat)), na.rm=TRUE)
+          mse_tce <- mean(as.matrix(abs(R_tce - R_tce_hat)**2), na.rm=TRUE)
       
           # We might have some missing values, for now impute with true + noise.
           n_tce_nans = sum(is.na(R_tce_hat))
           R_tce_hat[is.na(R_tce_hat)] = R_tce[is.na(R_tce_hat)] + 
             rnorm(sum(is.na(R_tce_hat)), sd = 1.5*mae_tce)
+          SE_tce_hat[is.na(SE_tce_hat)] = 0
       
           fit_method_func <- switch(fit_method,
             exact = fit_exact,
-            regularized = function(R_tce){
-              fit_regularized_over_lambda(R_tce, R_normed)},
+            reg_cheat = function(R_tce){
+              fit_regularized_over_lambda(R_tce, R_normed)
+            },
+            reg_auto = function(R_tce){
+              fit_regularized_auto(R_tce)$R_hat
+            },
+            reg_auto_same = function(R_tce){
+              fit_regularized_auto_same(R_tce)$R_hat
+            },
             pcor = function(R_tce){
               cor2pcor(m = R_tce)
             }
           )
-          R_hat = fit_method_func(R_tce = R_tce_hat)
-          mae_cde <- mean(as.matrix(abs(R_hat - R_normed)))
-          tibble(noise = noise, min_abs_self = min_abs_self, rank_R = rank_R,
-                 n_tce_nans = n_tce_nans, mr_method = mr_method,
-                 fit_method = fit_method, mae_tce = mae_tce, mae_cde = mae_cde)
+          rs_res = resample_cde(R_tce_hat, SE_tce_hat,
+                                fit_method_func, n_resample)
+          SE_cde = rs_res$SE_cde
+
+          SE_cde_hat = delta_cde(solve(R_tce_hat), SE_tce_hat)
+          
+          mer_cde_se = mean(SE_cde_hat - SE_cde)
+          mae_cde_se = mean(abs(SE_cde_hat - SE_cde))
+          print(mae_cde_se)
+          tibble(iter = i, noise = noise, conf_ratio = conf_ratio, total_noise = total_noise,
+            min_abs_self = min_abs_self, rank_R = rank_R,
+            n_tce_nans = n_tce_nans, mr_method = mr_method,
+            fit_method = fit_method, mae_cde_se = mae_cde_se,
+            mer_cde_se = mer_cde_se)
         },
         error = function(cond){
           print(mr_method)
           print(fit_method)
           print(cond)
-          tibble(noise = noise, min_abs_self = min_abs_self, rank_R = rank_R,
-            n_tce_nans = NA, mr_method = mr_method, fit_method = fit_method,
-            mae_tce = NA, mae_cde = NA)
         })
-    }
   }
-}
 plot_tibble = unite(plot_tibble, "mr_fit", c("mr_method", "fit_method"), sep = "_", remove = FALSE)
-```
-
-
-```{r}
-well_cond = plot_tibble[(plot_tibble[,"min_abs_self"] > 0.5) & (plot_tibble[,"n_tce_nans"] < 45),]
-ggplot(well_cond, aes(noise, mae_tce, colour = mr_method)) + geom_point() + ylim(0, 0.5)
-ggplot(well_cond, aes(noise, mae_cde, colour = mr_fit)) + geom_point() + ylim(0, 0.5)
-
-ggplot(well_cond, aes(mr_method, mae_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1) + ylim(0, 0.5)
-ggplot(well_cond, aes(mr_fit, mae_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1) + ylim(0, 0.5) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+well_cond = plot_tibble[(plot_tibble[,"n_tce_nans"] < 30),]
 ```

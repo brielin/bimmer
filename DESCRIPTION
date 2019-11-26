@@ -18,7 +18,9 @@ Imports:
     foreach,
     tibble,
     ppcor,
-    corpcor
+    corpcor,
+    MASS,
+    madness
 Suggests: 
     testthat (>= 2.1.0)
 RoxygenNote: 6.1.1

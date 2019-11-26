@@ -58,15 +58,29 @@ test_that("generate_genotypes_whitens", {
   expect_equal(unname(cov(X)), diag(M))
 })
 
+test_that("generate_confounding_works", {
+  N <- 10
+  D <- 2
+  C <- 5
+
+  Ug <- generate_confounding(N, C, D, sigma_g = 1.0)
+  expect_equal(dim(Ug), c(N, D))
+
+  sigma_g <- matrix(c(1, 0.5, 0.5, 1), nrow = D)
+  Ug <- generate_confounding(N, C, D, sigma_g = sigma_g)
+  expect_equal(dim(Ug), c(N, D))
+})
+
 test_that("generate_dataset_runs", {
   N <- 10
   D <- 5
   M <- 7
   p_beta <- 0.5
-  p_network <- 0.5
+  p_net <- 0.5
   noise_ratio <- 0.5
-  result <- generate_dataset(N, M, D, p_beta, p_network,
-    noise_ratio,
+  result <- generate_dataset(N, M, D,
+    p_beta = p_beta, p_net = p_net,
+    noise = noise_ratio,
     pleiotropy = TRUE
   )
   expect_equal(dim(result$Y), c(N, D))
@@ -75,13 +89,32 @@ test_that("generate_dataset_runs", {
   expect_equal(dim(result$R), c(D, D))
 })
 
+test_that("generate_dataset_with_confounding", {
+  N <- 10
+  D <- 5
+  C <- 5
+  M <- 7
+  p_beta <- 0.5
+  p_net <- 0.5
+  noise_ratio <- 0.5
+  result <- generate_dataset(N, M, D, C,
+    p_beta = p_beta, p_net = p_net, noise_ratio,
+    pleiotropy = TRUE, conf_ratio = 0.5, sigma_g = 1.0
+  )
+  expect_equal(dim(result$Y), c(N, D))
+  expect_equal(dim(result$X), c(N, M))
+  expect_equal(dim(result$beta), c(M, D))
+  expect_equal(dim(result$R), c(D, D))
+})
+
+
 test_that("generate_sumstats_works", {
   N <- 10
   D <- 2
   M <- 2
   p_beta <- 1.0
-  p_network <- 0.5
-  dataset <- generate_dataset(N, M, D, p_beta, p_network, pleiotropy = TRUE)
+  p_net <- 0.5
+  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net, pleiotropy = TRUE)
   sumstats <- generate_sumstats(dataset$X, dataset$Y, normalize = FALSE)
   expect_equal(
     sumstats$beta_hat[1, 1],
@@ -106,8 +139,8 @@ test_that("generate_sumstats_normalizes", {
   D <- 2
   M <- 2
   p_beta <- 1.0
-  p_network <- 0.5
-  dataset <- generate_dataset(N, M, D, p_beta, p_network, pleiotropy = TRUE)
+  p_net <- 0.5
+  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net, pleiotropy = TRUE)
   sumstats <- generate_sumstats(dataset$X, dataset$Y, normalize = TRUE)
   expect_equal(sumstats$beta_hat^2, sumstats$r_squared)
 })
@@ -115,15 +148,16 @@ test_that("generate_sumstats_normalizes", {
 test_that("select_snps_oracle_works", {
   N <- 10
   D <- 2
-  M <- 2
+  M <- 10
   p_beta <- 1.0
-  p_network <- 0.5
-  dataset <- generate_dataset(N, M, D, p_beta, p_network, pleiotropy = FALSE)
+  p_net <- 0.5
+  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net, pleiotropy = FALSE)
   sumstats <- generate_sumstats(dataset$X, dataset$Y, normalize = FALSE)
-  snps_to_use <- select_snps_oracle(dataset$beta, sumstats$p_value)
-  expected <- list(
-    "P1" = list("P1" = c(FALSE, TRUE), "P2" = c(FALSE, TRUE)),
-    "P2" = list("P1" = c(FALSE, FALSE), "P2" = c(FALSE, FALSE))
-  )
-  expect_equal(snps_to_use, expected)
+  snps <- select_snps_oracle(dataset$beta, sumstats$p_value)
+  expect_is(snps, "list")
+  expect_equal(names(snps), c("P1", "P2"))
+  expect_is(get("P1", snps), "list")
+  expect_is(get("P2", snps), "list")
+  expect_is(get("P2", get("P1", snps)), "logical")
+  expect_equal(length(get("P2", get("P1", snps))), M)
 })

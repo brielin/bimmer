@@ -13,21 +13,31 @@ test_that("get_direct_observed_works", {
 })
 
 test_that("get_tce_fit_exact_works", {
-  expect_equal(matrix(fit_exact(get_tce(get_observed(R)))), matrix(R))
+  expect_equal(matrix(fit_exact(get_tce(get_observed(R)))$R_hat), matrix(R))
+})
+
+test_that("fit_exact_inverse", {
+  expect_equal(
+    matrix(fit_exact(get_tce(get_observed(R)))$R_tce_inv),
+    matrix(solve(get_tce(get_observed(R))))
+  )
 })
 
 test_that("fit_regularized_works", {
   R_tce <- get_tce(get_observed(R))
-  R_hat <- fit_regularized(R_tce, lambda = 0)
+  fit_res <- fit_regularized(R_tce, lambda = 0)
+  R_hat <- fit_res$R_hat
+  R_tce_inv <- fit_res$R_tce_inv
   expect_equal(as.matrix(R), R_hat, tolerance = 0.01)
+  expect_equal(dim(R_tce_inv), c(D, D), tolerance = 0.01)
 })
 
-test_that("fit_direct_works", {
-  res <- fit_direct(dataset$X, dataset$Y, lambda = 0, niter = 3)
-  expect_is(res$R_hat, "matrix")
-  expect_is(res$B_hat, "matrix")
-  expect_equal(dim(res$R_hat), c(3, 3))
-  expect_equal(dim(res$B_hat), c(3, 3))
+test_that("fit_regularized_cv_works", {
+  R_tce <- get_tce(get_observed(R))
+  fit_res <- fit_regularized_cv(R_tce)
+  R_hat <- fit_res$R_hat
+  R_tce_inv <- fit_res$R_tce_inv
+  expect_equal(dim(R_hat), c(D, D))
 })
 
 test_that("naive_ma_works", {
@@ -100,12 +110,40 @@ test_that("fit_tce_raps_works", {
   expect_false(any(is.na(R_tce_hat)))
 })
 
+test_that("resample_cde_works", {
+  selected <- select_snps(sumstats)
+  tce_res <- fit_tce(sumstats, selected, "ps", min_instruments = 1)
+  rs_res <- resample_cde(tce_res$R_tce, tce_res$SE_tce, fit_exact, niter = 10)
+  expect_is(rs_res$R_cde, "matrix")
+  expect_equal(dim(rs_res$R_cde), dim(tce_res$R_tce))
+  expect_is(rs_res$SE_cde, "matrix")
+  expect_equal(dim(rs_res$SE_cde), dim(tce_res$SE_tce))
+})
+
+
+test_that("delta_cde_runs", {
+  selected <- select_snps(sumstats)
+  tce_res <- fit_tce(sumstats, selected, "ps", min_instruments = 1)
+  fit_res <- fit_exact(tce_res$R_tce)
+  SE <- delta_cde(fit_res$R_tce_inv, tce_res$SE_tce)
+  expect_equal(dim(SE), c(3, 3))
+})
+
 test_that("fit_sumstats_exact_works", {
-  R_hat <- fit_sumstats(sumstats, sumstats, "mean", "exact",
+  ss_res <- fit_sumstats(sumstats, sumstats, "mean", "exact",
     min_instruments = 1
   )
-  expect_is(R_hat, "matrix")
-  expect_false(any(is.na(R_hat)))
+  expect_is(ss_res$R_cde, "matrix")
+  expect_false(any(is.na(ss_res$R_cde)))
+})
+
+test_that("fit_sumstats_exact_delta_works", {
+  ss_res <- fit_sumstats(sumstats, sumstats, "mean", "exact",
+    min_instruments = 1, resample = "delta"
+  )
+  expect_is(ss_res$R_cde, "matrix")
+  expect_is(ss_res$SE_cde, "matrix")
+  expect_false(any(is.na(ss_res$R_cde)))
 })
 
 test_that("fit_error_exactly_zero", {

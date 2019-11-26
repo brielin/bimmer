@@ -5,7 +5,8 @@
 \title{Calculates matrix of total causal effects using a specified method.}
 \usage{
 fit_tce(sumstats_fit, selected_snps, mr_method = c("mean", "ps", "aps",
-  "raps"), p_thresh = 1e-05, min_instruments = 5, ...)
+  "raps"), p_thresh = 1e-05, min_instruments = 5, shrink = FALSE,
+  ...)
 }
 \arguments{
 \item{sumstats_fit}{List representing summary statistics from the second
@@ -22,6 +23,8 @@ estimate between every pair.}
 
 \item{min_instruments}{Integer. Return NA if there are less than
 this many instruments for a pair of phenotypes.}
+
+\item{shrink}{Boolean. True to shrink estimates of R_tce to 0.}
 
 \item{...}{Additional parameters to pass to mr_method.}
 }

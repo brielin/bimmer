@@ -5,7 +5,8 @@
 fit_exact <- function(R_tce) {
   D <- dim(R_tce)[1]
   R_tce_inv <- solve(R_tce)
-  diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
+  R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
+  list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv)
 }
 
 #' Fits L1-regularized approximate inverse model.
@@ -26,102 +27,76 @@ fit_regularized <- function(R_tce, lambda = 0.01) {
   R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
   colnames(R_hat) <- colnames(R_tce)
   rownames(R_hat) <- rownames(R_tce)
-  return(R_hat)
+  list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv)
 }
 
-#' Fits L1-regularized approximate inverse while finding best lambda.
+#' Fits L1-regularized approximate inverse model.
+#'
+#' @param R_tce D x D matrix of "total causal effects".
+#' @param weights Length D vector of per-row weights. Default is 1 for each observation.
+#' @param k Number of zero-values to drop during CV.
+#' @param nfolds Number of folds. NULL for k=1 to use leave-one-out CV.
+#' @param lambda Vector of lambda values to try.
+fit_regularized_cv <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
+                               lambda = c(0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001)) {
+  D <- dim(R_tce)[1]
+  if (k == 1) {
+    nfolds <- D - 1
+  }
+  if (is.null(weights)) {
+    weights <- rep(1, D)
+  }
+
+  resp <- diag(D)
+  error <- matrix(0L, nrow = D * nfolds, ncol = length(lambda))
+  for (d in 1:D) {
+    # The d'th entry in response is 1.0, which we cannot drop.
+    for (fold in 1:nfolds) {
+      if (k == 1) {
+        index <- if (fold < d) fold else fold + 1
+      } else {
+        index <- sample(c(1:D)[-d], k)
+      }
+      fit <- glmnet::glmnet(R_tce[-index, ], resp[-index, d],
+        alpha = 1.0, lambda = lambda, weights = weights[-index],
+        standardize = FALSE, intercept = FALSE
+      )
+      pred <- glmnet::predict.glmnet(fit, R_tce[index, , drop = FALSE])
+      pred_one <- glmnet::predict.glmnet(fit, R_tce[d, , drop = FALSE])
+      # Weight such that the zero-rows contribute D-1 entries to score.
+      error[d * fold, ] <- colSums(pred**2) * round((D - 1) / k) + (1 - pred_one)**2
+    }
+  }
+  scores <- colSums(error)
+  best_lambda <- lambda[which.min(scores)]
+  fit_regularized(R_tce, best_lambda)
+}
+
+#' Fits L1-regularized approximate inverse while finding best lambda (cheating).
 #'
 #' @param R_tce DxD matrix of "total causal effects".
 #' @param R DxD matrix of true "causal direct effects".
-fit_regularized_over_lambda <- function(R_tce, R) {
+fit_regularized_cheat <- function(R_tce, R) {
   mae <- Inf
   best_R <- NULL
   for (lambda in c(0.0, 0.0001, 0.001, 0.01, 0.1)) {
-    R_hat <- tryCatch(
+    tce_res <- tryCatch(
       fit_regularized(R_tce, lambda),
       error = function(cond) {
         return(NA)
       }
     )
-    lam_mae <- mean(abs(R - R_hat))
+    lam_mae <- mean(abs(R - tce_res$R_hat))
     if (is.na(lam_mae)) {
       lam_mae <- Inf
     }
     if (lam_mae < mae) {
       mae <- lam_mae
-      best_R <- R_hat
+      best_R <- tce_res
     }
   }
   return(best_R)
 }
-
-#' Fit simple inspre model
-#'
-#' @param X N x M matrix of genotypes.
-#' @param Y N x D matrix of response.
-#' @param lambda regularization strength, passed to glmnet.
-#' @param niter max iterations.
-#' @return A list:
-#'   R_hat: D x D matrix of deconvoluted direct effects.
-#'   B_hat: M x D matrix of inferred genotype effect sizes.
-#'   progress_tibble: A tible containing information on convergence.
-#'
-#' TODO(brielin): Figure out what to do with the progress of this and why it's
-#'   performance is so poor OR remove this method.
-fit_direct <- function(X, Y, lambda = 1., niter = 20, true_R = NULL, true_B = NULL) {
-  N <- nrow(X)
-  M <- ncol(X)
-  D <- ncol(Y)
-  Y_hat <- matrix(0L, nrow = N, ncol = D)
-  R_hat <- matrix(0L, nrow = D, ncol = D)
-  for (d in 1:D) {
-    fit <- glmnet::glmnet(X, Y[, d],
-      alpha = 1.0, lambda = lambda,
-      standardize = FALSE, intercept = FALSE
-    )
-    Y_hat[, d] <- glmnet::predict.glmnet(fit, X)
-  }
-
-  `%do%` <- foreach::`%do%`
-  progress_tibble <- foreach::foreach(i = 1:niter, .combine = dplyr::bind_rows) %do% {
-    R_hat_next <- matrix(0L, nrow = D, ncol = D)
-    Y_hat_next <- matrix(0L, nrow = N, ncol = D)
-    B_hat <- matrix(0L, nrow = M, ncol = D)
-    for (d in 1:D) {
-      fit <- glmnet::glmnet(cbind(Y_hat[, -d], X), Y[, d],
-        alpha = 1.0,
-        lambda = lambda, standardize = FALSE,
-        intercept = FALSE
-      )
-      Y_hat_next[, d] <- glmnet::predict.glmnet(fit, cbind(Y_hat[, -d], X))
-      if (d == 1) { # I fucking hate R.
-        Rdnext <- c(0, fit$beta[1:(D - 1)])
-      } else if (d == D) {
-        Rdnext <- c(fit$beta[1:(D - 1)], 0)
-      }
-      else {
-        Rdnext <- c(fit$beta[1:(d - 1)], 0, fit$beta[d:(D - 1)])
-      }
-      R_hat_next[, d] <- Rdnext
-      B_hat[, d] <- fit$beta[D:(D + M - 1)]
-    }
-    delta_Y <- sum((Y_hat - Y_hat_next)^2)
-    delta_R <- sum((R_hat - R_hat_next)^2)
-    Y_hat <- Y_hat_next
-    R_hat <- R_hat_next
-
-    tibble::tibble(
-      iteration = i,
-      mae_recover_R = ifelse(is.null(true_R), NA, mean(abs(true_R - R_hat_next))),
-      mae_recover_B = ifelse(is.null(true_B), NA, mean(as.matrix(abs(true_B - B_hat)))),
-      delta_Y = delta_Y,
-      delta_R = delta_R
-    )
-  }
-
-  list(R_hat = R_hat, B_hat = B_hat, progress_tibble = progress_tibble)
-}
-
 
 #' Gets matrix of TCE from observed network.
 #'
@@ -184,7 +159,7 @@ naive_ma <- function(b_exp, b_out, se_exp, se_out) {
 #' @param s2 Float, SD of estimate of mu2.
 #' @param n1 Integer, number of samples in dataset 1.
 #' @param n2 Integer, number of samples in dataset 2.
-#' @returns Float, the p-value corresponding to the test.
+#' @return Float, the p-value corresponding to the test.
 welch_test <- function(mu1, mu2, s1, s2, n1, n2) {
   t_val <- (mu2 - mu1) / sqrt(s1^2 + s2^2)
   nu <- (s1^2 + s2^2)^2 / (s1^4 / ((n1 - 1)) + s2^4 / ((n2 - 1)))
@@ -245,14 +220,23 @@ select_snps <- function(sumstats_select, p_thresh = 1e-5, welch_thresh = 0.01) {
 #'   of the entries in R_tce.
 #' @param N_obs A matrix of ints with diagonals equal to 0.0. The number of
 #'   samples (instruments) used in the estimate of R_tce for each entry.
-shrink_R <- function(R_tce, SE_tce, N_obs) {
-  # Diagonal of SE_tce should be 0.
-  var_tce <- N_obs * (SE_tce)^2
-  numerator <- sum(var_tce, na.rm = TRUE)
-  # Diagonal of R_tce should be 1.
-  denominator <- sum(R_tce^2, na.rm = TRUE) - nrow(R_tce)
-  lambda <- numerator / denominator
-  R_tce <- (1 - lambda) * R_tce
+#' @param lambda Float less than 1.0 or NULL. Amount of shrinkage. NULL
+#'   computes shrinkage automatically.
+shrink_R <- function(R_tce, SE_tce, N_obs, lambda = NULL) {
+  if (is.null(lambda)) {
+    # TODO(brielin): Something is wrong with this formula.
+    # Diagonal of SE_tce should be 0.
+    var_tce <- N_obs * (SE_tce)^2
+    numerator <- sum(var_tce, na.rm = TRUE)
+    # Diagonal of R_tce should be 1, so technically I should subtract D
+    # here but that gives bad results.
+    denominator <- sum(R_tce^2, na.rm = TRUE)
+    lambda <- numerator / denominator
+    lambda_s <- max(0, min(1, lambda))
+  } else {
+    lambda_s <- lambda
+  }
+  R_tce <- (1 - lambda_s) * R_tce
   diag(R_tce) <- 1.0
   return(R_tce)
 }
@@ -269,8 +253,8 @@ shrink_R <- function(R_tce, SE_tce, N_obs) {
 #'   estimate between every pair.
 #' @param min_instruments Integer. Return NA if there are less than
 #'   this many instruments for a pair of phenotypes.
+#' @param shrink Boolean. True to shrink estimates of R_tce to 0.
 #' @param ... Additional parameters to pass to mr_method.
-#' @returns
 fit_tce <- function(sumstats_fit,
                     selected_snps,
                     mr_method = c("mean", "ps", "aps", "raps"),
@@ -337,9 +321,61 @@ fit_tce <- function(sumstats_fit,
   diag(SE_tce) <- 0.0
   diag(N_obs) <- 0.0
   if (shrink) {
-    R_tce <- shrink_R(R_tce, SE_tce, N_obs)
+    if (is.logical(shrink)) {
+      R_tce <- shrink_R(R_tce, SE_tce, N_obs)
+    } else if (is.numeric(shrink)) {
+      R_tce <- shrink_R(R_tce, SE_tce, N_obs, lambda = shrink)
+    }
   }
   list("R_tce" = R_tce, "SE_tce" = SE_tce, "N_obs" = N_obs)
+}
+
+#' Resample CDE estimate using observed standard errors of TCE.
+#'
+#' @param R_tce DxD matrix of floats. Estimates of R_tce to resample.
+#' @param SE_tce DxD matrix of floats. Standard errors of entries in R_tce.
+#' @param fit_method_func Function. Method for inferring R_cde given R_tce.
+#'   Must return a list with entry "R_hat".
+#' @param niter Integer. Number of resampling iterations.
+resample_cde <- function(R_tce, SE_tce, fit_method_func, niter = 100) {
+  run_sum <- rep(0, length(R_tce))
+  run_sum_sq <- rep(0, length(R_tce))
+  SE_cde <- rep(0, length(R_tce))
+  R_cde <- rep(0, length(R_tce))
+  for (i in 1:niter) {
+    R_tce_i <- stats::rnorm(length(R_tce),
+      mean = as.vector(R_tce),
+      sd = as.vector(SE_tce)
+    )
+    R_tce_i <- matrix(R_tce_i, nrow = nrow(R_tce))
+    R_cde_i <- fit_method_func(R_tce_i)$R_hat
+    run_sum <- run_sum + as.vector(R_cde_i)
+    run_sum_sq <- run_sum_sq + as.vector(R_cde_i)^2
+    R_cde <- run_sum / i
+    SE_cde_next <- sqrt((run_sum_sq / i - R_cde^2) * (i / (i - 1)))
+    eps <- mean(abs(SE_cde - SE_cde_next))
+    # print(c(i, eps))
+    SE_cde <- SE_cde_next
+  }
+  R_cde <- matrix(R_cde, nrow = nrow(R_tce))
+  SE_cde <- matrix(SE_cde, nrow = nrow(R_tce))
+  list("R_cde" = R_cde, "SE_cde" = SE_cde)
+}
+
+#' Uses delta method to calculate CDE standard error.
+#'
+#' @param R_tce_inv DxD matrix. Inverse or approximate inverse of the TCE.
+#' @param SE_tce DxD matrix. Standard error of the TCE.
+delta_cde <- function(R_tce_inv, SE_tce) {
+  delta_one_entry <- function(Ri_row_k, Ri_col_j) {
+    sum((SE_tce**2) * outer(Ri_row_k**2, Ri_col_j**2))
+  }
+  delta_one_row <- function(Ri_col_j) {
+    apply(R_tce_inv, 1, delta_one_entry, Ri_col_j = Ri_col_j)
+  }
+  var_cde <- apply(R_tce_inv, 2, delta_one_row)
+  diag(var_cde) <- 0
+  sqrt(t(t(var_cde) / diag(R_tce_inv)))
 }
 
 #' Fits network mendelian randomization model to data.
@@ -355,20 +391,21 @@ fit_tce <- function(sumstats_fit,
 #'   network optimization. Note that this will  be called with the default
 #'   arguments. For more detailed control, call the fit method directly.
 #' @param p_thresh Float. p-value threshold for inclusion.
+#' @param shrink Boolean. True to shrink estimates of R_tce to 0.
 #' @param min_instruments Integer. Return NA if there are less than
 #'   this many instruments for a pair of phenotypes.
-#' @returns A modified version of sumtats_fit or dataset_fit with only SNPs
-#'   that are selected for further analysis.
+#' @param resample Non-negative integer or "delta". The number of resample iterations.
 fit_sumstats <- function(sumstats_select,
                          sumstats_fit,
                          mr_method = c("mean", "ps", "aps", "raps"),
                          fit_method = c("exact", "regularized"),
                          p_thresh = 1e-5,
                          shrink = FALSE,
-                         min_instruments = 5) {
+                         min_instruments = 5,
+                         resample = 0) {
   fit_method_func <- switch(fit_method,
     exact = fit_exact,
-    regularized = fit_regularized
+    regularized = fit_regularized_cv
   )
   selected <- select_snps(sumstats_select)
   tce_res <- fit_tce(
@@ -376,5 +413,16 @@ fit_sumstats <- function(sumstats_select,
     min_instruments,
     shrink = shrink
   )
-  fit_method_func(tce_res$R_tce)
+  if (resample == "delta") {
+    fit_res <- fit_method_func(tce_res$R_tce)
+    list(
+      "R_cde" = fit_res$R_hat,
+      "SE_cde" = delta_cde(fit_res$R_tce_inv, tce_res$SE_tce)
+    )
+  }
+  else if (resample) {
+    resample_cde(tce_res$R_tce, tce_res$SE_tce, fit_method_func, resample)
+  } else {
+    list("R_cde" = fit_method_func(tce_res$R_tce)$R_hat, "SE_cde" = NA)
+  }
 }

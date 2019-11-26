@@ -21,7 +21,8 @@ normalization.}
 \item{symmetric}{Bool. TRUE to force the returned matrix to be
 symmetric, false for anti-symmetric, and NULL for no symmetry enforcement.}
 
-\item{sd}{Float. Standard deviation of network edge weights.}
+\item{sd}{Float. Standard deviation of network edge weights. NA for binary
+matrices with equal probability of}
 }
 \value{
 A DxD sparse matrix.

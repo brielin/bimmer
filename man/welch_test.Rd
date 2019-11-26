@@ -19,6 +19,9 @@ welch_test(mu1, mu2, s1, s2, n1, n2)
 
 \item{n2}{Integer, number of samples in dataset 2.}
 }
+\value{
+Float, the p-value corresponding to the test.
+}
 \description{
 This tests the null hypothesis mu1 = mu2 against the one-sided alternative
 mu1 > mu2.

@@ -13,7 +13,6 @@
 #' @return A list,
 #'   beta: sparse float matrix of dimension MxD.
 #'   condition: float vector of length D.
-#' @example generate_beta(100, 10, 0.2)
 generate_beta <- function(M, D, p = 0.1, sd = 1.0, pleiotropy = FALSE) {
   # TODO(brielin): Separate beta generation from condition analysis?
   beta <- Matrix::Matrix(
@@ -55,11 +54,11 @@ generate_beta <- function(M, D, p = 0.1, sd = 1.0, pleiotropy = FALSE) {
 #' @param sd Float. Standard deviation of network edge weights. NA for binary
 #'   matrices with equal probability of
 #' @return A DxD sparse matrix.
-#' @example generate_network(10, 0.2)
 generate_network <- function(D, p = 0.1, normalize = TRUE, epsilon = 0.1,
                              symmetric = NULL, sd = 1.0) {
   if (is.na(sd)) {
-    R <- matrix((2 * rbinom(D * D, 1, 0.5) - 1) * (stats::runif(D * D) < p), D, D)
+    R <- matrix((2 * stats::rbinom(D * D, 1, 0.5) - 1) *
+      (stats::runif(D * D) < p), D, D)
   } else {
     R <- matrix(stats::rnorm(D * D, sd = sd) * (stats::runif(D * D) < p), D, D)
   }
@@ -98,7 +97,6 @@ generate_network <- function(D, p = 0.1, normalize = TRUE, epsilon = 0.1,
 #' @param whiten Bool. TRUE to whiten such that the observed covariance is
 #'   exactly 0. This should only be used for testing.
 #' @return and NxM matrix of simulated genotypes.
-#' @example generate_genotype(100, 10)
 generate_genotypes <- function(N, M, whiten = FALSE) {
   # TODO(brielin): Get real genotypes from Biobank.
   X <- matrix(stats::rnorm(N * M), N, M)
@@ -112,6 +110,29 @@ generate_genotypes <- function(N, M, whiten = FALSE) {
   return(X)
 }
 
+#' Generates (optionally correlated) environmental confounding.
+#'
+#' Note that this is different from the (always uncorrelated) measurement error
+#' since it is mixed by the network with the genetic component.
+#'
+#' @param N Integer, number of individuals.
+#' @param C Integer, dimensionality of confounding.
+#' @param D Integer, number of phenotypes.
+#' @param sigma_g Float or D x D matrix of floats. If a single value it will be
+#'   taken as the variance of the generated effect size. If a CxC matrix it will
+#'   be the covariance.
+generate_confounding <- function(N, C, D, sigma_g) {
+  U <- matrix(stats::rnorm(N * C), N, C)
+  if (is.null(dim(sigma_g))) {
+    gamma <- matrix(stats::rnorm(C * D, sd = sqrt(sigma_g)), C, D)
+  } else if (identical(sigma_g, matrix(1L, D, D))) {
+    gamma <- matrix(rep(stats::rnorm(C, sd = sqrt(sigma_g)), D), nrow = C)
+  } else {
+    gamma <- MASS::mvrnorm(C, mu = rep(0, D), Sigma = sigma_g)
+  }
+  U %*% gamma
+}
+
 #' Generates dataset.
 #'
 #' Generates a network mendelian randomization dataset with observed phenotypes,
@@ -120,10 +141,14 @@ generate_genotypes <- function(N, M, whiten = FALSE) {
 #' @param N Integer. Number of individuals to simulate.
 #' @param M Integer. Number of SNPs to simulate.
 #' @param D Integer. Number of phenotypes to simulate.
+#' @param C Integer. Number of confounding components to simulate.
 #' @param p_beta Float. Proportion of SNPs with non-zero effect size.
 #' @param p_net Float. Proportion of non-zero network edges.
-#' @param noise Float. Proprotion of variance in phenotype attributable to
-#'   noise. 0 for no noise, 1 for all noise with no genetic/network component.
+#' @param noise Float between 0 and 1. Proportion of variance in phenotype
+#'   attributable to noise. 0 for no noise, 1 for all noise with no
+#'   genetic/network/confounding component.
+#' @param conf_ratio Float between 0 and 1. Ratio of genetic vs confounding
+#'   component prior to mixing by R and adding noiose.
 #' @param pleiotropy Bool. TRUE to allow for SNPs to effect multiple phenotypes.
 #' @param whiten Bool. TRUE to whiten generated genotypes. See
 #'   generate_genotypes for more information.
@@ -131,22 +156,55 @@ generate_genotypes <- function(N, M, whiten = FALSE) {
 #'   generated network. See generate_network for more.
 #' @param sd_net Float. Standard deviation of network edge weights.
 #' @param sd_beta Float. Standard deviation of SNP effect sizes.
+#' @param sigma_g Float or CxC matrix of floats. Variance or covariance matrix
+#'   of confounding effects.
+#' @param fix_R Null or DxD matrix. Use to provide R in order to repeatedly
+#'   resample from the same model.
+#' @param fix_beta Null or MxD matrix. Use to provide beta in order to
+#'   repeatedly resample from the same model.
 #' @return A list:
 #'   Y: N x D matrix of observed phenotypes.
 #'   X: N x M matrix of genotypes.
 #'   beta: M x D matrix of genotype effect sizes.
 #'   R: D x D network effect matrix.
-generate_dataset <- function(N, M, D, p_beta = 0.2, p_net = 0.2, noise = 0.0,
-                             pleiotropy = FALSE, whiten = FALSE,
-                             symmetric = NULL, sd_net = 1.0, sd_beta = 1.0) {
+generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2, noise = 0.0,
+                             conf_ratio = 0.0, pleiotropy = FALSE,
+                             whiten = FALSE, symmetric = NULL, sd_net = 1.0,
+                             sd_beta = 1.0, sigma_g = 1.0, fix_R = NULL,
+                             fix_beta = NULL) {
+  # Generate the various components.
+  if (is.null(fix_beta)) {
+    beta <- generate_beta(M, D, p_beta, pleiotropy = pleiotropy, sd = sd_beta)$beta
+  } else {
+    beta <- fix_beta
+  }
+  if (is.null(fix_R)) {
+    R <- generate_network(D, p_net, symmetric = symmetric, sd = sd_net)
+  } else {
+    R <- fix_R
+  }
   X <- generate_genotypes(N, M, whiten = whiten)
-  beta_res <- generate_beta(M, D, p_beta, pleiotropy = pleiotropy, sd = sd_beta)
-  R <- generate_network(D, p_net, symmetric = symmetric, sd = sd_net)
-  network <- X %*% beta_res$beta %*% solve(diag(D) - R)
+  genetic <- X %*% beta
+
+  # Normalize the confouding contribution to have equal variance to the genetic.
+  if (C > 0) {
+    confounding <- generate_confounding(N, C, D, sigma_g = sigma_g)
+    genetic_var <- apply(genetic, 2, stats::var)
+    confounding_var <- apply(confounding, 2, stats::var)
+    confounding <- t(t(confounding) * sqrt(genetic_var / confounding_var))
+  }
+  else {
+    confounding <- 0
+  }
+
+  # Calculate the direct and mixed effect plus noise to produce Y.
+  direct <- sqrt(1 - conf_ratio) * genetic + sqrt(conf_ratio) * confounding
+  network <- direct %*% solve(diag(D) - R)
   network_var <- apply(network, 2, stats::var)
   epsilon <- t(t(matrix(stats::rnorm(N * D), N, D)) * sqrt(network_var))
   Y <- sqrt(1 - noise) * network + sqrt(noise) * epsilon
-  list("Y" = as.matrix(Y), "X" = X, "beta" = beta_res$beta, "R" = R)
+
+  list("Y" = as.matrix(Y), "X" = X, "beta" = beta, "R" = R)
 }
 
 #' Generate summary statistics.
