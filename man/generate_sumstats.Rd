@@ -19,7 +19,7 @@ A list,
   beta_hat: An M x D matrix of calculated effect sizes.
   se_hat: An M x D matrix of corresponding estimated standard errors.
   p_value: An M x D matrix of corresponding p-values.
-  r_squared: An M x D matrix of variances explained.
+  r_hat: An M x D matrix of correlations, normalized-scale effect sizes.
   n_mat: An M x D matrix of sample sizes. For simulations, this is just N.
 }
 \description{

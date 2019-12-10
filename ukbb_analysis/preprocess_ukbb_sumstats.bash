@@ -3,11 +3,15 @@
 # This preprocesses the UKBB sumstats by filtering down to only SNPs that
 # will be used in the network MR analysis. That is, SNPs with pvalue < val
 # for some phenotype in the analysis directory.
+#
+# Args:
+#   $1: Directory with sumstats files to search.
+#   $2: Place to store intermediary file with SNP list for analysis.
 
 P_THRESH=0.00001
 MIN_MAF=0.001
-SUMSTATS_DIR="data"
-SNP_FILE="snps_to_use.txt"
+SUMSTATS_DIR=$1
+SNP_FILE=$2
 
 # The sumstats format from Neale lab has optional columns for binary traits.
 # Therefore we track column names rather than numbers.
@@ -50,6 +54,9 @@ for file in "${SUMSTATS_DIR}/"*.tsv.bgz; do
       NR == FNR {
         snp_list[$1] = $1
 	next
+      }
+      FNR == 1{
+        print $0
       }
       {
         if($1 in snp_list){

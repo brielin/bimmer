@@ -4,30 +4,36 @@
 # statistics from the Neale lab dropbox by parsing the LDSC results
 # and analysis manifest. It pulls all sumstats with Z-score above 4 and
 # medium or high confidence.
+#
+# Args:
+#   $1: Manifest location.
+#   $2: LDSC results location.
+#   $3: Desired download directory.
+#   $4: Maximum number of files to download.
 
-MANIFEST="UKBB_GWAS_Manifest_201807.tsv.gz"
-LDSC_RESULTS="ukb31063_h2_topline.02Oct2019.tsv.gz"
-MAX_DOWNLOADS=4
-DOWNLOAD_DIR="data"
 
-awk -F"\t" -vmax_dls="${MAX_DOWNLOADS}" '
+MANIFEST=$1
+LDSC_RESULTS=$2
+DOWNLOAD_DIR=$3
+MAX_DOWNLOADS=$4
+
+[ ! -d "${DOWNLOAD_DIR}" ] && mkdir -p "${DOWNLOAD_DIR}"
+awk -F"\t" -vmax_dls="${MAX_DOWNLOADS}" -vdl_dir="${DOWNLOAD_DIR}" '
   FNR==NR {
     if(($9 == "z4" || $9 == "z7") && ($10 == "medium" || $10 == "high")){
       phenotypes[$1] = $1
     }
     next
   }
-  {
-    if(($1 in phenotypes) && ($4 == "male" || $4 == "female")){
-      print $6
-      system($6)
-      dls += 1
-    }
-    if(dls == max_dls){
+  ($1 in phenotypes) && ($5 ~ /male.tsv.bgz$/)  {
+    split($6, arr, " ")
+    print "Processing " dl_dir "/" arr[4]
+    if(system("[ ! -f " dl_dir "/" arr[4] " ]") == 0)
+      system(arr[1] " " arr[2] " " arr[3] " " dl_dir "/" arr[4])
+    else
+      print dl_dir "/" arr[4] " exists!"
+    dls += 1
+    if(dls == max_dls)
       exit
-    }
   }
 ' <(gzip -dc "${LDSC_RESULTS}") <(gzip -dc "${MANIFEST}")
-
-[ ! -d "${DOWNLOAD_DIR}" ] && mkdir -p "${DOWNLOAD_DIR}"
-mv *.{male,female}.tsv.bgz "${DOWNLOAD_DIR}"

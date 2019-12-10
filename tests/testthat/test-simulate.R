@@ -142,7 +142,7 @@ test_that("generate_sumstats_normalizes", {
   p_net <- 0.5
   dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net, pleiotropy = TRUE)
   sumstats <- generate_sumstats(dataset$X, dataset$Y, normalize = TRUE)
-  expect_equal(sumstats$beta_hat^2, sumstats$r_squared)
+  expect_equal(sumstats$beta_hat^2, sumstats$r_hat^2)
 })
 
 test_that("select_snps_oracle_works", {

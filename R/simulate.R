@@ -217,7 +217,7 @@ generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2, noise = 
 #'   beta_hat: An M x D matrix of calculated effect sizes.
 #'   se_hat: An M x D matrix of corresponding estimated standard errors.
 #'   p_value: An M x D matrix of corresponding p-values.
-#'   r_squared: An M x D matrix of variances explained.
+#'   r_hat: An M x D matrix of correlations, normalized-scale effect sizes.
 #'   n_mat: An M x D matrix of sample sizes. For simulations, this is just N.
 generate_sumstats <- function(X, Y, normalize = TRUE) {
   # TODO(brielin): Add test for this function.
@@ -249,12 +249,12 @@ generate_sumstats <- function(X, Y, normalize = TRUE) {
   n_mat <- matrix(rep(N, M * D), M, D)
   rownames(n_mat) <- colnames(X)
   colnames(n_mat) <- colnames(Y)
-  r_squared <- (normalizer * beta_hat)^2
+  r_hat <- normalizer * beta_hat
   list(
     "beta_hat" = beta_hat,
     "se_hat" = se_hat,
     "p_value" = p_value,
-    "r_squared" = r_squared,
+    "r_hat" = r_hat,
     "n_mat" = n_mat
   )
 }

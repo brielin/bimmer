@@ -1,0 +1,7 @@
+UKBB_GWAS_Manifest_201807.tsv.gz
+data
+snps_to_use.txt
+ukb31063_h2_topline.02Oct2019.tsv.gz
+preprocess_ukbb_sumstats.bash~
+get_ukbb_sumstats.bash~
+#preprocess_ukbb_sumstats.bash#
