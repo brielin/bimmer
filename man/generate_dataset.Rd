@@ -4,10 +4,24 @@
 \alias{generate_dataset}
 \title{Generates dataset.}
 \usage{
-generate_dataset(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2,
-  noise = 0, conf_ratio = 0, pleiotropy = FALSE, whiten = FALSE,
-  symmetric = NULL, sd_net = 1, sd_beta = 1, sigma_g = 1,
-  fix_R = NULL, fix_beta = NULL)
+generate_dataset(
+  N,
+  M,
+  D,
+  C = 0,
+  p_beta = 0.2,
+  p_net = 0.2,
+  noise = 0,
+  conf_ratio = 0,
+  pleiotropy = FALSE,
+  whiten = FALSE,
+  symmetric = NULL,
+  sd_net = 1,
+  sd_beta = 1,
+  sigma_g = 1,
+  fix_R = NULL,
+  fix_beta = NULL
+)
 }
 \arguments{
 \item{N}{Integer. Number of individuals to simulate.}

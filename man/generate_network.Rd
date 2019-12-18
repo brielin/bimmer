@@ -4,8 +4,14 @@
 \alias{generate_network}
 \title{Generates and optionally normalizes causal graph.}
 \usage{
-generate_network(D, p = 0.1, normalize = TRUE, epsilon = 0.1,
-  symmetric = NULL, sd = 1)
+generate_network(
+  D,
+  p = 0.1,
+  normalize = TRUE,
+  epsilon = 0.1,
+  symmetric = NULL,
+  sd = 1
+)
 }
 \arguments{
 \item{D}{Integer. Number of phenotypes to simulate.}

@@ -20,4 +20,6 @@ already on one. Note also that this reads the entire dataset into memory.
 If the number of SNPs is
 large, consider doing some preprocessing of your data to remove SNPs that
 are unlikely to be used in the analysis.
+Note also that this only keeps the normalized scale beta and SE due to memory
+concerns. The number of samples and p-value can be backed out from these.
 }

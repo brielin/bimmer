@@ -4,25 +4,23 @@
 \alias{welch_test}
 \title{Simple implementation of a welch test.}
 \usage{
-welch_test(mu1, mu2, s1, s2, n1, n2)
+welch_test(beta1, se1, beta2, se2, welch_thresh = 0.01)
 }
 \arguments{
-\item{mu1}{Float, mean of the first sample.}
+\item{beta1}{Float or vector of floats, mean of the first sample.}
 
-\item{mu2}{Float, mean of the second sample.}
+\item{se1}{Float or vector of floats, SD of estimate of mu1.}
 
-\item{s1}{Float, SD of estimate of mu1.}
+\item{beta2}{Float or vector of floats, mean of the second sample.}
 
-\item{s2}{Float, SD of estimate of mu2.}
+\item{se2}{Float or vector of floats, SD of estimate of mu2.}
 
-\item{n1}{Integer, number of samples in dataset 1.}
-
-\item{n2}{Integer, number of samples in dataset 2.}
+\item{welch_thresh}{Float, p_value threshold for significance.}
 }
 \value{
-Float, the p-value corresponding to the test.
+Float
 }
 \description{
-This tests the null hypothesis mu1 = mu2 against the one-sided alternative
-mu1 > mu2.
+This tests the null hypothesis abs(beta1) = abs(beta2) against the one-sided
+alternative abs(beta1) > abs(beta2).
 }

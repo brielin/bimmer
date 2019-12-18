@@ -4,12 +4,10 @@
 \alias{parse_sumstats_multi_trait}
 \title{Parses a list of sumstats tibbles, returning a list of matrices.}
 \usage{
-parse_sumstats_multi_trait(sumstats_list, min_maf = 0.001)
+parse_sumstats_multi_trait(sumstats)
 }
 \arguments{
-\item{sumstats_list}{A list where each entry is a tibble of sumstats.}
-
-\item{min_maf}{Float, minimum allele frequency to keep.}
+\item{sumstats}{A list where each entry is a tibble of sumstats.}
 }
 \description{
 This parses a list of sumstats tibbles into a list of matrices containing

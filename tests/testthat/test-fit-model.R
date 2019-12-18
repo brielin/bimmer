@@ -54,14 +54,12 @@ test_that("naive_ma_works", {
 })
 
 test_that("welch_test_works", {
-  mu1 <- 0
-  mu2 <- 1
+  b1 <- 0
+  b2 <- 1
   s1 <- 0.01
   s2 <- 0.01
-  n1 <- 1000
-  n2 <- 1000
-  expect_equal(welch_test(mu1, mu2, s1, s2, n1, n2), 1)
-  expect_equal(welch_test(mu2, mu1, s1, s2, n1, n2), 0)
+  expect_false(welch_test(b1, s1, b2, s2))
+  expect_true(welch_test(b2, s2, b1, s1))
 })
 
 test_that("select_snps_works", {
@@ -129,23 +127,6 @@ test_that("delta_cde_runs", {
   expect_equal(dim(SE), c(3, 3))
 })
 
-test_that("fit_sumstats_exact_works", {
-  ss_res <- fit_sumstats(sumstats, sumstats, "mean", "exact",
-    min_instruments = 1
-  )
-  expect_is(ss_res$R_cde, "matrix")
-  expect_false(any(is.na(ss_res$R_cde)))
-})
-
-test_that("fit_sumstats_exact_delta_works", {
-  ss_res <- fit_sumstats(sumstats, sumstats, "mean", "exact",
-    min_instruments = 1, resample = "delta"
-  )
-  expect_is(ss_res$R_cde, "matrix")
-  expect_is(ss_res$SE_cde, "matrix")
-  expect_false(any(is.na(ss_res$R_cde)))
-})
-
 test_that("fit_error_exactly_zero", {
   M <- 20
   dataset_exact <- generate_dataset(
@@ -154,9 +135,8 @@ test_that("fit_error_exactly_zero", {
     sd_net = 0.2, whiten = TRUE
   )
   Y_sds <- apply(dataset_exact$Y, 2, sd)
-
   sumstats_exact <- generate_sumstats(dataset_exact$X, dataset_exact$Y)
-  selected <- select_snps_oracle(dataset_exact$beta, sumstats_exact$p_value)
+  selected <- select_snps_oracle(dataset_exact$beta)
   R_tce_hat <- fit_tce(sumstats_exact, selected, "mean", min_instruments = 1)$R_tce
   R_tce <- as.matrix(get_tce(get_observed(dataset_exact$R), normalize = Y_sds))
   expect_equal(R_tce_hat, R_tce)

@@ -4,8 +4,13 @@
 \alias{fit_regularized_cv}
 \title{Fits L1-regularized approximate inverse model.}
 \usage{
-fit_regularized_cv(R_tce, weights = NULL, k = 1, nfolds = NULL,
-  lambda = c(0.1, 0.05, 0.01, 0.005, 0.001, 5e-04, 1e-04))
+fit_regularized_cv(
+  R_tce,
+  weights = NULL,
+  k = 1,
+  nfolds = NULL,
+  lambda = c(0.1, 0.05, 0.01, 0.005, 0.001, 5e-04, 1e-04)
+)
 }
 \arguments{
 \item{R_tce}{D x D matrix of "total causal effects".}

@@ -4,12 +4,18 @@
 \alias{fit_tce}
 \title{Calculates matrix of total causal effects using a specified method.}
 \usage{
-fit_tce(sumstats_fit, selected_snps, mr_method = c("mean", "ps", "aps",
-  "raps"), p_thresh = 1e-05, min_instruments = 5, shrink = FALSE,
-  ...)
+fit_tce(
+  sumstats,
+  selected_snps,
+  mr_method = c("mean", "ps", "aps", "raps"),
+  p_thresh = 1e-05,
+  min_instruments = 5,
+  shrink = FALSE,
+  ...
+)
 }
 \arguments{
-\item{sumstats_fit}{List representing summary statistics from the second
+\item{sumstats}{List representing summary statistics from the second
 dataset. Must include entries "beta_hat" and "se_hat".}
 
 \item{selected_snps}{A list of lists with names of each equal to the

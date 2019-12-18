@@ -4,20 +4,10 @@
 \alias{select_snps_oracle}
 \title{Selects SNPs based on true effect sizes.}
 \usage{
-select_snps_oracle(beta, p_val, p_thresh = 1e-05)
+select_snps_oracle(beta_true)
 }
 \arguments{
-\item{beta}{M x D matrix of true effect sizes.}
-
-\item{p_val}{M x D matrix of observed p-values.}
-
-\item{p_thresh}{Float. Threshold for inclusion of a SNP.}
-}
-\value{
-A list of lists. The outer list is indexed by the phenotype names.
-  Each inner list is also indexed by the phenotype names, and the value of
-  result$P1$P2 is a boolean vector of length M corresponding to the SNPs to
-  use in the estimation of TCE of P1 on P2.
+\item{beta_true}{M x D matrix of true effect sizes.}
 }
 \description{
 Selects SNPs based on true effect sizes.

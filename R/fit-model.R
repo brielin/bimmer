@@ -12,27 +12,6 @@ fit_exact <- function(R_tce) {
 #' Fits L1-regularized approximate inverse model.
 #'
 #' @param R_tce D x D matrix of "total causal effects".
-#' @param lambda Float. Regularization strength.
-fit_regularized <- function(R_tce, lambda = 0.01) {
-  D <- dim(R_tce)[1]
-  resp <- diag(D)
-  R_tce_inv <- matrix(0L, nrow = D, ncol = D)
-  for (d in 1:D) {
-    fit <- glmnet::glmnet(R_tce, resp[, d],
-      alpha = 1.0, lambda = lambda,
-      standardize = FALSE, intercept = FALSE
-    )
-    R_tce_inv[, d] <- matrix(fit$beta)
-  }
-  R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
-  colnames(R_hat) <- colnames(R_tce)
-  rownames(R_hat) <- rownames(R_tce)
-  list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv)
-}
-
-#' Fits L1-regularized approximate inverse model.
-#'
-#' @param R_tce D x D matrix of "total causal effects".
 #' @param weights Length D vector of per-row weights. Default is 1 for each observation.
 #' @param k Number of zero-values to drop during CV.
 #' @param nfolds Number of folds. NULL for k=1 to use leave-one-out CV.
@@ -106,9 +85,9 @@ fit_regularized_cheat <- function(R_tce, R) {
 #'   std dev of the corresponding phenotype. Set to NULL for no normalization.
 #' @return D x D matrix of total causal effects.
 get_tce <- function(R_obs, normalize = NULL) {
-  diag_R_obs <- Matrix::diag(R_obs)
+  diag_R_obs <- diag(R_obs)
   R_tce <- (1 / (1 + diag_R_obs)) * R_obs
-  Matrix::diag(R_tce) <- 1
+  diag(R_tce) <- 1
   if (!is.null(normalize)) {
     R_tce <- R_tce * outer(normalize, 1 / normalize)
   }
@@ -121,7 +100,7 @@ get_tce <- function(R_obs, normalize = NULL) {
 #' @return D x D matrix of observed effects.
 get_observed <- function(R) {
   D <- dim(R)[1]
-  R %*% solve(diag(D) - R)
+  as.matrix(R %*% solve(diag(D) - R))
 }
 
 #' Gets direct network from observed effects.
@@ -150,67 +129,53 @@ naive_ma <- function(b_exp, b_out, se_exp, se_out) {
 
 #' Simple implementation of a welch test.
 #'
-#' This tests the null hypothesis mu1 = mu2 against the one-sided alternative
-#' mu1 > mu2.
+#' This tests the null hypothesis abs(beta1) = abs(beta2) against the one-sided
+#' alternative abs(beta1) > abs(beta2).
 #'
-#' @param mu1 Float, mean of the first sample.
-#' @param mu2 Float, mean of the second sample.
-#' @param s1 Float, SD of estimate of mu1.
-#' @param s2 Float, SD of estimate of mu2.
-#' @param n1 Integer, number of samples in dataset 1.
-#' @param n2 Integer, number of samples in dataset 2.
-#' @return Float, the p-value corresponding to the test.
-welch_test <- function(mu1, mu2, s1, s2, n1, n2) {
-  t_val <- (mu2 - mu1) / sqrt(s1^2 + s2^2)
-  nu <- (s1^2 + s2^2)^2 / (s1^4 / ((n1 - 1)) + s2^4 / ((n2 - 1)))
-  stats::pt(t_val, round(nu))
+#' @param beta1 Float or vector of floats, mean of the first sample.
+#' @param beta2 Float or vector of floats, mean of the second sample.
+#' @param se1 Float or vector of floats, SD of estimate of mu1.
+#' @param se2 Float or vector of floats, SD of estimate of mu2.
+#' @param welch_thresh Float, p_value threshold for significance.
+#' @return Float
+welch_test <- function(beta1, se1, beta2, se2, welch_thresh = 0.01) {
+  n1 <- 1/(se1**2)
+  n2 <- 1/(se2**2)
+  t_val <- (abs(beta2) - abs(beta1)) / sqrt(se1^2 + se2^2)
+  nu <- (se1^2 + se2^2)^2 / (se1^4 / ((n1 - 1)) + se2^4 / ((n2 - 1)))
+  res <- stats::pt(t_val, round(nu)) < welch_thresh
+  res[is.na(t_val)] = FALSE
+  return(res)
 }
+
 
 #' Selects SNPs for inclusion in MR by comparing per-variance effect sizes.
 #'
 #' Notes: sumstats passed to this function must be computed on the per-variance
 #' scale. This function does twice as much work as necessary.
 #'
-#' @param sumstats_select List with elements "beta_hat", "se_hat", "n_mat", and
+#' @param sumstats List with elements "beta_hat", "se_hat", "n_mat", and
 #'   "p_value", each M x D matrices.
 #' @param p_thresh Float, p-value threshold to use for SNP inclusion.
 #' @param welch_thresh FLOAT, p-value threshold for Welch test of equal betas.
-#' @return A list of lists. The outer list is indexed by the phenotype names.
-#'   Each inner list is also indexed by the phenotype names, and the value of
-#'   result$P1$P2 is a boolean vector of length M corresponding to the SNPs to
-#'   use in the estimation of TCE of P1 on P2.
-select_snps <- function(sumstats_select, p_thresh = 1e-5, welch_thresh = 0.01) {
-  select_function <- function(beta, se, p_val, n_val) {
-    run_test <- function(beta_other, se_other, n_other) {
-      index <- p_val < p_thresh
-      welch_res <- mapply(
-        welch_test,
-        abs(beta[index]),
-        abs(beta_other[index]),
-        se[index],
-        se_other[index],
-        n_val[index],
-        n_other[index]
-      )
-      index[index == TRUE][welch_res > welch_thresh] <- FALSE
-      return(index)
-    }
-    mapply(run_test,
-      data.frame(sumstats_select$beta_hat),
-      data.frame(sumstats_select$se_hat),
-      data.frame(sumstats_select$n_mat),
-      SIMPLIFY = FALSE
-    )
+select_snps <- function(sumstats, p_thresh = 1e-5, welch_thresh = 0.01){
+  run_pheno <- function(pheno){
+    p_vals <- 2 * (1 - stats::pnorm(abs(sumstats$beta_hat[,pheno]/sumstats$se_hat[,pheno])))
+    snp_mask <- p_vals < p_thresh
+    snp_mask[is.na(snp_mask)] <- FALSE
+    beta_sub <- sumstats$beta_hat[snp_mask, ]
+    se_sub <- sumstats$se_hat[snp_mask, ]
+    beta <- beta_sub[, pheno]
+    se <- se_sub[, pheno]
+    snps <- purrr::pmap(list(beta_sub, se_sub), welch_test, beta1=beta, se1=se, welch_thresh=welch_thresh)
+    snps$names <- rownames(beta_sub)
+    return(snps)
   }
-  result <- mapply(select_function,
-    data.frame(sumstats_select$beta_hat),
-    data.frame(sumstats_select$se_hat),
-    data.frame(sumstats_select$p_value),
-    data.frame(sumstats_select$n_mat),
-    SIMPLIFY = FALSE
-  )
-  result
+  snps_to_use = purrr::map(colnames(sumstats$beta_hat), run_pheno)
+  names(snps_to_use) = colnames(sumstats$beta_hat)
+  return(snps_to_use)
 }
+
 
 #' Shrinks the estimate of the total causal effect matrix.
 #'
@@ -243,7 +208,7 @@ shrink_R <- function(R_tce, SE_tce, N_obs, lambda = NULL) {
 
 #' Calculates matrix of total causal effects using a specified method.
 #'
-#' @param sumstats_fit List representing summary statistics from the second
+#' @param sumstats List representing summary statistics from the second
 #'   dataset. Must include entries "beta_hat" and "se_hat".
 #' @param selected_snps A list of lists with names of each equal to the
 #'   phenotype names. The inner lists are boolean vectors of length equal to
@@ -255,7 +220,7 @@ shrink_R <- function(R_tce, SE_tce, N_obs, lambda = NULL) {
 #'   this many instruments for a pair of phenotypes.
 #' @param shrink Boolean. True to shrink estimates of R_tce to 0.
 #' @param ... Additional parameters to pass to mr_method.
-fit_tce <- function(sumstats_fit,
+fit_tce <- function(sumstats,
                     selected_snps,
                     mr_method = c("mean", "ps", "aps", "raps"),
                     p_thresh = 1e-5,
@@ -273,53 +238,45 @@ fit_tce <- function(sumstats_fit,
     }
   )
 
-  run_one_pheno <- function(snp_list, beta_exp, stderr_exp) {
-    run_paired_pheno <- function(snps_to_use, beta_out, stderr_out) {
-      # TODO(brielin): Do something with the SE of this estimate
-      n_instruments <- sum(snps_to_use)
+  run_tce_row <- function(snps_to_use, exp){
+    beta_sub <- sumstats$beta_hat[snps_to_use$names,]
+    se_sub <- sumstats$se_hat[snps_to_use$names,]
+    beta_exp <- beta_sub[, exp]
+    se_exp <- se_sub[, exp]
+    run_tce_entry <- function(beta_out, se_out, out){
+      snp_mask = get(out, snps_to_use)
+      n_instruments <- sum(snp_mask)
       if (n_instruments < min_instruments) {
-        list(NA, NA, n_instruments)
+        list("R" = NA, "SE" = NA, "N" = n_instruments)
       }
       else {
         mr_res <- mr_method_func(
-          b_exp = beta_exp[snps_to_use],
-          b_out = beta_out[snps_to_use],
-          se_exp = stderr_exp[snps_to_use],
-          se_out = stderr_out[snps_to_use],
+          b_exp = beta_exp[snp_mask],
+          b_out = beta_out[snp_mask],
+          se_exp = se_exp[snp_mask],
+          se_out = se_out[snp_mask],
           ...
         )
-        list(mr_res$beta.hat, mr_res$beta.se, n_instruments)
+        list("R" = mr_res$beta.hat, "SE" = mr_res$beta.se, "N" = n_instruments)
       }
     }
-    mapply(
-      run_paired_pheno,
-      snp_list,
-      data.frame(sumstats_fit$beta_hat),
-      data.frame(sumstats_fit$se_hat)
-    )
+    purrr::pmap_dfr(list(beta_sub, se_sub, colnames(beta_sub)), run_tce_entry, .id = "out")
   }
-  res <- t(mapply(
-    run_one_pheno,
-    selected_snps,
-    data.frame(sumstats_fit$beta_hat),
-    data.frame(sumstats_fit$se_hat)
-  ))
-  # Fuck this garbage programming language.
-  R_tce <- matrix(as.numeric(res[, c(TRUE, FALSE, FALSE)]),
-    nrow = nrow(res),
-    dimnames = list(rownames(res), rownames(res))
-  )
-  SE_tce <- matrix(as.numeric(res[, c(FALSE, TRUE, FALSE)]),
-    nrow = nrow(res),
-    dimnames = list(rownames(res), rownames(res))
-  )
-  N_obs <- matrix(as.numeric(res[, c(FALSE, FALSE, TRUE)]),
-    nrow = nrow(res),
-    dimnames = list(rownames(res), rownames(res))
-  )
+  tce_res <- purrr::imap_dfr(selected_snps, run_tce_row, .id = "exp")
+
+  R_tce <- tce_res %>%
+    tidyr::pivot_wider(names_from = "out", values_from = "R", id_cols = "exp") %>%
+    tibble::column_to_rownames("exp")
+  SE_tce <- tce_res %>%
+    tidyr::pivot_wider(names_from = "out", values_from = "SE", id_cols = "exp") %>%
+    tibble::column_to_rownames("exp")
+  N_obs <- tce_res %>%
+    tidyr::pivot_wider(names_from = "out", values_from = "N", id_cols = "exp") %>%
+    tibble::column_to_rownames("exp")
   diag(R_tce) <- 1.0
   diag(SE_tce) <- 0.0
   diag(N_obs) <- 0.0
+
   if (shrink) {
     if (is.logical(shrink)) {
       R_tce <- shrink_R(R_tce, SE_tce, N_obs)
@@ -327,7 +284,7 @@ fit_tce <- function(sumstats_fit,
       R_tce <- shrink_R(R_tce, SE_tce, N_obs, lambda = shrink)
     }
   }
-  list("R_tce" = R_tce, "SE_tce" = SE_tce, "N_obs" = N_obs)
+  list("R_tce" = as.matrix(R_tce), "SE_tce" = as.matrix(SE_tce), "N_obs" = as.matrix(N_obs))
 }
 
 #' Resample CDE estimate using observed standard errors of TCE.
@@ -380,49 +337,37 @@ delta_cde <- function(R_tce_inv, SE_tce) {
 
 #' Fits network mendelian randomization model to data.
 #'
-#' @param sumstats_select List representing summary statistics from the first
-#'   dataset. Must include "p-value" and "r-squared".
-#' @param sumstats_fit List representing summary statistics from the second
-#'   dataset. Must include entries "beta_hat" and "se_hat".
-#' @param mr_method String, one of c("mean", "raps"). Method to use for TCE
-#'   estimate between every pair. Note that this will be called with default
-#'   arguments. For more detailed control, call fit_tce() directly.
-#' @param fit_method String, one of c("exact", "regularized"). Method to use for
-#'   network optimization. Note that this will  be called with the default
-#'   arguments. For more detailed control, call the fit method directly.
+#' @param file_pattern_select String representing a file pattern. Sumstats files
+#'   matching this pattern will be used for SNP selection.
+#' @param file_pattern_fit String representing a file pattern. Sumstats files
+#'   matching this pattern will be used for SNP selection.
 #' @param p_thresh Float. p-value threshold for inclusion.
 #' @param shrink Boolean. True to shrink estimates of R_tce to 0.
 #' @param min_instruments Integer. Return NA if there are less than
 #'   this many instruments for a pair of phenotypes.
 #' @param resample Non-negative integer or "delta". The number of resample iterations.
-fit_sumstats <- function(sumstats_select,
-                         sumstats_fit,
-                         mr_method = c("mean", "ps", "aps", "raps"),
-                         fit_method = c("exact", "regularized"),
-                         p_thresh = 1e-5,
-                         shrink = FALSE,
-                         min_instruments = 5,
-                         resample = 0) {
-  fit_method_func <- switch(fit_method,
-    exact = fit_exact,
-    regularized = fit_regularized_cv
-  )
-  selected <- select_snps(sumstats_select)
+fit_model <- function(file_pattern_select,
+                       file_pattern_fit,
+                       p_thresh = 1e-5,
+                       shrink = FALSE,
+                       min_instruments = 5,
+                       resample = 0){
+  sumstats <- read_ukbbss_neale(file_pattern_select)
+  selected_snps <- select_snps(sumstats)
+  rm(sumstats)
+  sumstats <- read_ukbbss_neale(file_pattern_fit)
   tce_res <- fit_tce(
-    sumstats_fit, selected, mr_method, p_thresh,
-    min_instruments,
-    shrink = shrink
-  )
+    sumstats, selected_snps, mr_method = "raps", p_thresh, min_instruments, shrink = shrink)
   if (resample == "delta") {
-    fit_res <- fit_method_func(tce_res$R_tce)
+    fit_res <- fit_regularized_cv(tce_res$R_tce)
     list(
       "R_cde" = fit_res$R_hat,
       "SE_cde" = delta_cde(fit_res$R_tce_inv, tce_res$SE_tce)
     )
-  }
-  else if (resample) {
-    resample_cde(tce_res$R_tce, tce_res$SE_tce, fit_method_func, resample)
+  } else if (resample) {
+    resample_cde(tce_res$R_tce, tce_res$SE_tce, fit_regularized_cv, resample)
   } else {
-    list("R_cde" = fit_method_func(tce_res$R_tce)$R_hat, "SE_cde" = NA)
+    list("R_cde" = fit_regularized_cv(tce_res$R_tce)$R_hat, "SE_cde" = NA)
   }
 }
+

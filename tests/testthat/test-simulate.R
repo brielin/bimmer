@@ -115,7 +115,9 @@ test_that("generate_sumstats_works", {
   p_beta <- 1.0
   p_net <- 0.5
   dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net, pleiotropy = TRUE)
-  sumstats <- generate_sumstats(dataset$X, dataset$Y, normalize = FALSE)
+  sumstats <- generate_sumstats(dataset$X, dataset$Y)
+  dataset$Y <- scale(dataset$Y)
+  dataset$X <- scale(dataset$X)
   expect_equal(
     sumstats$beta_hat[1, 1],
     unname(lm(dataset$Y[, 1] ~ dataset$X[, 1])$coefficients)[2]
@@ -134,16 +136,6 @@ test_that("generate_sumstats_works", {
   )
 })
 
-test_that("generate_sumstats_normalizes", {
-  N <- 10
-  D <- 2
-  M <- 2
-  p_beta <- 1.0
-  p_net <- 0.5
-  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net, pleiotropy = TRUE)
-  sumstats <- generate_sumstats(dataset$X, dataset$Y, normalize = TRUE)
-  expect_equal(sumstats$beta_hat^2, sumstats$r_hat^2)
-})
 
 test_that("select_snps_oracle_works", {
   N <- 10
@@ -152,8 +144,8 @@ test_that("select_snps_oracle_works", {
   p_beta <- 1.0
   p_net <- 0.5
   dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net, pleiotropy = FALSE)
-  sumstats <- generate_sumstats(dataset$X, dataset$Y, normalize = FALSE)
-  snps <- select_snps_oracle(dataset$beta, sumstats$p_value)
+  sumstats <- generate_sumstats(dataset$X, dataset$Y)
+  snps <- select_snps_oracle(dataset$beta)
   expect_is(snps, "list")
   expect_equal(names(snps), c("P1", "P2"))
   expect_is(get("P1", snps), "list")

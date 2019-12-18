@@ -17,11 +17,10 @@ Imports:
     dplyr,
     foreach,
     tibble,
-    ppcor,
-    corpcor,
     MASS,
-    madness,
-    readr
+    readr,
+    purrr,
+    tidyr
 Suggests: 
     testthat (>= 2.1.0)
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2

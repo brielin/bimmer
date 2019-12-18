@@ -4,10 +4,12 @@
 \alias{read_file_pattern}
 \title{Wrapper for read_gz_tsv to read all files matching pattern.}
 \usage{
-read_file_pattern(file_pattern)
+read_file_pattern(file_pattern, min_maf = 0.001)
 }
 \arguments{
 \item{file_pattern}{A string representing a glob pattern of files to match.}
+
+\item{min_maf}{Float, minimum allele frequency to keep.}
 }
 \description{
 Wrapper for read_gz_tsv to read all files matching pattern.

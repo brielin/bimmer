@@ -209,17 +209,14 @@ generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2, noise = 
 
 #' Generate summary statistics.
 #'
+#' Note that this always returns values on the normalized (per-variance) scale.
+#'
 #' @param X N x M matrix of genotypes.
 #' @param Y N x D matrix of phenotypes.
-#' @param normalize Bool. If TRUE, normalize X and Y matrices to have variance
-#'   1.0. That is, return r_hat instead of beta_hat. Default TRUE.
 #' @return A list,
 #'   beta_hat: An M x D matrix of calculated effect sizes.
 #'   se_hat: An M x D matrix of corresponding estimated standard errors.
-#'   p_value: An M x D matrix of corresponding p-values.
-#'   r_hat: An M x D matrix of correlations, normalized-scale effect sizes.
-#'   n_mat: An M x D matrix of sample sizes. For simulations, this is just N.
-generate_sumstats <- function(X, Y, normalize = TRUE) {
+generate_sumstats <- function(X, Y) {
   # TODO(brielin): Add test for this function.
   N <- dim(X)[1]
   M <- dim(X)[2]
@@ -228,55 +225,56 @@ generate_sumstats <- function(X, Y, normalize = TRUE) {
   Y_no_mean <- t(t(Y) - colMeans(Y))
   X_sd <- apply(X, 2, stats::sd)
   Y_sd <- apply(Y, 2, stats::sd)
-  normalizer <- outer(X_sd, 1 / Y_sd)
-  if (normalize) {
-    X_no_mean <- t(t(X_no_mean) / X_sd)
-    Y_no_mean <- t(t(Y_no_mean) / Y_sd)
-    normalizer <- matrix(1L, M, D)
-  }
-
+  X_no_mean <- t(t(X_no_mean) / X_sd)
+  Y_no_mean <- t(t(Y_no_mean) / Y_sd)
   diag_xtxi <- 1 / colSums(X_no_mean^2)
   beta_hat <- (diag_xtxi * t(X_no_mean)) %*% Y_no_mean
+
   calc_s <- function(X_col, beta_row) {
     eps2sum <- colSums((Y_no_mean - outer(X_col, beta_row))^2)
     X2sum <- sum(X_col^2)
     sqrt(eps2sum / ((N - 2) * X2sum))
   }
   se_hat <- t(mapply(calc_s, data.frame(X_no_mean), data.frame(t(beta_hat))))
-  Z_hat <- beta_hat / se_hat
-  p_value <- 2 * (1 - stats::pnorm(abs(Z_hat)))
 
-  n_mat <- matrix(rep(N, M * D), M, D)
-  rownames(n_mat) <- colnames(X)
-  colnames(n_mat) <- colnames(Y)
-  r_hat <- normalizer * beta_hat
   list(
-    "beta_hat" = beta_hat,
-    "se_hat" = se_hat,
-    "p_value" = p_value,
-    "r_hat" = r_hat,
-    "n_mat" = n_mat
+    "beta_hat" = as.data.frame(beta_hat),
+    "se_hat" = as.data.frame(se_hat)
   )
 }
 
 #' Selects SNPs based on true effect sizes.
 #'
-#' @param beta M x D matrix of true effect sizes.
-#' @param p_val M x D matrix of observed p-values.
-#' @param p_thresh Float. Threshold for inclusion of a SNP.
-#' @return A list of lists. The outer list is indexed by the phenotype names.
-#'   Each inner list is also indexed by the phenotype names, and the value of
-#'   result$P1$P2 is a boolean vector of length M corresponding to the SNPs to
-#'   use in the estimation of TCE of P1 on P2.
-select_snps_oracle <- function(beta, p_val, p_thresh = 1e-5) {
-  pheno_names <- colnames(beta)
-  select <- function(beta_exp, p_val_exp) {
-    index <- (abs(beta_exp) > 0) & (p_val_exp < p_thresh)
-    sapply(pheno_names, function(x) {
-      return(index)
-    }, simplify = FALSE)
+#' @param beta_true M x D matrix of true effect sizes.
+select_snps_oracle <- function(beta_true) {
+  select <- function(beta){
+    mask <- abs(beta) > 0
+    res <- purrr::map(colnames(beta_true), function(x){return(mask)})
+    names(res) <- colnames(beta_true)
+    res$names <- rownames(beta_true)
+    return(res)
   }
-  mapply(select, data.frame(as.matrix(beta)), data.frame(p_val),
-    SIMPLIFY = FALSE
-  )
+  purrr::map(data.frame(as.matrix(beta_true)), select)
 }
+
+#' Fits L1-regularized approximate inverse model.
+#'
+#' @param R_tce D x D matrix of "total causal effects".
+#' @param lambda Float. Regularization strength.
+fit_regularized <- function(R_tce, lambda = 0.01) {
+  D <- dim(R_tce)[1]
+  resp <- diag(D)
+  R_tce_inv <- matrix(0L, nrow = D, ncol = D)
+  for (d in 1:D) {
+    fit <- glmnet::glmnet(R_tce, resp[, d],
+                          alpha = 1.0, lambda = lambda,
+                          standardize = FALSE, intercept = FALSE
+    )
+    R_tce_inv[, d] <- matrix(fit$beta)
+  }
+  R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
+  colnames(R_hat) <- colnames(R_tce)
+  rownames(R_hat) <- rownames(R_tce)
+  list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv)
+}
+

@@ -30,7 +30,8 @@ find "${SUMSTATS_DIR}" -type f -name "*.tsv.bgz" |
       }
       {
         if(($(fields["minor_AF"]) > min_maf) &&
-            ($(fields["low_confidence_variant"]) == "false") &&
+            (($(fields["low_confidence_variant"]) == "false") ||
+             ($(fields["low_confidence_variant"]) == "FALSE")) &&
             ($(fields["pval"]) < p_thresh)){
 	  snps_to_use[$(fields["variant"])] = $(fields["variant"])
 	}

@@ -4,24 +4,18 @@
 \alias{generate_sumstats}
 \title{Generate summary statistics.}
 \usage{
-generate_sumstats(X, Y, normalize = TRUE)
+generate_sumstats(X, Y)
 }
 \arguments{
 \item{X}{N x M matrix of genotypes.}
 
 \item{Y}{N x D matrix of phenotypes.}
-
-\item{normalize}{Bool. If TRUE, normalize X and Y matrices to have variance
-1.0. That is, return r_hat instead of beta_hat. Default TRUE.}
 }
 \value{
 A list,
   beta_hat: An M x D matrix of calculated effect sizes.
   se_hat: An M x D matrix of corresponding estimated standard errors.
-  p_value: An M x D matrix of corresponding p-values.
-  r_hat: An M x D matrix of correlations, normalized-scale effect sizes.
-  n_mat: An M x D matrix of sample sizes. For simulations, this is just N.
 }
 \description{
-Generate summary statistics.
+Note that this always returns values on the normalized (per-variance) scale.
 }
