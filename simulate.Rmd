@@ -16,7 +16,6 @@ require(tibble)
 require(dplyr)
 require(Matrix)
 require(ggplot2)
-require(corpcor)
 ```
 
 ```{r warning=FALSE}
@@ -25,12 +24,12 @@ N = 5000
 M = 1000
 D = 10
 C = 0
-sd_net = 1.0
-p_beta = 0.15
-p_net = 0.15
+sd_net = 0.7
+p_beta = 0.2
+p_net = 0.1
 symmetric = FALSE
 pleiotropy = FALSE
-niter = 10
+niter = 500
 sigma_g = matrix(1L, D, D)
 
 plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
@@ -56,8 +55,8 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
 
   # All calculations happen on per-normalized scale, so convert R here.
   R_tce = get_tce(R_obs, normalize=Y_sds)
-  R_normed <- fit_exact(R_tce)
-
+  R_normed <- fit_exact(R_tce)$R_hat
+  rank_R_tce <- sum(abs(eigen(R_tce, only.values = TRUE)$values) > 1e-10)
 
   # Split dataset into SNP selection and fitting.
   sample <- sample.int(n = N, size = floor(N/2), replace = FALSE)
@@ -65,17 +64,17 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   Y_select = dataset$Y[sample, ]
   X_fit = dataset$X[-sample, ]
   Y_fit = dataset$Y[-sample, ]
-  sumstats_select = generate_sumstats(X_select, Y_select, normalize = TRUE)
-  sumstats_fit = generate_sumstats(X_fit, Y_fit, normalize = TRUE)
+  sumstats_select = generate_sumstats(X_select, Y_select)
+  sumstats_fit = generate_sumstats(X_fit, Y_fit)
 
   # Select SNPs via sumstats and by cheating.
   selected <- select_snps(sumstats_select)
-  selected_oracle <- select_snps_oracle(dataset$beta, sumstats_fit$p_value)
+  selected_oracle <- select_snps_oracle(dataset$beta)
   
   # Run all combinations of MR method and fit method.
   foreach(mr_method = c("cheat", "ps", "ps_shrunk"),
           .combine = bind_rows) %do% {
-    foreach(fit_method = c("exact", "reg_cheat", "reg_auto", "reg_auto_same"),
+    foreach(fit_method = c("exact", "reg_cv"),
             .combine = bind_rows) %do% {
       tryCatch(
         {
@@ -83,8 +82,11 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
           if(mr_method == "cheat"){
             tce_res <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps")
           }
+          else if(mr_method == "ps"){
+            tce_res <- fit_tce(sumstats_fit, selected, mr_method="ps", shrink = FALSE)
+          }
           else if(mr_method == "ps_shrunk"){
-            tce_res <- fit_tce(sumstats_fit, selected_oracle, mr_method="ps", shrink = TRUE)
+            tce_res <- fit_tce(sumstats_fit, selected, mr_method="ps", shrink = TRUE)
           }
           else if(mr_method == "cor"){
             tce_res <- list("R_tce" = cor.shrink(Y_fit, verbose = FALSE))
@@ -106,24 +108,18 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
           fit_method_func <- switch(fit_method,
             exact = fit_exact,
             reg_cheat = function(R_tce){
-              fit_regularized_over_lambda(R_tce, R_normed)
+              fit_regularized_cheat(R_tce, R_normed)
             },
-            reg_auto = function(R_tce){
-              fit_regularized_auto(R_tce)$R_hat
-            },
-            reg_auto_same = function(R_tce){
-              fit_regularized_auto_same(R_tce)$R_hat
-            },
-            pcor = function(R_tce){
-              cor2pcor(m = R_tce)
+            reg_cv = function(R_tce){
+              fit_regularized_cv(R_tce)
             }
           )
-          R_hat = fit_method_func(R_tce = R_tce_hat)
+          R_hat = fit_method_func(R_tce = R_tce_hat)$R_hat
           mer_cde <- mean(as.matrix(R_hat - R_normed))
           mae_cde <- mean(as.matrix(abs(R_hat - R_normed)))
           mse_cde <- mean(as.matrix(abs(R_hat - R_normed)**2))
           tibble(iter = i, noise = noise, conf_ratio = conf_ratio, total_noise = total_noise,
-                 min_abs_self = min_abs_self, rank_R = rank_R,
+                 min_abs_self = min_abs_self, rank_R = rank_R, rank_R_tce = rank_R_tce,
                  n_tce_nans = n_tce_nans, mr_method = mr_method,
                  fit_method = fit_method, mae_tce = mae_tce, mae_cde = mae_cde,
                  mer_tce = mer_tce, mer_cde = mer_cde, mse_tce = mse_tce, mse_cde = mse_cde)
@@ -133,7 +129,7 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
           print(fit_method)
           print(cond)
           tibble(iter = i, noise = noise, conf_ratio = conf_ratio, total_noise = total_noise,
-                 min_abs_self = min_abs_self, rank_R = rank_R,
+                 min_abs_self = min_abs_self, rank_R = rank_R, rank_R_tce = rank_R_tce,
             n_tce_nans = NA, mr_method = mr_method, fit_method = fit_method,
             mae_tce = NA, mae_cde = NA, mer_tce = NA, mer_cde = NA)
         })
@@ -145,12 +141,12 @@ plot_tibble = unite(plot_tibble, "mr_fit", c("mr_method", "fit_method"), sep = "
 
 
 ```{r}
-well_cond = plot_tibble[(plot_tibble[,"min_abs_self"] > 0.5) & (plot_tibble[,"n_tce_nans"] < 45),]
+well_cond <- plot_tibble %>% filter(n_tce_nans < 45, !is.na(mr_method))
 ggplot(well_cond, aes(total_noise, mae_tce, colour = mr_method)) + geom_point() # + ylim(0, 0.5)
 ggplot(well_cond, aes(total_noise, mae_cde, colour = mr_fit)) + geom_point() # + ylim(0, 0.5)
 
-ggplot(well_cond, aes(mr_method, mse_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05)#  + ylim(0, 0.5)
-ggplot(well_cond, aes(mr_fit, mse_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05)#  + ylim(0, 0.5) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggplot(well_cond, aes(mr_method, mse_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05)  + ylim(0, 0.5)
+ggplot(well_cond, aes(mr_fit, mse_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05)  + ylim(0, 0.5) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ggplot(well_cond, aes(mr_method, mae_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05)#+ ylim(0, 0.5)
 ggplot(well_cond, aes(mr_fit, mae_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05) + theme(axis.text.x = element_text(angle = 90, hjust = 1))# + ylim(0, 0.5)
@@ -360,7 +356,7 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   Y_select = dataset$Y[sample, ]
   X_fit = dataset$X[-sample, ]
   Y_fit = dataset$Y[-sample, ]
-  sumstats_select = generate_sumstats(X_select, Y_select, normalize = TRUE)
+  sumstats_select = generate_sumstats(X_select, Y_select)
   sumstats_fit = generate_sumstats(X_fit, Y_fit, normalize = TRUE)
 
   # Select SNPs via sumstats and by cheating.

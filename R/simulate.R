@@ -1,3 +1,53 @@
+#' Gets matrix of TCE from observed network.
+#'
+#' @param R_obs D x D matrix of observed effects.
+#' @param normalize A length D vector which is used to convert R_tce from the
+#'   per-allele to the per-variance scale. Each entry should be the
+#'   std dev of the corresponding phenotype. Set to NULL for no normalization.
+#' @return D x D matrix of total causal effects.
+get_tce <- function(R_obs, normalize = NULL) {
+  diag_R_obs <- diag(R_obs)
+  R_tce <- (1 / (1 + diag_R_obs)) * R_obs
+  diag(R_tce) <- 1
+  if (!is.null(normalize)) {
+    R_tce <- R_tce * outer(normalize, 1 / normalize)
+  }
+  return(R_tce)
+}
+
+#' Gets observed network from direct effects.
+#'
+#' @param R D x D matrix of direct effects.
+#' @return D x D matrix of observed effects.
+get_observed <- function(R) {
+  D <- dim(R)[1]
+  as.matrix(R %*% solve(diag(D) - R))
+}
+
+#' Gets direct network from observed effects.
+#'
+#' @param R_obs D x D matrix of direct effects.
+#' @return D x D matrix of observed effects.
+get_direct <- function(R_obs) {
+  D <- dim(R_obs)[1]
+  R_obs %*% solve(diag(D) + R_obs)
+}
+
+#' Uses naive meta analysis method for TCE estimation with multiple SNPs.
+#'
+#' @param b_exp Vector of SNP effects on exposure variable.
+#' @param b_out Vector of SNP effects on outcome variable.
+#' @param se_exp Vector of SNP effects on exposure variable.
+#' @param se_out Vector of SNP effects on outcome variable.
+#' @return A list with two elements.
+#'   tce_hat: The total causal efffect estimate.
+#'   se_tce: The standard error of the estimate.
+naive_ma <- function(b_exp, b_out, se_exp, se_out) {
+  tce_hat <- mean(b_out / b_exp)
+  se_tce <- stats::sd(b_out / b_exp) / sqrt(length(b_exp))
+  list("beta.hat" = tce_hat, "beta.se" = se_tce)
+}
+
 #' Generates sparse effects and Mendelian randomization conditioning statistic.
 #'
 #' @description
@@ -257,24 +307,37 @@ select_snps_oracle <- function(beta_true) {
   purrr::map(data.frame(as.matrix(beta_true)), select)
 }
 
-#' Fits L1-regularized approximate inverse model.
+
+#' Fits L1-regularized approximate inverse while finding best lambda (cheating).
 #'
-#' @param R_tce D x D matrix of "total causal effects".
-#' @param lambda Float. Regularization strength.
-fit_regularized <- function(R_tce, lambda = 0.01) {
-  D <- dim(R_tce)[1]
-  resp <- diag(D)
-  R_tce_inv <- matrix(0L, nrow = D, ncol = D)
-  for (d in 1:D) {
-    fit <- glmnet::glmnet(R_tce, resp[, d],
-                          alpha = 1.0, lambda = lambda,
-                          standardize = FALSE, intercept = FALSE
+#' @param R_tce DxD matrix of "total causal effects".
+#' @param R DxD matrix of true "causal direct effects".
+fit_regularized_cheat <- function(R_tce, R) {
+  mae <- Inf
+  best_R <- NULL
+  for (lambda in c(0.0, 0.0001, 0.001, 0.01, 0.1)) {
+    tce_res <- tryCatch(
+      fit_regularized(R_tce, lambda),
+      error = function(cond) {
+        return(NA)
+      }
     )
-    R_tce_inv[, d] <- matrix(fit$beta)
+    lam_mae <- mean(abs(R - tce_res$R_hat))
+    if (is.na(lam_mae)) {
+      lam_mae <- Inf
+    }
+    if (lam_mae < mae) {
+      mae <- lam_mae
+      best_R <- tce_res
+    }
   }
-  R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
-  colnames(R_hat) <- colnames(R_tce)
-  rownames(R_hat) <- rownames(R_tce)
-  list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv)
+  return(best_R)
 }
 
+#' A simple helper function to count the number of instuments for each pair.
+#'
+#' @param selected A list of lists, output of `select_snps`.
+count_instruments <- function(selected){
+  D = length(selected[[1]])
+  do.call(cbind, purrr::map(selected, function(pheno){purrr::map(pheno[-D], sum)}))
+}

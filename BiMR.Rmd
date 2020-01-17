@@ -1,0 +1,131 @@
+```{r}
+require(tidyverse)
+require(foreach)
+```
+
+```{r, warning = FALSE, echo = FALSE, results = 'hide'}
+N = 5000
+M = 500
+D = 2
+noise = 0.5
+sd_net = 0.5
+niter = 1000
+
+plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
+  print(i)
+  dataset = generate_dataset(N, M, D, noise = noise, p_net = 1.0, sd_net = sd_net)
+  Y_sds <- apply(dataset$Y, 2, sd)
+  R_obs = get_observed(dataset$R)
+  R_tce = get_tce(R_obs, normalize=Y_sds)
+  R_normed <- fit_exact(R_tce)$R_hat
+
+  sample <- sample.int(n = N, size = floor(N/2), replace = FALSE)
+  X_select = dataset$X[sample, ]
+  Y_select = dataset$Y[sample, ]
+  X_fit = dataset$X[-sample, ]
+  Y_fit = dataset$Y[-sample, ]
+  sumstats_select = generate_sumstats(X_select, Y_select)
+  sumstats_fit = generate_sumstats(X_fit, Y_fit)
+
+  foreach(method = c("oracle", "naive", "test"), .combine = bind_rows) %do% {
+    if(method == "oracle"){
+      selected <- select_snps_oracle(dataset$beta)    
+    } else if (method == "naive"){
+      selected <- select_snps(sumstats_select, welch_thresh = 1.0)
+    } else if (method == "test"){
+      selected <- select_snps(sumstats_select, welch_thresh = 0.01)
+    }
+    tce_res <- fit_tce(sumstats_fit, selected, mr_method = "raps")
+    tibble(method = method, r1 = R_normed[1,2], r2 = R_normed[2, 1],
+           r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
+           n1_inst = sum(selected$P1$P2), n2_inst = sum(selected$P1$P2))
+  }
+}
+```
+
+```{r}
+plot_tibble %>% filter(method=="oracle") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat) + abs(r2-r2_hat))) + scale_color_gradient(limits=c(0, 0.5))
+plot_tibble %>% filter(method=="naive") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat) + abs(r2-r2_hat))) + scale_color_gradient(limits=c(0, 0.5))
+plot_tibble %>% filter(method=="test") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat) + abs(r2-r2_hat))) + scale_color_gradient(limits=c(0, 0.5))
+```
+
+```{r, warning=FALSE, echo = FALSE}
+N = 10000
+M = 10000
+D = 100
+C = 0
+sd_net = 0.5
+p_beta = 0.2
+sd_beta = 0.3
+p_net = 0.05
+symmetric = FALSE
+pleiotropy = FALSE
+sigma_g = matrix(1L, D, D)
+conf_ratio = 0
+noise = 0.5
+niter = 1
+nresample = 100
+
+plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
+  dataset <- generate_dataset(N, M, D, C, noise = noise, sd_net = sd_net, p_net = p_net, p_beta = p_beta, sd_beta = sd_beta, symmetric = symmetric, conf_ratio = conf_ratio, sigma_g = sigma_g, pleiotropy = pleiotropy)
+  Y_sds <- apply(dataset$Y, 2, sd)
+  R_obs = get_observed(dataset$R)
+  R_tce = get_tce(R_obs, normalize=Y_sds)
+  R_normed <- fit_exact(R_tce)$R_hat
+  sample <- sample.int(n = N, size = floor(N/2), replace = FALSE)
+  X_select = dataset$X[sample, ]
+  Y_select = dataset$Y[sample, ]
+  X_fit = dataset$X[-sample, ]
+  Y_fit = dataset$Y[-sample, ]
+  sumstats_select = generate_sumstats(X_select, Y_select)
+  selected <- select_snps(sumstats_select)
+
+  sumstats_fit = generate_sumstats(X_fit, Y_fit)
+  tce_res <- fit_tce(sumstats_fit, selected, mr_method="raps", shrink = FALSE)
+  tce_filt <- filter_tce_hat(tce_res$R_tce, tce_res$SE_tce, R_tce)
+  R_tce <- tce_filt$R_tce_true
+  print(c(iter=iter, pre=sum(count_instruments(selected) < 5)-D, post=sum(is.na(tce_filt$R_tce))))
+  tibble(iter=iter, pre=sum(count_instruments(selected) < 5)-D, post=sum(is.na(tce_filt$R_tce)))
+
+  tce_nans <- is.na(tce_filt$R_tce)
+  weights <- 1/tce_filt$SE_tce^2
+  weights[tce_nans] <- 0
+  diag(weights) <- 0  # The diag is currently inf.
+  diag(weights) <- max(weights)
+  
+  r_to_use <- 2*cv.convexPCA(tce_filt$R_tce, weights=weights)
+  print(r_to_use)
+  varmat <- matrix(0L, ncol = nresample, nrow = length(tce_filt$R_tce))
+  for (j in 1:nresample) {
+    R_tce_i <- stats::rnorm(length(tce_filt$R_tce),
+      mean = as.vector(tce_filt$R_tce),
+      sd = as.vector(tce_filt$SE_tce)
+    )
+    R_tce_i <- matrix(R_tce_i, nrow = nrow(tce_filt$R_tce))
+    R_tce_imp <- convexPCA(R_tce_i, weights = weights, r = r_to_use)
+    varmat[,j] <- R_tce_imp
+  }
+  sds <- matrix(apply(varmat, 1, sd), nrow = nrow(tce_filt$R_tce))
+  sds_na <- sds[tce_nans]
+  sds_obs <- sds[!tce_nans]
+  data_imp <- tibble(iter=i, sd=c(sds_na, sds_obs), obs=c(rep("Na", sum(tce_nans)), rep("Obs", sum(!tce_nans))))
+  ggplot(data_imp, aes(sd, color = obs)) + geom_density()
+  
+  rmse_unimp_true = sqrt(mean((R_tce - tce_filt$R_tce)^2, na.rm=TRUE))
+  rmse_impobs_unimp = sqrt(mean((R_tce_imp - tce_filt$R_tce)^2, na.rm=TRUE))
+  rmse_impall_true = sqrt(mean((R_tce_imp - R_tce)^2))
+  rmse_impobs_true = sqrt(mean((R_tce_imp[!tce_nans] - R_tce[!tce_nans])^2))
+  rmse_impnan_true = sqrt(mean((R_tce_imp[tce_nans] - R_tce[tce_nans])^2))
+  
+  print(c(rmse_unimp_true, rmse_impobs_unimp, rmse_impall_true, rmse_impobs_true, rmse_impnan_true))
+  # tibble(iter = iter, n_tce_nans = sum(tce_nans), metric = c("tce", "imp_tce_hat", "imp_tce", "imp_tce_obs", "imp_tce_nan"),
+  #        rmse = c(rmse_tce, rmse_imp_tce_hat, rmse_imp_tce, rmse_imp_tce_obs, rmse_imp_tce_nan))
+}
+
+  # 
+
+```
+
+```{r}
+ggplot(plot_tibble, aes(metric, rmse)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05) + ylim(0,1)
+```

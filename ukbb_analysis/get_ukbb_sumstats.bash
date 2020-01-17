@@ -25,6 +25,12 @@ awk -F"\t" -vmax_dls="${MAX_DOWNLOADS}" -vdl_dir="${DOWNLOAD_DIR}" '
     }
     next
   }
+  ($5 == "variants.tsv.bgz") {
+    if(system("[ ! -f " dl_dir "/" arr[4] " ]") == 0)
+      system(arr[1] " " arr[2] " " arr[3] " " dl_dir "/" arr[4])
+    else
+      print dl_dir "/" arr[4] " exists!"
+  }
   ($1 in phenotypes) && ($5 ~ /male.tsv.bgz$/)  {
     split($6, arr, " ")
     print "Processing " dl_dir "/" arr[4]

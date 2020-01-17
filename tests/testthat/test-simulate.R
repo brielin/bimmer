@@ -1,5 +1,37 @@
 set.seed(123)
 
+test_that("get_direct_observed_works", {
+  dataset <- generate_dataset(
+    100, 3, 3,
+    p_beta = 1.0, p_net = 0.5, noise = 0.0, pleiotropy = FALSE, sd_net = 0.5
+  )
+  R <- dataset$R
+  expect_equal(matrix(get_direct(get_observed(R))), matrix(R))
+})
+
+test_that("get_tce_fit_exact_works", {
+  dataset <- generate_dataset(
+    100, 3, 3,
+    p_beta = 1.0, p_net = 0.5, noise = 0.0, pleiotropy = FALSE, sd_net = 0.5
+  )
+  R <- dataset$R
+  expect_equal(matrix(fit_exact(get_tce(get_observed(R)))$R_hat), matrix(R))
+})
+
+test_that("naive_ma_works", {
+  beta_exp <- c(1, 2, 3, 4)
+  beta_out <- c(0.5, 2, 1.5, 4)
+  se_exp <- c(1, 1, 1, 1)
+  se_out <- c(1, 1, 1, 1)
+  tce_hat <- 0.75
+  se_tce <- 0.144337
+
+  res <- naive_ma(beta_exp, beta_out, se_exp, se_out)
+  expect_equal(res$beta.hat, tce_hat)
+  expect_equal(res$beta.se, se_tce, tolerance = 1e-6)
+})
+
+
 test_that("generate_beta_runs", {
   M <- 5
   D <- 2
@@ -152,4 +184,17 @@ test_that("select_snps_oracle_works", {
   expect_is(get("P2", snps), "list")
   expect_is(get("P2", get("P1", snps)), "logical")
   expect_equal(length(get("P2", get("P1", snps))), M)
+})
+
+test_that("fit_regularized_cheat_works", {
+  dataset <- generate_dataset(
+    100, 3, 3,
+    p_beta = 1.0, p_net = 0.5, noise = 0.0, pleiotropy = FALSE, sd_net = 0.5
+  )
+  R <- dataset$R
+  R_tce <- get_tce(get_observed(R))
+  fit_res <- fit_regularized_cheat(R_tce, R = as.matrix(R))
+  R_hat <- fit_res$R_hat
+  R_tce_inv <- fit_res$R_tce_inv
+  expect_equal(dim(R_hat), c(3, 3))
 })
