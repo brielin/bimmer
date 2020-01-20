@@ -4,7 +4,7 @@
 \alias{welch_test}
 \title{Simple implementation of a welch test.}
 \usage{
-welch_test(beta1, se1, beta2, se2, welch_thresh = 0.01)
+welch_test(beta1, se1, beta2, se2, welch_thresh = 0.05)
 }
 \arguments{
 \item{beta1}{Float or vector of floats, mean of the first sample.}
