@@ -7,10 +7,10 @@
 fit_tce(
   sumstats,
   selected_snps,
-  mr_method = c("mean", "ps", "aps", "raps"),
-  p_thresh = 1e-05,
+  mr_method = c("raps", "ps", "aps"),
   min_instruments = 5,
   shrink = FALSE,
+  verbose = FALSE,
   ...
 )
 }
@@ -25,12 +25,12 @@ the number of SNPs and TRUE indicating to use that SNP.}
 \item{mr_method}{String, one of c("mean", "raps"). Method to use for TCE
 estimate between every pair.}
 
-\item{p_thresh}{Float. p-value threshold for inclusion.}
-
 \item{min_instruments}{Integer. Return NA if there are less than
 this many instruments for a pair of phenotypes.}
 
 \item{shrink}{Boolean. True to shrink estimates of R_tce to 0.}
+
+\item{verbose}{Bpplean. True to print progress.}
 
 \item{...}{Additional parameters to pass to mr_method.}
 }

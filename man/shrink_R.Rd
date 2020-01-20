@@ -4,17 +4,13 @@
 \alias{shrink_R}
 \title{Shrinks the estimate of the total causal effect matrix.}
 \usage{
-shrink_R(R_tce, SE_tce, N_obs, lambda = NULL)
+shrink_R(R_tce, SE_tce, lambda = NULL)
 }
 \arguments{
 \item{R_tce}{A matrix of floats with diagonals equal to 1.0. The estimate
 of R_tce to be shunk.}
 
-\item{SE_tce}{A matrix of floats with diagonals equal to 0.0. Standard errors
-of the entries in R_tce.}
-
-\item{N_obs}{A matrix of ints with diagonals equal to 0.0. The number of
-samples (instruments) used in the estimate of R_tce for each entry.}
+\item{SE_tce}{A matrix of floats, standard errors of the entries in `R_tce`.}
 
 \item{lambda}{Float less than 1.0 or NULL. Amount of shrinkage. NULL
 computes shrinkage automatically.}

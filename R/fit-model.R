@@ -123,10 +123,13 @@ welch_filter_both_sig <- function(beta1, se1, beta2, se2, sig2,
 #'
 #' @param sumstats List with elements "beta_hat", "se_hat", "n_mat", and
 #'   "p_value", each M x D matrices.
+#' @param snps_to_use List or NULL. A list named by phenotypes where each list
+#'   entry is a list of SNPs that can be used for that phenotype. Usually
+#'   the result of clumping to avoid correlated SNPs.
 #' @param p_thresh Float, p-value threshold to use for SNP inclusion.
 #' @param welch_thresh FLOAT, p-value threshold for Welch test of equal betas.
 #' @param verbose Bool. If true, print phenotype label during iteration.
-select_snps <- function(sumstats, snps_to_use = FALSE, p_thresh = 1e-4,
+select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
                         welch_thresh = 0.05, verbose = FALSE) {
   z_scores <- as.matrix(abs(sumstats$beta_hat / sumstats$se_hat))
   p_vals <- 2 * (1 - stats::pnorm(z_scores))
@@ -136,7 +139,7 @@ select_snps <- function(sumstats, snps_to_use = FALSE, p_thresh = 1e-4,
       print(pheno)
     }
     snp_mask <- sig_p_vals[, pheno]
-    if (!identical(snps_to_use, FALSE)) {
+    if (!is.null(snps_to_use)) {
       pheno_snps <- get(pheno, snps_to_use)
       snp_mask <- (rownames(sumstats$beta_hat) %in% pheno_snps) & snp_mask
     }
@@ -162,8 +165,7 @@ select_snps <- function(sumstats, snps_to_use = FALSE, p_thresh = 1e-4,
 #'
 #' @param R_tce A matrix of floats with diagonals equal to 1.0. The estimate
 #'   of R_tce to be shunk.
-#' @param N_obs A matrix of ints with diagonals equal to 0.0. The number of
-#'   samples (instruments) used in the estimate of R_tce for each entry.
+#' @param SE_tce A matrix of floats, standard errors of the entries in `R_tce`.
 #' @param lambda Float less than 1.0 or NULL. Amount of shrinkage. NULL
 #'   computes shrinkage automatically.
 shrink_R <- function(R_tce, SE_tce, lambda = NULL) {
@@ -189,7 +191,6 @@ shrink_R <- function(R_tce, SE_tce, lambda = NULL) {
 #' @param selected_snps A list of lists with names of each equal to the
 #'   phenotype names. The inner lists are boolean vectors of length equal to
 #'   the number of SNPs and TRUE indicating to use that SNP.
-#' @param p_thresh Float. p-value threshold for inclusion.
 #' @param mr_method String, one of c("mean", "raps"). Method to use for TCE
 #'   estimate between every pair.
 #' @param min_instruments Integer. Return NA if there are less than
@@ -344,8 +345,10 @@ resample_tce <- function(R_tce, SE_tce, niter = 100, impute_function = NULL,
 #' @param SE_tce DxD matrix of floats. Standard errors of entries in R_tce.
 #' @param fit_method_func Function. Method for inferring R_cde given R_tce.
 #'   Must return a list with entry "R_hat".
+#' @param impute_function Function. Method to use for imputing missing values in
+#'   `R_tce`.
 #' @param niter Integer. Maximum number of resampling iterations.
-#' @param rmse_target Float. Stop when change in observed SE of CDE is below `err`.
+#' @param rmse_target Float. Stop when change in SE of CDE is below this.
 #' @param verbose Boolean. True to print convergence progress.
 resample_cde <- function(R_tce, SE_tce, fit_method_func, impute_function = NULL,
                          niter = 100, rmse_target = 1e-3, verbose = FALSE) {
@@ -380,7 +383,7 @@ resample_cde <- function(R_tce, SE_tce, fit_method_func, impute_function = NULL,
       SE_cde <- SE_cde_next
     }
     if (verbose) {
-      print(c(i, eps))
+      print(c(i, rmse_change))
     }
   }
   R_cde <- matrix(R_cde, nrow = nrow(R_tce))

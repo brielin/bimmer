@@ -4,22 +4,27 @@
 \alias{select_snps}
 \title{Selects SNPs for inclusion in MR by comparing per-variance effect sizes.}
 \usage{
-select_snps(sumstats, p_thresh = 1e-05, welch_thresh = 0.01)
+select_snps(
+  sumstats,
+  snps_to_use = NULL,
+  p_thresh = 1e-04,
+  welch_thresh = 0.05,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{sumstats}{List with elements "beta_hat", "se_hat", "n_mat", and
 "p_value", each M x D matrices.}
 
+\item{snps_to_use}{List or NULL. A list named by phenotypes where each list
+entry is a list of SNPs that can be used for that phenotype. Usually
+the result of clumping to avoid correlated SNPs.}
+
 \item{p_thresh}{Float, p-value threshold to use for SNP inclusion.}
 
 \item{welch_thresh}{FLOAT, p-value threshold for Welch test of equal betas.}
-}
-\value{
-A list of lists. The outer list is indexed by the phenotype names.
-  Each inner list is also indexed by the phenotype names, and the value of
-  result$P1$P2 is a boolean vector of length M corresponding to the SNPs to
-  use in the estimation of TCE of P1 on P2 for all SNPs meeting p_thresh.
-  on P1. The names of these SNPs are stored in the entry $names.
+
+\item{verbose}{Bool. If true, print phenotype label during iteration.}
 }
 \description{
 Notes: sumstats passed to this function must be computed on the per-variance

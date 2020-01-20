@@ -4,8 +4,8 @@
 #' If there are entries with SE 0, they will receive the same weight as the
 #' largest weighted non-zero entry, rather than Infinity.
 #'
-#' @param SE. A matrix of floats, with missing entries (NA) allowed.
-#' @param max_weight. The maximum allowable weight to use. Entries with 1/SE^2
+#' @param SE A matrix of floats, with missing entries (NA) allowed.
+#' @param max_weight The maximum allowable weight to use. Entries with 1/SE^2
 #'   above `max_weight` will get weight `max_weight`.
 make_weights <- function(SE, max_weight = NULL) {
   weights <- 1 / SE^2
@@ -27,6 +27,7 @@ make_weights <- function(SE, max_weight = NULL) {
 #' @param Y Matrix. See `convex_pca`.
 #' @param r Float. Maximum nuclear norm of the returned solution.
 #' @param weights Matrix. See `convex_pca`.
+#' @param its Integer. See `convex_pca`.
 #' @param rmse_target Float. See `convex_pca`.
 #' @param warm_start Matrix. See `convex_pca`
 #' @param verbose Boolean. See `convex_pca`
@@ -78,9 +79,10 @@ convex_pca_worker <- function(Y, r = NULL, weights = NULL, its = 1000,
 #'
 #' @param Y See `convex_pca`.
 #' @param rs A list of r values to try.
-#' @param Weights See `convex_pca`.
+#' @param weights See `convex_pca`.
 #' @param its See `convex_pca`.
 #' @param rmse_target See `convex_pca`.
+#' @param verbose Print progress.
 find_best_r <- function(Y, rs = NULL, weights = NULL, its = 1000,
                         rmse_target = 1e-3, verbose = FALSE) {
   if (is.null(weights)) {
@@ -92,7 +94,7 @@ find_best_r <- function(Y, rs = NULL, weights = NULL, its = 1000,
     rs <- 10^seq(0, log10(sum(Y^2, na.rm = TRUE) + 1), length.out = 10)
   }
   # Break the matrix into training and test sets, equally and at random
-  rand <- matrix(runif(nrow(Y) * ncol(Y)), nrow(Y))
+  rand <- matrix(stats::runif(nrow(Y) * ncol(Y)), nrow(Y))
   train <- rand < 2 / 3
   test <- !train & (weights > 0)
 
@@ -149,8 +151,6 @@ find_best_r <- function(Y, rs = NULL, weights = NULL, its = 1000,
 #' @param its Integer. Maximum number of iterations to run.
 #' @param rmse_target Float. Stop when rmse change in solution is less than
 #'   `rmse_target`.
-#' @param warm_start Matrix or `NULL`. If non-`NULL`, use this matrix as
-#'   initial solution.
 #' @param verbose Boolean. `TRUE` to print convergance progress.
 convex_pca <- function(Y, r = NULL, weights = NULL, n_components = NULL,
                        its = 1000, rmse_target = 1e-4, verbose = FALSE) {

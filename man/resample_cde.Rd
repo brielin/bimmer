@@ -4,7 +4,15 @@
 \alias{resample_cde}
 \title{Resample CDE estimate using observed standard errors of TCE.}
 \usage{
-resample_cde(R_tce, SE_tce, fit_method_func, niter = 100)
+resample_cde(
+  R_tce,
+  SE_tce,
+  fit_method_func,
+  impute_function = NULL,
+  niter = 100,
+  rmse_target = 0.001,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{R_tce}{DxD matrix of floats. Estimates of R_tce to resample.}
@@ -14,7 +22,14 @@ resample_cde(R_tce, SE_tce, fit_method_func, niter = 100)
 \item{fit_method_func}{Function. Method for inferring R_cde given R_tce.
 Must return a list with entry "R_hat".}
 
-\item{niter}{Integer. Number of resampling iterations.}
+\item{niter}{Integer. Maximum number of resampling iterations.}
+
+\item{rmse_target}{Float. Stop when change in SE of CDE is below this.}
+
+\item{verbose}{Boolean. True to print convergence progress.}
+
+\item{impute_func}{Function. Method to use for imputing missing values in
+`R_tce`.}
 }
 \description{
 Resample CDE estimate using observed standard errors of TCE.

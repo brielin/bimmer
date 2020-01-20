@@ -4,15 +4,12 @@
 \alias{parse_ukbbss_neale}
 \title{Reads single sumstats file in the format of the Neale lab UKBB analysis.}
 \usage{
-parse_ukbbss_neale(sumstats, min_maf = 0.001)
+parse_ukbbss_neale(sumstats)
 }
 \arguments{
 \item{sumstats}{Tibble. Must include ccolumns "minor_AF",
 "low_confidence_variant", "tstat", "n_completet_samples", "beta", "se"
 and "pval".}
-
-\item{min_maf}{Float. Filter alleles with minor allele frequency less than
-min_maf.}
 }
 \description{
 Note that this converts beta values to a normalized scale if they are not

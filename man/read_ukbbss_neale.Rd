@@ -4,12 +4,12 @@
 \alias{read_ukbbss_neale}
 \title{Reads a pattern of summary statistics formatted according to the Neale lab.}
 \usage{
-read_ukbbss_neale(file_pattern, min_maf = 0.001)
+read_ukbbss_neale(file_pattern, chunk_size = 20)
 }
 \arguments{
 \item{file_pattern}{A glob string specifying the files to read.}
 
-\item{min_maf}{Float, minimum allele frequency to keep.}
+\item{chunk_size}{Number of phenotypes to pivot at a time.}
 }
 \description{
 Reads a pattern of summary statistics formatted according to the Neale lab.
