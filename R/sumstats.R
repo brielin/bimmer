@@ -3,7 +3,7 @@
 #' @param filename A string ending in .tsv.gz or .tsv.bgz to be read.
 read_gz_tsv <- function(filename) {
   print(filename)
-  readr::read_tsv(gzfile(filename))
+  return(readr::read_tsv(gzfile(filename)))
 }
 
 #' Wrapper for read_gz_tsv to read all files matching pattern.
@@ -19,9 +19,9 @@ read_file_pattern <- function(file_pattern) {
     x[1]
   })
   files <- stats::setNames(as.list(files), names)
-  lapply(files, function(file) {
+  return(lapply(files, function(file) {
     parse_ukbbss_neale(read_gz_tsv(file))
-  })
+  }))
 }
 
 #' Reads single sumstats file in the format of the Neale lab UKBB analysis.
@@ -45,7 +45,8 @@ parse_ukbbss_neale <- function(sumstats) {
   sumstats$tstat[sumstats$low_confidence_variant == TRUE] <- NA
   sumstats <- sumstats %>%
     dplyr::filter(!duplicated(sumstats$rsid)) %>%
-    dplyr::mutate(se_hat = 1 / sqrt(n_complete_samples), beta_hat = tstat * se_hat) %>%
+    dplyr::mutate(
+      se_hat = 1 / sqrt(n_complete_samples), beta_hat = tstat * se_hat) %>%
     dplyr::select(rsid, beta_hat, se_hat)
   return(sumstats)
 }
@@ -60,13 +61,15 @@ parse_sumstats_multi_trait <- function(sumstats) {
   sumstats <- dplyr::bind_rows(sumstats, .id = "trait")
   beta_hat <- sumstats %>%
     dplyr::select("rsid", "trait", "beta_hat") %>%
-    tidyr::pivot_wider(names_from = "trait", values_from = "beta_hat", id_cols = "rsid") %>%
+    tidyr::pivot_wider(
+      names_from = "trait", values_from = "beta_hat", id_cols = "rsid") %>%
     tibble::column_to_rownames("rsid")
   se_hat <- sumstats %>%
     dplyr::select("rsid", "trait", "se_hat") %>%
-    tidyr::pivot_wider(names_from = "trait", values_from = "se_hat", id_cols = "rsid") %>%
+    tidyr::pivot_wider(
+      names_from = "trait", values_from = "se_hat", id_cols = "rsid") %>%
     tibble::column_to_rownames("rsid")
-  list("beta_hat" = beta_hat, "se_hat" = se_hat)
+  return(list("beta_hat" = beta_hat, "se_hat" = se_hat))
 }
 
 #' Reads a pattern of summary statistics formatted according to the Neale lab.
@@ -90,15 +93,18 @@ read_ukbbss_neale <- function(file_pattern, chunk_size = 20) {
     ss_chunk <- dplyr::bind_rows(ss_chunk, .id = "trait")
     beta_chunk <- ss_chunk %>%
       dplyr::select("rsid", "trait", "beta_hat") %>%
-      tidyr::pivot_wider(names_from = "trait", values_from = "beta_hat", id_cols = "rsid")
+      tidyr::pivot_wider(
+        names_from = "trait", values_from = "beta_hat", id_cols = "rsid")
     se_chunk <- ss_chunk %>%
       dplyr::select("rsid", "trait", "se_hat") %>%
-      tidyr::pivot_wider(names_from = "trait", values_from = "se_hat", id_cols = "rsid")
+      tidyr::pivot_wider(
+        names_from = "trait", values_from = "se_hat", id_cols = "rsid")
     list("beta" = beta_chunk, "se" = se_chunk)
   }
   num_stats <- length(sumstats)
   if (num_stats %% chunk_size > 0) {
-    nread_seq <- c(rep(chunk_size, num_stats %/% chunk_size), num_stats %% chunk_size)
+    nread_seq <- c(rep(chunk_size, num_stats %/% chunk_size),
+                   num_stats %% chunk_size)
   } else {
     nread_seq <- rep(chunk_size, num_stats %/% chunk_size)
   }
@@ -109,29 +115,32 @@ read_ukbbss_neale <- function(file_pattern, chunk_size = 20) {
   if (all(sapply(pivoted_chunks$beta, function(x) {
     all.equal(x$rsid, pivoted_chunks$beta[[1]]$rsid)
   }))) {
-    list(
+    return(list(
       "beta_hat" = dplyr::bind_cols(pivoted_chunks$beta) %>%
         tibble::column_to_rownames("rsid") %>%
         dplyr::select(-dplyr::starts_with("rsid")),
       "se_hat" = dplyr::bind_cols(pivoted_chunks$se) %>%
         tibble::column_to_rownames("rsid") %>%
         dplyr::select(-dplyr::starts_with("rsid"))
-    )
+    ))
   } else {
-    warning("The variant IDs in each chunk do not match! Performing a full join. This may take a while.")
-    list(
-      "beta_hat" = plyr::join_all(pivoted_chunks$beta, by = "rsid", type = "full", match = "first") %>%
+    warning("The variant IDs in each chunk do not match! Performing a full join.
+            This may take a while.")
+    return(list(
+      "beta_hat" = plyr::join_all(
+        pivoted_chunks$beta, by = "rsid", type = "full", match = "first") %>%
         tibble::column_to_rownames("rsid"),
-      "se_hat" = plyr::join_all(pivoted_chunks$se, by = "rsid", type = "full", match = "first") %>%
+      "se_hat" = plyr::join_all(
+        pivoted_chunks$se, by = "rsid", type = "full", match = "first") %>%
         tibble::column_to_rownames("rsid")
-    )
+    ))
   }
 }
 
-#' Reads a file pattern corresponding to a set of files with potential instruments.
+#' Reads a file pattern corresponding to files with potential instruments.
 #'
-#' @param file_pattern A file pattern corresponding to a set of files, one for each
-#'   phenotype. Each file should contain a list of potential SNPs to use as
+#' @param file_pattern A file pattern corresponding to a set of files, one for
+#'   each phenotype. Each file should contain a list of potential SNPs to use as
 #'   instruments for that phenotype.
 read_snp_list <- function(file_pattern) {
   files <- Sys.glob(file_pattern)
@@ -143,7 +152,7 @@ read_snp_list <- function(file_pattern) {
     x[1]
   })
   files <- stats::setNames(as.list(files), names)
-  lapply(files, function(file) {
+  return(lapply(files, function(file) {
     readLines(file)
-  })
+  }))
 }

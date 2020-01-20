@@ -46,7 +46,7 @@ test_that("welch_test_wrapper_works", {
   b2 <- 1
   s1 <- 0.01
   s2 <- 0.01
-  expect_false(welch_filter_both_sig(b2, s2, b1, s1, sig2=c(1)))
+  expect_false(welch_filter_both_sig(b2, s2, b1, s1, sig2 = c(1)))
 })
 
 test_that("select_snps_works", {
@@ -116,16 +116,16 @@ test_that("delta_cde_runs", {
 })
 
 test_that("filter_tce_filters", {
-  R_tce <- matrix(c(0.5, 2, 0.5, 0.5), nrow=2)
-  SE_tce <- matrix(c(5, 1, NaN, 0.5 ), nrow=2)
+  R_tce <- matrix(c(0.5, 2, 0.5, 0.5), nrow = 2)
+  SE_tce <- matrix(c(5, 1, NaN, 0.5), nrow = 2)
   filt_res <- filter_tce(R_tce, SE_tce, max_nan_perc = 1)
-  expect_equal(filt_res$R_tce, matrix(c(NA, NA, NA, 0.5), nrow=2))
-  expect_equal(filt_res$SE_tce, matrix(c(NA, NA, NA, 0.5), nrow=2))
+  expect_equal(filt_res$R_tce, matrix(c(NA, NA, NA, 0.5), nrow = 2))
+  expect_equal(filt_res$SE_tce, matrix(c(NA, NA, NA, 0.5), nrow = 2))
 })
 
 test_that("filter_tce_drops", {
-  R_tce <- matrix(c(1, 0, 0, NA), nrow=2)
-  SE_tce <- matrix(c(1, 1, 1, 1), nrow=2)
+  R_tce <- matrix(c(1, 0, 0, NA), nrow = 2)
+  SE_tce <- matrix(c(1, 1, 1, 1), nrow = 2)
   filt_res <- filter_tce(R_tce, SE_tce, max_nan_perc = 0.1)
   expect_equal(filt_res$R_tce, 1)
 })
@@ -140,7 +140,8 @@ test_that("fit_error_exactly_zero", {
   Y_sds <- apply(dataset_exact$Y, 2, sd)
   sumstats_exact <- generate_sumstats(dataset_exact$X, dataset_exact$Y)
   selected <- select_snps_oracle(dataset_exact$beta)
-  R_tce_hat <- fit_tce(sumstats_exact, selected, "mean", min_instruments = 1)$R_tce
+  R_tce_hat <- fit_tce(
+    sumstats_exact, selected, "mean", min_instruments = 1)$R_tce
   R_tce <- as.matrix(get_tce(get_observed(dataset_exact$R), normalize = Y_sds))
   expect_equal(R_tce_hat, R_tce)
 })

@@ -6,7 +6,7 @@ fit_exact <- function(R_tce) {
   D <- dim(R_tce)[1]
   R_tce_inv <- solve(R_tce)
   R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
-  list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv)
+  return(list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv))
 }
 
 #' Fits L1-regularized approximate inverse model.
@@ -19,26 +19,31 @@ fit_regularized <- function(R_tce, lambda = 0.01) {
   R_tce_inv <- matrix(0L, nrow = D, ncol = D)
   for (d in 1:D) {
     fit <- glmnet::glmnet(R_tce, resp[, d],
-                          alpha = 1.0, lambda = lambda,
-                          standardize = FALSE, intercept = FALSE
+      alpha = 1.0, lambda = lambda,
+      standardize = FALSE, intercept = FALSE
     )
     R_tce_inv[, d] <- matrix(fit$beta)
   }
   R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
   colnames(R_hat) <- colnames(R_tce)
   rownames(R_hat) <- rownames(R_tce)
-  list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv)
+  return(list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv))
 }
 
 #' Fits L1-regularized approximate inverse model.
 #'
 #' @param R_tce D x D matrix of "total causal effects".
-#' @param weights Length D vector of per-row weights. Default is 1 for each observation.
+#' @param weights Length D vector of per-row weights. Default is 1 for each
+#'   observation.
 #' @param k Number of zero-values to drop during CV.
 #' @param nfolds Number of folds. NULL for k=1 to use leave-one-out CV.
 #' @param lambda Vector of lambda values to try.
 cv_fit_regularized <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
-                               lambda = c(0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001)) {
+                               lambda = NULL) {
+  if(is.null(lambda)){
+    lambda = c(0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001)
+  }
+
   D <- dim(R_tce)[1]
   if (k == 1) {
     nfolds <- D - 1
@@ -64,12 +69,13 @@ cv_fit_regularized <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
       pred <- glmnet::predict.glmnet(fit, R_tce[index, , drop = FALSE])
       pred_one <- glmnet::predict.glmnet(fit, R_tce[d, , drop = FALSE])
       # Weight such that the zero-rows contribute D-1 entries to score.
-      error[d * fold, ] <- colSums(pred**2) * round((D - 1) / k) + (1 - pred_one)**2
+      fold_err <- colSums(pred**2) * round((D - 1) / k) + (1 - pred_one)**2
+      error[d * fold, ] <- fold_err
     }
   }
   scores <- colSums(error)
   best_lambda <- lambda[which.min(scores)]
-  fit_regularized(R_tce, best_lambda)
+  return(fit_regularized(R_tce, best_lambda))
 }
 
 
@@ -85,27 +91,28 @@ cv_fit_regularized <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
 #' @param welch_thresh Float, p_value threshold for significance.
 #' @return Float
 welch_test <- function(beta1, se1, beta2, se2, welch_thresh = 0.05) {
-  n1 <- 1/(se1**2)
-  n2 <- 1/(se2**2)
+  n1 <- 1 / (se1**2)
+  n2 <- 1 / (se2**2)
   t_val <- (abs(beta2) - abs(beta1)) / sqrt(se1^2 + se2^2)
   nu <- (se1^2 + se2^2)^2 / (se1^4 / (n1 - 1) + se2^4 / (n2 - 1))
   res <- stats::pt(t_val, round(nu)) < welch_thresh
-  res[is.na(t_val)] = FALSE
+  res[is.na(t_val)] <- FALSE
   return(res)
 }
 
-#' Simple wrapper for `welch_test` that sets SNPs that are significant for both to FALSE.
+#' Wrapper for `welch_test` that sets SNPs significant for both to FALSE.
 #'
 #' @param beta1 Float or vector of floats, mean of the first sample.
 #' @param beta2 Float or vector of floats, mean of the second sample.
 #' @param se1 Float or vector of floats, SD of estimate of mu1.
 #' @param se2 Float or vector of floats, SD of estimate of mu2.
-#' @param sig2 Bool or vector of bools indicating whether this SNP is also significant for
-#'   phenotype two.
+#' @param sig2 Bool or vector of bools indicating whether this SNP is also
+#'   significant for phenotype two.
 #' @param welch_thresh Float, p_value threshold for significance.
-welch_filter_both_sig <- function(beta1, se1, beta2, se2, sig2, welch_thresh = 0.05) {
+welch_filter_both_sig <- function(beta1, se1, beta2, se2, sig2,
+                                  welch_thresh = 0.05) {
   welch_res <- welch_test(beta1, se1, beta2, se2, welch_thresh)
-  welch_res[sig2] = FALSE
+  welch_res[sig2] <- FALSE
   return(welch_res)
 }
 
@@ -119,15 +126,19 @@ welch_filter_both_sig <- function(beta1, se1, beta2, se2, sig2, welch_thresh = 0
 #' @param p_thresh Float, p-value threshold to use for SNP inclusion.
 #' @param welch_thresh FLOAT, p-value threshold for Welch test of equal betas.
 #' @param verbose Bool. If true, print phenotype label during iteration.
-select_snps <- function(sumstats, snps_to_use = FALSE, p_thresh = 1e-4, welch_thresh = 0.05, verbose = FALSE){
-  p_vals <- 2 * (1 - stats::pnorm(as.matrix(abs(sumstats$beta_hat/sumstats$se_hat))))
+select_snps <- function(sumstats, snps_to_use = FALSE, p_thresh = 1e-4,
+                        welch_thresh = 0.05, verbose = FALSE) {
+  z_scores <- as.matrix(abs(sumstats$beta_hat / sumstats$se_hat))
+  p_vals <- 2 * (1 - stats::pnorm(z_scores))
   sig_p_vals <- data.frame(p_vals < p_thresh)
-  run_pheno <- function(pheno){
-    if(verbose){ print(pheno) }
+  run_pheno <- function(pheno) {
+    if (verbose) {
+      print(pheno)
+    }
     snp_mask <- sig_p_vals[, pheno]
-    if(!identical(snps_to_use, FALSE)){
-      pheno_snps = get(pheno, snps_to_use)
-      snp_mask = (rownames(sumstats$beta_hat) %in% pheno_snps) & snp_mask
+    if (!identical(snps_to_use, FALSE)) {
+      pheno_snps <- get(pheno, snps_to_use)
+      snp_mask <- (rownames(sumstats$beta_hat) %in% pheno_snps) & snp_mask
     }
     snp_mask[is.na(snp_mask)] <- FALSE
     beta_sub <- sumstats$beta_hat[snp_mask, ]
@@ -135,12 +146,14 @@ select_snps <- function(sumstats, snps_to_use = FALSE, p_thresh = 1e-4, welch_th
     sig_pv_sub <- sig_p_vals[snp_mask, ]
     beta <- beta_sub[, pheno]
     se <- se_sub[, pheno]
-    snps <- purrr::pmap(list(beta_sub, se_sub, sig_pv_sub), welch_filter_both_sig, beta1=beta, se1=se, welch_thresh=welch_thresh)
+    snps <- purrr::pmap(list(beta_sub, se_sub, sig_pv_sub),
+                        welch_filter_both_sig,
+                        beta1 = beta, se1 = se, welch_thresh = welch_thresh)
     snps$names <- rownames(beta_sub)
     return(snps)
   }
-  snps_to_use = purrr::map(colnames(sumstats$beta_hat), run_pheno)
-  names(snps_to_use) = colnames(sumstats$beta_hat)
+  snps_to_use <- purrr::map(colnames(sumstats$beta_hat), run_pheno)
+  names(snps_to_use) <- colnames(sumstats$beta_hat)
   return(snps_to_use)
 }
 
@@ -184,13 +197,8 @@ shrink_R <- function(R_tce, SE_tce, lambda = NULL) {
 #' @param shrink Boolean. True to shrink estimates of R_tce to 0.
 #' @param verbose Bpplean. True to print progress.
 #' @param ... Additional parameters to pass to mr_method.
-fit_tce <- function(sumstats,
-                    selected_snps,
-                    mr_method = c("raps", "ps", "aps", "mean"),
-                    min_instruments = 5,
-                    shrink = FALSE,
-                    verbose = FALSE,
-                    ...) {
+fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps"),
+                    min_instruments = 5, shrink = FALSE, verbose = FALSE, ...) {
   mr_method_func <- switch(mr_method,
     mean = naive_ma,
     ps = mr.raps::mr.raps,
@@ -203,21 +211,28 @@ fit_tce <- function(sumstats,
   )
 
   # all.equal returns a STRING if they dont have the same length??
-  if(!isTRUE(all.equal(names(sumstats$beta_hat), names(selected_snps)))){
-    common_phenotypes <- intersect(names(sumstats$beta_hat), names(selected_snps))
-    sumstats$beta_hat <- dplyr::select(sumstats$beta_hat, dplyr::one_of(common_phenotypes))
-    sumstats$se_hat <- dplyr::select(sumstats$se_hat, dplyr::one_of(common_phenotypes))
-    selected_snps <- purrr::map(selected_snps[common_phenotypes], function(x){x[c(common_phenotypes, "names")]})
+  if (!isTRUE(all.equal(names(sumstats$beta_hat), names(selected_snps)))) {
+    common_phenotypes <- intersect(
+      names(sumstats$beta_hat), names(selected_snps))
+    sumstats$beta_hat <- dplyr::select(
+      sumstats$beta_hat, dplyr::one_of(common_phenotypes))
+    sumstats$se_hat <- dplyr::select(
+      sumstats$se_hat, dplyr::one_of(common_phenotypes))
+    selected_snps <- purrr::map(selected_snps[common_phenotypes], function(x) {
+      x[c(common_phenotypes, "names")]
+    })
   }
 
-  run_tce_row <- function(snps_to_use, exp){
-    if(verbose){ print(exp) }
-    beta_sub <- sumstats$beta_hat[snps_to_use$names,]
-    se_sub <- sumstats$se_hat[snps_to_use$names,]
+  run_tce_row <- function(snps_to_use, exp) {
+    if (verbose) {
+      print(exp)
+    }
+    beta_sub <- sumstats$beta_hat[snps_to_use$names, ]
+    se_sub <- sumstats$se_hat[snps_to_use$names, ]
     beta_exp <- beta_sub[, exp]
     se_exp <- se_sub[, exp]
-    run_tce_entry <- function(beta_out, se_out, out){
-      snp_mask = get(out, snps_to_use) & !is.na(beta_out) & !is.na(beta_exp)
+    run_tce_entry <- function(beta_out, se_out, out) {
+      snp_mask <- get(out, snps_to_use) & !is.na(beta_out) & !is.na(beta_exp)
       n_instruments <- sum(snp_mask)
       if (n_instruments < min_instruments) {
         list("R" = NA, "SE" = NA, "N" = n_instruments)
@@ -232,9 +247,10 @@ fit_tce <- function(sumstats,
               se_out = se_out[snp_mask],
               ...
             )
-            list("R" = mr_res$beta.hat, "SE" = mr_res$beta.se, "N" = n_instruments)
+            return(list("R" = mr_res$beta.hat, "SE" = mr_res$beta.se,
+                        "N" = n_instruments))
           },
-          error=function(cond){
+          error = function(cond) {
             message(c("Error when processing ", exp, " ", out))
             message(cond)
             list("R" = NA, "SE" = NA, "N" = n_instruments)
@@ -242,18 +258,22 @@ fit_tce <- function(sumstats,
         )
       }
     }
-    purrr::pmap_dfr(list(beta_sub, se_sub, colnames(beta_sub)), run_tce_entry, .id = "out")
+    return(purrr::pmap_dfr(
+      list(beta_sub, se_sub, colnames(beta_sub)), run_tce_entry, .id = "out"))
   }
   tce_res <- purrr::imap_dfr(selected_snps, run_tce_row, .id = "exp")
 
   R_tce <- tce_res %>%
-    tidyr::pivot_wider(names_from = "out", values_from = "R", id_cols = "exp") %>%
+    tidyr::pivot_wider(
+      names_from = "out", values_from = "R", id_cols = "exp") %>%
     tibble::column_to_rownames("exp")
   SE_tce <- tce_res %>%
-    tidyr::pivot_wider(names_from = "out", values_from = "SE", id_cols = "exp") %>%
+    tidyr::pivot_wider(
+      names_from = "out", values_from = "SE", id_cols = "exp") %>%
     tibble::column_to_rownames("exp")
   N_obs <- tce_res %>%
-    tidyr::pivot_wider(names_from = "out", values_from = "N", id_cols = "exp") %>%
+    tidyr::pivot_wider(
+      names_from = "out", values_from = "N", id_cols = "exp") %>%
     tibble::column_to_rownames("exp")
   diag(R_tce) <- 1.0
   diag(SE_tce) <- 0.0
@@ -266,14 +286,23 @@ fit_tce <- function(sumstats,
       R_tce <- shrink_R(R_tce, SE_tce, lambda = shrink)
     }
   }
-  list("R_tce" = as.matrix(R_tce), "SE_tce" = as.matrix(SE_tce), "N_obs" = as.matrix(N_obs))
+  return(list("R_tce" = as.matrix(R_tce), "SE_tce" = as.matrix(SE_tce),
+              "N_obs" = as.matrix(N_obs)))
 }
 
-#' Resample TCE estimates using observed standard errors while imputing missing values.
+#' Resample TCE estimates using observed SEs while imputing missing values.
 #'
-resample_tce <- function(R_tce, SE_tce, niter=100, impute_function = NULL, rmse_target = 1e-4, verbose=FALSE){
-  if(any(is.na(R_tce)) && is.null(impute_function)){
-    stop("There are NA values in the R_tce, matrix. You must provide an imputation function.")
+#' @param R_tce Matrix.
+#' @param SE_tce Matrix, same dimensnions as `R_tce`.
+#' @param niter Integer, number of resampling iterations.
+#' @param impute_function Function to use to impute values of R_tce.
+#' @param rmse_target Float. Target RMSE change per iteration to stop.
+#' @param verbose Bool. True to print progress.
+resample_tce <- function(R_tce, SE_tce, niter = 100, impute_function = NULL,
+                         rmse_target = 1e-4, verbose = FALSE) {
+  if (any(is.na(R_tce)) && is.null(impute_function)) {
+    stop("There are NA values in the R_tce, matrix.
+         You must provide an imputation function.")
   }
   run_sum <- rep(0, length(R_tce))
   run_sum_sq <- rep(0, length(R_tce))
@@ -281,28 +310,32 @@ resample_tce <- function(R_tce, SE_tce, niter=100, impute_function = NULL, rmse_
   R <- rep(0, length(R_tce))
   for (i in 1:niter) {
     R_tce_i <- stats::rnorm(length(R_tce),
-                            mean = as.vector(R_tce),
-                            sd = as.vector(SE_tce)
+      mean = as.vector(R_tce),
+      sd = as.vector(SE_tce)
     )
     R_tce_i <- matrix(R_tce_i, nrow = nrow(R_tce))
-    if(!is.null(impute_function)){
+    if (!is.null(impute_function)) {
       R_tce_i <- impute_function(R_tce_i)
     }
     run_sum <- run_sum + as.vector(R_tce_i)
     run_sum_sq <- run_sum_sq + as.vector(R_tce_i)^2
 
     R <- run_sum / i
-    if(i > 1){
+    if (i > 1) {
       SE_next <- sqrt((run_sum_sq / i - R^2) * (i / (i - 1)))
-      rmse_change <- sqrt(mean((SE - SE_next)^2, na.rm=TRUE))
-      if(rmse_change < rmse_target) break
+      rmse_change <- sqrt(mean((SE - SE_next)^2, na.rm = TRUE))
+      if (rmse_change < rmse_target){
+        break
+      }
       SE <- SE_next
     }
-    if(verbose){ print(c(i, rmse_change)) }
+    if (verbose) {
+      print(c(i, rmse_change))
+    }
   }
   R <- matrix(R, nrow = nrow(R_tce))
   SE <- matrix(SE, nrow = nrow(R_tce))
-  list("R_tce" = R, "SE_tce" = SE)
+  return(list("R_tce" = R, "SE_tce" = SE))
 }
 
 #' Resample CDE estimate using observed standard errors of TCE.
@@ -314,9 +347,11 @@ resample_tce <- function(R_tce, SE_tce, niter=100, impute_function = NULL, rmse_
 #' @param niter Integer. Maximum number of resampling iterations.
 #' @param rmse_target Float. Stop when change in observed SE of CDE is below `err`.
 #' @param verbose Boolean. True to print convergence progress.
-resample_cde <- function(R_tce, SE_tce, fit_method_func, impute_function = NULL, niter = 100, rmse_target = 1e-3, verbose = FALSE) {
-  if(any(is.na(R_tce)) && is.null(impute_function)){
-    stop("There are NA values in the R_tce, matrix. You must provide an imputation function.")
+resample_cde <- function(R_tce, SE_tce, fit_method_func, impute_function = NULL,
+                         niter = 100, rmse_target = 1e-3, verbose = FALSE) {
+  if (any(is.na(R_tce)) && is.null(impute_function)) {
+    stop("There are NA values in the R_tce, matrix.
+         You must provide an imputation function.")
   }
   run_sum <- rep(0, length(R_tce))
   run_sum_sq <- rep(0, length(R_tce))
@@ -328,7 +363,7 @@ resample_cde <- function(R_tce, SE_tce, fit_method_func, impute_function = NULL,
       sd = as.vector(SE_tce)
     )
     R_tce_i <- matrix(R_tce_i, nrow = nrow(R_tce))
-    if(!is.null(impute_function)){
+    if (!is.null(impute_function)) {
       R_tce_i <- impute_function(R_tce_i)
     }
     R_cde_i <- fit_method_func(R_tce_i)$R_hat
@@ -336,17 +371,21 @@ resample_cde <- function(R_tce, SE_tce, fit_method_func, impute_function = NULL,
     run_sum_sq <- run_sum_sq + as.vector(R_cde_i)^2
 
     R_cde <- run_sum / i
-    if(i > 1){
+    if (i > 1) {
       SE_cde_next <- sqrt((run_sum_sq / i - R_cde^2) * (i / (i - 1)))
-      rmse_change <- sqrt(mean((SE_cde - SE_cde_next)^2, na.rm=TRUE))
-      if(rmse_change < rmse_target) break
+      rmse_change <- sqrt(mean((SE_cde - SE_cde_next)^2, na.rm = TRUE))
+      if (rmse_change < rmse_target){
+        break
+      }
       SE_cde <- SE_cde_next
     }
-    if(verbose){ print(c(i, eps)) }
+    if (verbose) {
+      print(c(i, eps))
+    }
   }
   R_cde <- matrix(R_cde, nrow = nrow(R_tce))
   SE_cde <- matrix(SE_cde, nrow = nrow(R_tce))
-  list("R_cde" = R_cde, "SE_cde" = SE_cde)
+  return(list("R_cde" = R_cde, "SE_cde" = SE_cde))
 }
 
 #' Uses delta method to calculate CDE standard error.
@@ -355,28 +394,31 @@ resample_cde <- function(R_tce, SE_tce, fit_method_func, impute_function = NULL,
 #' @param SE_tce DxD matrix. Standard error of the TCE.
 delta_cde <- function(R_tce_inv, SE_tce) {
   delta_one_entry <- function(Ri_row_k, Ri_col_j) {
-    sum((SE_tce**2) * outer(Ri_row_k**2, Ri_col_j**2))
+    return(sum((SE_tce**2) * outer(Ri_row_k**2, Ri_col_j**2)))
   }
   delta_one_row <- function(Ri_col_j) {
-    apply(R_tce_inv, 1, delta_one_entry, Ri_col_j = Ri_col_j)
+    return(apply(R_tce_inv, 1, delta_one_entry, Ri_col_j = Ri_col_j))
   }
   var_cde <- apply(R_tce_inv, 2, delta_one_row)
   diag(var_cde) <- 0
-  sqrt(t(t(var_cde) / diag(R_tce_inv)))
+  return(sqrt(t(t(var_cde) / diag(R_tce_inv))))
 }
 
 #' Helper function to do basic filtering of the TCE matrix.
 #'
-#' Large values of R, entries with a high SE, and row/columns with many nans can be removed.
+#' Large values of R, entries with a high SE, and row/columns with many nans
+#' can be removed.
 #'
 #' @param R_tce Matrix or data.frame. Estimates of TCE.
 #' @param SE_tce Matrix or data.frame. Standard errors of the entries in R_tce.
-#' @param R_tce_true Matrix or data.frame. For simulation and testing, remove columns/rows from
-#'   the true R_tce as well as our estimate.
+#' @param R_tce_true Matrix or data.frame. For simulation and testing, remove
+#'   columns/rows from the true R_tce as well as our estimate.
 #' @param max_R Float. Set all entries where `abs(R_tce) > max_R` to `NA`.
 #' @param max_SE Float. Set all entries where `SE_tce > max_SE` to `NA`.
-#' @param max_nan_perc Float. Remove columns and rows that are more than `max_nan_perc` NAs.
-filter_tce <- function(R_tce, SE_tce, R_tce_true = NULL, max_R = 1.5, max_SE = 3, max_nan_perc = 0.5){
+#' @param max_nan_perc Float. Remove columns and rows that are more than
+#'   `max_nan_perc` NAs.
+filter_tce <- function(R_tce, SE_tce, R_tce_true = NULL, max_R = 1.5,
+                       max_SE = 3, max_nan_perc = 0.5) {
   R_tce[is.nan(SE_tce)] <- NA
   SE_tce[is.nan(SE_tce)] <- NA
 
@@ -389,16 +431,19 @@ filter_tce <- function(R_tce, SE_tce, R_tce_true = NULL, max_R = 1.5, max_SE = 3
   SE_tce[SE_too_large] <- NA
 
   drop_rows <- rowMeans(is.na(R_tce)) > max_nan_perc
-  R_tce <- R_tce[!drop_rows, !drop_rows, drop=FALSE]
-  SE_tce <- SE_tce[!drop_rows, !drop_rows, drop=FALSE]
+  R_tce <- R_tce[!drop_rows, !drop_rows, drop = FALSE]
+  SE_tce <- SE_tce[!drop_rows, !drop_rows, drop = FALSE]
   drop_cols <- colMeans(is.na(R_tce)) > max_nan_perc
 
-  if(!is.null(R_tce_true)){
+  if (!is.null(R_tce_true)) {
     R_tce_true <- R_tce_true[!drop_rows, !drop_rows]
     R_tce_true <- R_tce_true[!drop_cols, !drop_cols]
-    list("R_tce" = R_tce[!drop_cols, !drop_cols], "SE_tce" = SE_tce[!drop_cols, !drop_cols], "R_tce_true" = R_tce_true)
+    return(list("R_tce" = R_tce[!drop_cols, !drop_cols],
+                "SE_tce" = SE_tce[!drop_cols, !drop_cols],
+                "R_tce_true" = R_tce_true))
   }
-  else{
-    list("R_tce" = R_tce[!drop_cols, !drop_cols], "SE_tce" = SE_tce[!drop_cols, !drop_cols])
+  else {
+    return(list("R_tce" = R_tce[!drop_cols, !drop_cols],
+                "SE_tce" = SE_tce[!drop_cols, !drop_cols]))
   }
 }

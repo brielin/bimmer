@@ -21,7 +21,7 @@ get_tce <- function(R_obs, normalize = NULL) {
 #' @return D x D matrix of observed effects.
 get_observed <- function(R) {
   D <- dim(R)[1]
-  as.matrix(R %*% solve(diag(D) - R))
+  return(as.matrix(R %*% solve(diag(D) - R)))
 }
 
 #' Gets direct network from observed effects.
@@ -30,7 +30,7 @@ get_observed <- function(R) {
 #' @return D x D matrix of observed effects.
 get_direct <- function(R_obs) {
   D <- dim(R_obs)[1]
-  R_obs %*% solve(diag(D) + R_obs)
+  return(R_obs %*% solve(diag(D) + R_obs))
 }
 
 #' Uses naive meta analysis method for TCE estimation with multiple SNPs.
@@ -45,7 +45,7 @@ get_direct <- function(R_obs) {
 naive_ma <- function(b_exp, b_out, se_exp, se_out) {
   tce_hat <- mean(b_out / b_exp)
   se_tce <- stats::sd(b_out / b_exp) / sqrt(length(b_exp))
-  list("beta.hat" = tce_hat, "beta.se" = se_tce)
+  return(list("beta.hat" = tce_hat, "beta.se" = se_tce))
 }
 
 #' Generates sparse effects and Mendelian randomization conditioning statistic.
@@ -84,7 +84,7 @@ generate_beta <- function(M, D, p = 0.1, sd = 1.0, pleiotropy = FALSE) {
   second_max <- apply(abs(beta_over_max), 1, max)
   beta_over_max[max_index] <- 1.0 / (second_max)
   condition <- apply(beta_over_max, 2, max)
-  list("beta" = beta, "condition" = condition)
+  return(list("beta" = beta, "condition" = condition))
 }
 
 #' Generates and optionally normalizes causal graph.
@@ -217,14 +217,15 @@ generate_confounding <- function(N, C, D, sigma_g) {
 #'   X: N x M matrix of genotypes.
 #'   beta: M x D matrix of genotype effect sizes.
 #'   R: D x D network effect matrix.
-generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2, noise = 0.0,
-                             conf_ratio = 0.0, pleiotropy = FALSE,
+generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2,
+                             noise = 0.0, conf_ratio = 0.0, pleiotropy = FALSE,
                              whiten = FALSE, symmetric = NULL, sd_net = 1.0,
                              sd_beta = 1.0, sigma_g = 1.0, fix_R = NULL,
                              fix_beta = NULL) {
   # Generate the various components.
   if (is.null(fix_beta)) {
-    beta <- generate_beta(M, D, p_beta, pleiotropy = pleiotropy, sd = sd_beta)$beta
+    beta <- generate_beta(
+      M, D, p_beta, pleiotropy = pleiotropy, sd = sd_beta)$beta
   } else {
     beta <- fix_beta
   }
@@ -254,7 +255,7 @@ generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2, noise = 
   epsilon <- t(t(matrix(stats::rnorm(N * D), N, D)) * sqrt(network_var))
   Y <- sqrt(1 - noise) * network + sqrt(noise) * epsilon
 
-  list("Y" = as.matrix(Y), "X" = X, "beta" = beta, "R" = R)
+  return(list("Y" = as.matrix(Y), "X" = X, "beta" = beta, "R" = R))
 }
 
 #' Generate summary statistics.
@@ -267,7 +268,6 @@ generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2, noise = 
 #'   beta_hat: An M x D matrix of calculated effect sizes.
 #'   se_hat: An M x D matrix of corresponding estimated standard errors.
 generate_sumstats <- function(X, Y) {
-  # TODO(brielin): Add test for this function.
   N <- dim(X)[1]
   M <- dim(X)[2]
   D <- dim(Y)[2]
@@ -287,24 +287,24 @@ generate_sumstats <- function(X, Y) {
   }
   se_hat <- t(mapply(calc_s, data.frame(X_no_mean), data.frame(t(beta_hat))))
 
-  list(
-    "beta_hat" = as.data.frame(beta_hat),
-    "se_hat" = as.data.frame(se_hat)
-  )
+  return(list("beta_hat" = as.data.frame(beta_hat),
+              "se_hat" = as.data.frame(se_hat)))
 }
 
 #' Selects SNPs based on true effect sizes.
 #'
 #' @param beta_true M x D matrix of true effect sizes.
 select_snps_oracle <- function(beta_true) {
-  select <- function(beta){
+  select <- function(beta) {
     mask <- abs(beta) > 0
-    res <- purrr::map(colnames(beta_true), function(x){return(mask)})
+    res <- purrr::map(colnames(beta_true), function(x) {
+      return(mask)
+    })
     names(res) <- colnames(beta_true)
     res$names <- rownames(beta_true)
     return(res)
   }
-  purrr::map(data.frame(as.matrix(beta_true)), select)
+  return(purrr::map(data.frame(as.matrix(beta_true)), select))
 }
 
 
@@ -337,7 +337,9 @@ fit_regularized_cheat <- function(R_tce, R) {
 #' A simple helper function to count the number of instuments for each pair.
 #'
 #' @param selected A list of lists, output of `select_snps`.
-count_instruments <- function(selected){
-  D = length(selected[[1]])
-  do.call(cbind, purrr::map(selected, function(pheno){purrr::map(pheno[-D], sum)}))
+count_instruments <- function(selected) {
+  D <- length(selected[[1]])
+  return(do.call(cbind, purrr::map(selected, function(pheno) {
+    return(purrr::map(pheno[-D], sum))
+  })))
 }

@@ -146,7 +146,8 @@ test_that("generate_sumstats_works", {
   M <- 2
   p_beta <- 1.0
   p_net <- 0.5
-  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net, pleiotropy = TRUE)
+  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net,
+                              pleiotropy = TRUE)
   sumstats <- generate_sumstats(dataset$X, dataset$Y)
   dataset$Y <- scale(dataset$Y)
   dataset$X <- scale(dataset$X)
@@ -175,7 +176,8 @@ test_that("select_snps_oracle_works", {
   M <- 10
   p_beta <- 1.0
   p_net <- 0.5
-  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net, pleiotropy = FALSE)
+  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net,
+                              pleiotropy = FALSE)
   sumstats <- generate_sumstats(dataset$X, dataset$Y)
   snps <- select_snps_oracle(dataset$beta)
   expect_is(snps, "list")
