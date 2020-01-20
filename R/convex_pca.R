@@ -5,6 +5,8 @@
 #' largest weighted non-zero entry, rather than Infinity.
 #'
 #' @param SE. A matrix of floats, with missing entries (NA) allowed.
+#' @param max_weight. The maximum allowable weight to use. Entries with 1/SE^2 above
+#'   `max_weight` will get weight `max_weight`.
 make_weights <- function(SE, max_weight = NULL){
   weights <- 1/SE^2
   weights[is.na(SE)] <- 0
@@ -29,35 +31,36 @@ make_weights <- function(SE, max_weight = NULL){
 #' @param warm_start Matrix. See `convex_pca`
 #' @param verbose Boolean. See `convex_pca`
 convex_pca_worker  <- function(Y, r=NULL, weights=NULL, its=1000, rmse_target=1e-4, warm_start=NULL, verbose=FALSE){
-  P=nrow(Y)
-  N=ncol(Y)
-  X=if (is.null(warm_start)) matrix(0,P,N) else warm_start
-  if (is.null(weights)) weights=!is.na(Y)
+  X <- if (is.null(warm_start)) matrix(0, nrow(Y), ncol(Y)) else warm_start
+  if (is.null(weights)) weights <- !is.na(Y)
   class(weights)="numeric"
 
-  oldRmse=Inf
+  old_rmse=Inf
   for (it in 0:its){
-    tol=max( 1e-1/(it+1)^2, 1e-6 )
-    g=weights * (X-Y)
-    g[weights == 0] = 0  # Remove NA.
-    svdTemp=irlba::irlba(-g,1,1,tol=tol)
-    ruv=(r * svdTemp$u) %*% t(svdTemp$v)
+    tol <- max( 1e-1/(it+1)^2, 1e-6 )
+    g <- weights * (X-Y)
+    # Y may contain NA's and 0*NA = NA.
+    g[weights == 0] <- 0
+
+    svd_temp <- irlba::irlba(-g, 1, 1, tol=tol)
+    ruv=(r * svd_temp$u) %*% t(svd_temp$v)
     erv=(X-ruv) * weights
-    stepSize=sum(g*erv)/sum(erv*erv)
-    if (stepSize<0)
-      cat('Warning: step size is',stepSize,'\n')
-    stepSize=min(stepSize,1)
-    X = (1.0-stepSize)*X + stepSize* ruv
+    step_size=sum(g*erv)/sum(erv*erv)
+    if (step_size<0)
+      warning(c('Warning: step size is ', step_size,'\n'))
+    step_size=min(step_size, 1)
+    X = (1.0-step_size)*X + step_size* ruv
     er=weights * (X-Y)
-    er[weights == 0] = 0  # Remove NA.
+    # Again, Y may contain NA's and 0*NA = NA.
+    er[weights == 0] <- 0
 
     rmse=sqrt(sum(er^2)/sum(weights))
-    rmseDelta=abs(rmse-oldRmse)
+    rmse_delta=abs(rmse-old_rmse)
     if (verbose)
-      cat(it,rmse,stepSize,rmseDelta,'\n')
-    if ( rmseDelta < rmse_target)
+      cat(it, rmse, step_size, rmse_delta,'\n')
+    if ( rmse_delta < rmse_target)
       break
-    oldRmse=rmse
+    old_rmse=rmse
   }
   X
 }
@@ -69,12 +72,16 @@ convex_pca_worker  <- function(Y, r=NULL, weights=NULL, its=1000, rmse_target=1e
 #' @param Weights See `convex_pca`.
 #' @param its See `convex_pca`.
 #' @param rmse_target See `convex_pca`.
-find_best_r <- function(Y, rs, weights=NULL,its=1000,rmse_target=1e-3, verbose=FALSE) {
+find_best_r <- function(Y, rs=NULL, weights=NULL,its=1000,rmse_target=1e-3, verbose=FALSE) {
   if (is.null(weights)) weights=!is.na(Y)
   class(weights)="numeric"
-  # break the matrix into training and test sets, equally and at random
+
+  if(is.null(rs)){
+    rs = 10^seq(0,log10(sum(Y^2,na.rm=TRUE)+1),length.out = 10)
+  }
+  # Break the matrix into training and test sets, equally and at random
   rand=matrix( runif(nrow(Y)*ncol(Y)),nrow(Y))
-  train=rand < 4/5
+  train=rand < 2/3
   test= !train & (weights>0)
 
   # training data
@@ -85,23 +92,23 @@ find_best_r <- function(Y, rs, weights=NULL,its=1000,rmse_target=1e-3, verbose=F
   test_weights[!test]=0
 
   # try a range of regularisation parameters
-  trainErrors=numeric(length(rs))
-  testErrors=numeric(length(rs))
+  train_errors=numeric(length(rs))
+  test_errors=numeric(length(rs))
   times=numeric(length(rs))
   for (ri in 1:length(rs)){
     r=rs[ri]
-    if(verbose) sprintf("Trying regularisation parameter r = %f", r)
+    if(verbose) cat(sprintf("Trying regularisation parameter r = %f", r))
     if(ri > 1){
       warm_start = X
     } else {
       warm_start = NULL
     }
-    times[ri]=system.time( X<-convex_pca_worker(Y, r, weights=train_weights,its=its,rmse_target=rmse_target,warm_start=warm_start ))[1]
-    trainErrors[ri]=sqrt(mean( train_weights * (X-Y)^2,na.rm=TRUE))
-    testErrors[ri]=sqrt(mean( test_weights * (X-Y)^2, na.rm=TRUE))
-    if(verbose) sprintf("Error is %f",testErrors[ri])
+    times[ri]=system.time( X<-convex_pca_worker(Y, r, weights=train_weights,its=its,rmse_target=rmse_target,warm_start=warm_start,verbose=verbose ))[1]
+    train_errors[ri]=sqrt(mean( train_weights * (X-Y)^2,na.rm=TRUE))
+    test_errors[ri]=sqrt(mean( test_weights * (X-Y)^2, na.rm=TRUE))
+    if(verbose) cat(sprintf("Error is %f",test_errors[ri]))
   }
-  rs[which.min(testErrors)]
+  rs[which.min(test_errors)]
 }
 
 #' Calculates the convex relaxation of principal component analysis
@@ -131,12 +138,12 @@ convex_pca <- function(Y, r=NULL, weights=NULL, n_components = NULL, its=1000, r
     }
   }
   else{
-    rs <- 10^seq(0,log10(sum(Y^2,na.rm=TRUE)+1),length.out = 20)
+    rs <- 10^seq(0,log10(sum(Y^2,na.rm=TRUE)+1),length.out = 10)
   }
 
   if(!is.null(rs)){
-    r <- find_best_r(Y, rs, weights = weights, its = its, rmse_target = rmse_target)
-    if(verbose) sprintf("Using regulariation parameter %f", r)
+    r <- find_best_r(Y, rs, weights = weights, its = its, rmse_target = rmse_target, verbose=verbose)
+    if(verbose) print(sprintf("Using regulariation parameter %f", r))
   }
   X <- convex_pca_worker(Y, r, weights = weights, its = its, rmse_target = rmse_target, verbose = verbose)
   if(!is.null(n_components)){

@@ -149,19 +149,15 @@ select_snps <- function(sumstats, snps_to_use = FALSE, p_thresh = 1e-4, welch_th
 #'
 #' @param R_tce A matrix of floats with diagonals equal to 1.0. The estimate
 #'   of R_tce to be shunk.
-#' @param SE_tce A matrix of floats with diagonals equal to 0.0. Standard errors
-#'   of the entries in R_tce.
 #' @param N_obs A matrix of ints with diagonals equal to 0.0. The number of
 #'   samples (instruments) used in the estimate of R_tce for each entry.
 #' @param lambda Float less than 1.0 or NULL. Amount of shrinkage. NULL
 #'   computes shrinkage automatically.
-shrink_R <- function(R_tce, SE_tce, N_obs = NULL, lambda = NULL) {
+shrink_R <- function(R_tce, SE_tce, lambda = NULL) {
   if (is.null(lambda)) {
     # Diagonal of SE_tce should be 0.
     var_tce <- SE_tce^2
-    # var_tce <- N_obs * (SE_tce)^2  # OLD, probably wrong.
     numerator <- sum(var_tce, na.rm = TRUE)
-    # denominator <- sum(R_tce^2, na.rm = TRUE)  # OLD, probably wrong.
     denominator <- sum(R_tce^2, na.rm = TRUE) - dim(R_tce)[1]
     lambda <- numerator / denominator
     lambda_s <- max(0, min(1, lambda))
@@ -265,12 +261,48 @@ fit_tce <- function(sumstats,
 
   if (shrink) {
     if (is.logical(shrink)) {
-      R_tce <- shrink_R(R_tce, SE_tce, N_obs)
+      R_tce <- shrink_R(R_tce, SE_tce)
     } else if (is.numeric(shrink)) {
-      R_tce <- shrink_R(R_tce, SE_tce, N_obs, lambda = shrink)
+      R_tce <- shrink_R(R_tce, SE_tce, lambda = shrink)
     }
   }
   list("R_tce" = as.matrix(R_tce), "SE_tce" = as.matrix(SE_tce), "N_obs" = as.matrix(N_obs))
+}
+
+#' Resample TCE estimates using observed standard errors while imputing missing values.
+#'
+resample_tce <- function(R_tce, SE_tce, niter=100, impute_function = NULL, rmse_target = 1e-4, verbose=FALSE){
+  if(any(is.na(R_tce)) && is.null(impute_function)){
+    stop("There are NA values in the R_tce, matrix. You must provide an imputation function.")
+  }
+  run_sum <- rep(0, length(R_tce))
+  run_sum_sq <- rep(0, length(R_tce))
+  SE <- rep(0, length(R_tce))
+  R <- rep(0, length(R_tce))
+  for (i in 1:niter) {
+    R_tce_i <- stats::rnorm(length(R_tce),
+                            mean = as.vector(R_tce),
+                            sd = as.vector(SE_tce)
+    )
+    R_tce_i <- matrix(R_tce_i, nrow = nrow(R_tce))
+    if(!is.null(impute_function)){
+      R_tce_i <- impute_function(R_tce_i)
+    }
+    run_sum <- run_sum + as.vector(R_tce_i)
+    run_sum_sq <- run_sum_sq + as.vector(R_tce_i)^2
+
+    R <- run_sum / i
+    if(i > 1){
+      SE_next <- sqrt((run_sum_sq / i - R^2) * (i / (i - 1)))
+      rmse_change <- sqrt(mean((SE - SE_next)^2, na.rm=TRUE))
+      if(rmse_change < rmse_target) break
+      SE <- SE_next
+    }
+    if(verbose){ print(c(i, rmse_change)) }
+  }
+  R <- matrix(R, nrow = nrow(R_tce))
+  SE <- matrix(SE, nrow = nrow(R_tce))
+  list("R_tce" = R, "SE_tce" = SE)
 }
 
 #' Resample CDE estimate using observed standard errors of TCE.
