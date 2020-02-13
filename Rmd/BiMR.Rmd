@@ -281,3 +281,28 @@ well_cond <- plot_tibble %>% filter(n_tce_nans <= 1, !is.na(mr_method))
 ggplot(well_cond, aes(mr_method, mse_tce)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05) + ylim(0, .15)
 ggplot(well_cond, aes(mr_fit, mse_cde)) + geom_violin() + geom_jitter(height = 0, width = 0.1, alpha = 0.05) + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + ylim(0,.1)
 ```
+
+```{r}
+
+null_test_raps <- function(N1, N2, Ninst){
+  b1 = rnorm(Ninst, 0, 1/sqrt(N1))
+  b2 = rnorm(Ninst, 0, 1/sqrt(N2))
+  s1 = rep(1/sqrt(N1), Ninst)
+  s2 = rep(1/sqrt(N2), Ninst)
+  mr.raps::mr.raps(b1, b2, s1, s2, loss.function = "huber")
+}
+
+null_test_mr <- function(N1, N2, Ninst){
+  b1 = rnorm(Ninst, 0, 1/sqrt(N1))
+  b2 = rnorm(Ninst, 0, 1/sqrt(N2))
+  s1 = rep(1/sqrt(N1), Ninst)
+  s2 = rep(1/sqrt(N2), Ninst)
+  print(b1)
+  print(b2)
+  
+  print(mr.raps::mr.raps.all(b1, b2, s1, s2))
+  input <- mr_input(bx = b1, bxse = s1, by = b2, byse = s2)
+  print(mr_allmethods(input, method = "all",  seed = as.numeric(Sys.time())))
+}
+
+```

@@ -22,14 +22,14 @@ resample_cde(
 \item{fit_method_func}{Function. Method for inferring R_cde given R_tce.
 Must return a list with entry "R_hat".}
 
+\item{impute_function}{Function. Method to use for imputing missing values in
+`R_tce`.}
+
 \item{niter}{Integer. Maximum number of resampling iterations.}
 
 \item{rmse_target}{Float. Stop when change in SE of CDE is below this.}
 
 \item{verbose}{Boolean. True to print convergence progress.}
-
-\item{impute_func}{Function. Method to use for imputing missing values in
-`R_tce`.}
 }
 \description{
 Resample CDE estimate using observed standard errors of TCE.

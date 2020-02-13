@@ -18,9 +18,12 @@ fit_regularized <- function(R_tce, lambda = 0.01) {
   resp <- diag(D)
   R_tce_inv <- matrix(0L, nrow = D, ncol = D)
   for (d in 1:D) {
+    penalty_factor = rep(1, D)
+    penalty_factor[d] <- 0
     fit <- glmnet::glmnet(R_tce, resp[, d],
       alpha = 1.0, lambda = lambda,
-      standardize = FALSE, intercept = FALSE
+      standardize = FALSE, intercept = FALSE,
+      penalty.factor = penalty_factor
     )
     R_tce_inv[, d] <- matrix(fit$beta)
   }
@@ -39,7 +42,7 @@ fit_regularized <- function(R_tce, lambda = 0.01) {
 #' @param nfolds Number of folds. NULL for k=1 to use leave-one-out CV.
 #' @param lambda Vector of lambda values to try.
 cv_fit_regularized <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
-                               lambda = NULL) {
+                               lambda = NULL, verbose = FALSE) {
   if(is.null(lambda)){
     lambda = c(0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001)
   }
@@ -56,15 +59,23 @@ cv_fit_regularized <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
   error <- matrix(0L, nrow = D * nfolds, ncol = length(lambda))
   for (d in 1:D) {
     # The d'th entry in response is 1.0, which we cannot drop.
+    if(verbose){
+      cat(sprintf("Fitting column %d.\n", d))
+    }
     for (fold in 1:nfolds) {
+      if(verbose){
+        cat(sprintf("Fitting fold %d.\n", fold))
+      }
       if (k == 1) {
         index <- if (fold < d) fold else fold + 1
       } else {
         index <- sample(c(1:D)[-d], k)
       }
+      penalty_factor = rep(1, D)
+      penalty_factor[d] <- 0
       fit <- glmnet::glmnet(R_tce[-index, ], resp[-index, d],
         alpha = 1.0, lambda = lambda, weights = weights[-index],
-        standardize = FALSE, intercept = FALSE
+        standardize = FALSE, intercept = FALSE, penalty.factor = penalty_factor
       )
       pred <- glmnet::predict.glmnet(fit, R_tce[index, , drop = FALSE])
       pred_one <- glmnet::predict.glmnet(fit, R_tce[d, , drop = FALSE])
@@ -75,7 +86,7 @@ cv_fit_regularized <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
   }
   scores <- colSums(error)
   best_lambda <- lambda[which.min(scores)]
-  return(fit_regularized(R_tce, best_lambda))
+  return(list("lambda" = best_lambda, "scores" = scores))
 }
 
 
@@ -182,6 +193,20 @@ shrink_R <- function(R_tce, SE_tce, lambda = NULL) {
   R_tce <- (1 - lambda_s) * R_tce
   diag(R_tce) <- 1.0
   return(R_tce)
+}
+
+shrink_local <- function(R_tce, SE_tce, width=100){
+  nnans <- sum(is.na(SE_tce))
+  sort_order <- order(SE_tce)
+  se <- SE_tce[sort_order]
+  r <- R_tce[sort_order]
+  calc_lambda <- function(index){
+    sum(se[(index-width/2):(index+width/2)]**2)/sum(r[(index-width/2):(index+width/2)]**2)
+  }
+  start = 1+(width)/2
+  end = length(SE_tce) - nnans - width/2
+  lambdas <- purrr::map_dbl(start:end, calc_lambda)
+  c(rep(lambdas[1], width/2), lambdas, rep(lambdas[length(lambdas)], width/2))
 }
 
 #' Calculates matrix of total causal effects using a specified method.
@@ -360,6 +385,7 @@ resample_cde <- function(R_tce, SE_tce, fit_method_func, impute_function = NULL,
   run_sum_sq <- rep(0, length(R_tce))
   SE_cde <- rep(0, length(R_tce))
   R_cde <- rep(0, length(R_tce))
+  rmse_change <- NA
   for (i in 1:niter) {
     R_tce_i <- stats::rnorm(length(R_tce),
       mean = as.vector(R_tce),

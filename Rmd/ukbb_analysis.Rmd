@@ -114,13 +114,19 @@ cor(pivoted$p6[(!is.na(pivoted$p6))&(!is.na(pivoted$p8))], pivoted$p8[(!is.na(pi
 # Shrink estimates of the TCE, then impute and resample.
 ```{r}
 tce_res <- tce_res_4
-R_tce <- shrink_R(tce_res$R_tce, tce_res$SE_tce)
-SE_tce <- tce_res$SE_tce
+tce_filt <- filter_tce(tce_res$R_tce, tce_res$SE_tce, max_SE=0.5)
+R_tce <- tce_filt$R_tce
+SE_tce <- tce_filt$SE_tce
+# R_tce <- shrink_R(tce_res$R_tce, tce_res$SE_tce)
+# SE_tce <- tce_res$SE_tce
 
-weights <- make_weights(R_tce, SE_tce)
-r_to_use <- 2*cv.convex_pca(R_tce, weights = weights)
+weights <- make_weights(SE_tce, max_weight = 10000)
+r_to_use <- find_best_r(R_tce, weights = weights)
+R_tce_imp <- convex_pca(R_tce, r = r_to_use, weights = weights)
+l_to_use <- cv_fit_regularized(R_tce_imp, k = 4, nfolds = 100)$lambda
+R_cde <- fit_regularized(R_tce_imp, lambda = l_to_use)$R_hat
 
-fit_function <- cv.fit_regularized
-impute_function <- function(...){cv.convex_pca(..., r = r_to_use, weights = weights)}
+fit_function <- function(...){fit_regularized(..., lambda = l_to_use)} 
+impute_function <- function(...){convex_pca(..., r = r_to_use, weights = weights)}
 cde_res <- resample_cde(R_tce, SE_tce, fit_function, impute_function)
 ```
