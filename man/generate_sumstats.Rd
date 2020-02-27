@@ -4,12 +4,15 @@
 \alias{generate_sumstats}
 \title{Generate summary statistics.}
 \usage{
-generate_sumstats(X, Y)
+generate_sumstats(X, Y, N_ind = NULL)
 }
 \arguments{
 \item{X}{N x M matrix of genotypes.}
 
 \item{Y}{N x D matrix of phenotypes.}
+
+\item{N_ind}{Length D vector with each entry specifying the number of samples
+from each phenotype to use.}
 }
 \value{
 A list,

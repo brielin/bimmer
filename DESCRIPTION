@@ -22,7 +22,8 @@ Imports:
     purrr,
     tidyr,
     irlba,
-    plyr
+    plyr,
+    MendelianRandomization
 Suggests: 
     testthat (>= 2.1.0)
 RoxygenNote: 7.0.2

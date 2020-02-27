@@ -264,31 +264,46 @@ generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2,
 #'
 #' @param X N x M matrix of genotypes.
 #' @param Y N x D matrix of phenotypes.
+#' @param N_ind Length D vector with each entry specifying the number of samples
+#'   from each phenotype to use.
 #' @return A list,
 #'   beta_hat: An M x D matrix of calculated effect sizes.
 #'   se_hat: An M x D matrix of corresponding estimated standard errors.
-generate_sumstats <- function(X, Y) {
+generate_sumstats <- function(X, Y, N_ind=NULL) {
   N <- dim(X)[1]
   M <- dim(X)[2]
   D <- dim(Y)[2]
-  X_no_mean <- t(t(X) - colMeans(X))
-  Y_no_mean <- t(t(Y) - colMeans(Y))
-  X_sd <- apply(X, 2, stats::sd)
-  Y_sd <- apply(Y, 2, stats::sd)
-  X_no_mean <- t(t(X_no_mean) / X_sd)
-  Y_no_mean <- t(t(Y_no_mean) / Y_sd)
-  diag_xtxi <- 1 / colSums(X_no_mean^2)
-  beta_hat <- (diag_xtxi * t(X_no_mean)) %*% Y_no_mean
 
-  calc_s <- function(X_col, beta_row) {
-    eps2sum <- colSums((Y_no_mean - outer(X_col, beta_row))^2)
-    X2sum <- sum(X_col^2)
-    sqrt(eps2sum / ((N - 2) * X2sum))
+  if(!is.null(N_ind)){
+    select_function <- function(y, n){
+      drop = sample.int(N, size=(N-n))
+      y[drop] = NA
+      return(y)
+    }
+    Y <- as.matrix(purrr::map2_dfr(data.frame(Y), N_ind, select_function))
   }
-  se_hat <- t(mapply(calc_s, data.frame(X_no_mean), data.frame(t(beta_hat))))
 
-  return(list("beta_hat" = as.data.frame(beta_hat),
-              "se_hat" = as.data.frame(se_hat)))
+  Xs <- scale(X)
+  Ys <- scale(Y)
+  sumstats_one_pheno <- function(y){
+    mask <- !is.na(y)
+    N_mask <- sum(mask)
+    y_mask <- y[mask]
+    if(any(!mask)){
+      X_mask <- scale(X[mask, ])
+    } else {
+      X_mask <- Xs
+    }
+    beta_hat <- c((t(X_mask) %*% y_mask)/(N_mask-1))
+    names(beta_hat) <- colnames(X_mask)
+    eps2sum <- colSums((y_mask - t(t(X_mask) * beta_hat))**2)
+    se_hat <- sqrt(eps2sum/((N_mask - 1)*(N_mask - 2)))
+    return(list(beta_hat, se_hat))
+  }
+
+  sumstats <- purrr::transpose(purrr::map(data.frame(Ys), sumstats_one_pheno))
+  return(list("beta_hat" = as.data.frame(sumstats[[1]]),
+              "se_hat" = as.data.frame(sumstats[[2]])))
 }
 
 #' Selects SNPs based on true effect sizes.

@@ -22,7 +22,8 @@ the result of clumping to avoid correlated SNPs.}
 
 \item{p_thresh}{Float, p-value threshold to use for SNP inclusion.}
 
-\item{welch_thresh}{FLOAT, p-value threshold for Welch test of equal betas.}
+\item{welch_thresh}{Float or NULL, p-value threshold for Welch test of equal
+betas.}
 
 \item{verbose}{Bool. If true, print phenotype label during iteration.}
 }

@@ -41,6 +41,7 @@ fit_regularized <- function(R_tce, lambda = 0.01) {
 #' @param k Number of zero-values to drop during CV.
 #' @param nfolds Number of folds. NULL for k=1 to use leave-one-out CV.
 #' @param lambda Vector of lambda values to try.
+#' @param verbose Boolean. True to print progress.
 cv_fit_regularized <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
                                lambda = NULL, verbose = FALSE) {
   if(is.null(lambda)){
@@ -92,39 +93,26 @@ cv_fit_regularized <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
 
 #' Simple implementation of a welch test.
 #'
-#' This tests the null hypothesis abs(beta1) = abs(beta2) against the one-sided
-#' alternative abs(beta1) > abs(beta2).
+#' This tests the null hypothesis abs(beta1) = abs(beta2) against the two
+#' alternatives abs(beta1) > abs(beta2) and abs(beta1) < abs(beta2).
 #'
 #' @param beta1 Float or vector of floats, mean of the first sample.
 #' @param beta2 Float or vector of floats, mean of the second sample.
 #' @param se1 Float or vector of floats, SD of estimate of mu1.
 #' @param se2 Float or vector of floats, SD of estimate of mu2.
 #' @param welch_thresh Float, p_value threshold for significance.
-#' @return Float
 welch_test <- function(beta1, se1, beta2, se2, welch_thresh = 0.05) {
   n1 <- 1 / (se1**2)
   n2 <- 1 / (se2**2)
   t_val <- (abs(beta2) - abs(beta1)) / sqrt(se1^2 + se2^2)
   nu <- (se1^2 + se2^2)^2 / (se1^4 / (n1 - 1) + se2^4 / (n2 - 1))
-  res <- stats::pt(t_val, round(nu)) < welch_thresh
-  res[is.na(t_val)] <- FALSE
+  res_12 <- stats::pt(t_val, round(nu))
+  res_21 <- 1-res_12
+  sig_12 <- res_12 < welch_thresh
+  sig_21 <- res_21 < welch_thresh
+  res <- sig_12 - sig_21
+  res[is.na(t_val)] <- 0
   return(res)
-}
-
-#' Wrapper for `welch_test` that sets SNPs significant for both to FALSE.
-#'
-#' @param beta1 Float or vector of floats, mean of the first sample.
-#' @param beta2 Float or vector of floats, mean of the second sample.
-#' @param se1 Float or vector of floats, SD of estimate of mu1.
-#' @param se2 Float or vector of floats, SD of estimate of mu2.
-#' @param sig2 Bool or vector of bools indicating whether this SNP is also
-#'   significant for phenotype two.
-#' @param welch_thresh Float, p_value threshold for significance.
-welch_filter_both_sig <- function(beta1, se1, beta2, se2, sig2,
-                                  welch_thresh = 0.05) {
-  welch_res <- welch_test(beta1, se1, beta2, se2, welch_thresh)
-  welch_res[sig2] <- FALSE
-  return(welch_res)
 }
 
 #' Selects SNPs for inclusion in MR by comparing per-variance effect sizes.
@@ -138,37 +126,59 @@ welch_filter_both_sig <- function(beta1, se1, beta2, se2, sig2,
 #'   entry is a list of SNPs that can be used for that phenotype. Usually
 #'   the result of clumping to avoid correlated SNPs.
 #' @param p_thresh Float, p-value threshold to use for SNP inclusion.
-#' @param welch_thresh FLOAT, p-value threshold for Welch test of equal betas.
+#' @param welch_thresh Float or NULL, p-value threshold for Welch test of equal
+#'   betas.
 #' @param verbose Bool. If true, print phenotype label during iteration.
 select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
                         welch_thresh = 0.05, verbose = FALSE) {
   z_scores <- as.matrix(abs(sumstats$beta_hat / sumstats$se_hat))
   p_vals <- 2 * (1 - stats::pnorm(z_scores))
-  sig_p_vals <- data.frame(p_vals < p_thresh)
-  run_pheno <- function(pheno) {
-    if (verbose) {
-      print(pheno)
+  sig_p_vals <- dplyr::as_tibble(p_vals < p_thresh)
+
+  selected_snps <- list()
+  phenos <- colnames(sumstats$beta_hat)
+  D <- length(phenos)
+  snps <- rownames(sumstats$beta_hat)
+  for(index in 1:D){
+    pheno1 <- phenos[index]
+    if(verbose){
+      print(pheno1)
     }
-    snp_mask <- sig_p_vals[, pheno]
+    mask1 <- rep(TRUE, length(snps))
     if (!is.null(snps_to_use)) {
-      pheno_snps <- get(pheno, snps_to_use)
-      snp_mask <- (rownames(sumstats$beta_hat) %in% pheno_snps) & snp_mask
+      p1_snps <- get(pheno1, snps_to_use)
+      mask1 <- (snps %in% p1_snps)
     }
-    snp_mask[is.na(snp_mask)] <- FALSE
-    beta_sub <- sumstats$beta_hat[snp_mask, ]
-    se_sub <- sumstats$se_hat[snp_mask, ]
-    sig_pv_sub <- sig_p_vals[snp_mask, ]
-    beta <- beta_sub[, pheno]
-    se <- se_sub[, pheno]
-    snps <- purrr::pmap(list(beta_sub, se_sub, sig_pv_sub),
-                        welch_filter_both_sig,
-                        beta1 = beta, se1 = se, welch_thresh = welch_thresh)
-    snps$names <- rownames(beta_sub)
-    return(snps)
+    for(pheno2 in phenos[index:D]){
+      mask2 <- rep(TRUE, length(snps))
+      if (!is.null(snps_to_use)) {
+        p2_snps <- get(pheno2, snps_to_use)
+        mask2 <- (snps %in% p2_snps)
+      }
+
+      sig1 <- dplyr::pull(sig_p_vals, pheno1)
+      sig2 <- dplyr::pull(sig_p_vals, pheno2)
+      candidate1 <- sig1 & mask1
+      candidate2 <- sig2 & mask2
+      selected_snps[[pheno1]]$names <- snps[candidate1]
+      selected_snps[[pheno2]]$names <- snps[candidate2]
+      if(!is.null(welch_thresh)){
+        keep <- candidate1 | candidate2
+        b1 <- sumstats$beta_hat[keep, pheno1]
+        b2 <- sumstats$beta_hat[keep, pheno2]
+        s1 <- sumstats$se_hat[keep, pheno1]
+        s2 <- sumstats$se_hat[keep, pheno2]
+        welch_res <- welch_test(b1, s1, b2, s2, welch_thresh)
+
+        selected_snps[[pheno1]][[pheno2]] <- welch_res[candidate1[keep]] == 1
+        selected_snps[[pheno2]][[pheno1]] <- welch_res[candidate2[keep]] == -1
+      } else{
+        selected_snps[[pheno1]][[pheno2]] <- !sig2[candidate1]
+        selected_snps[[pheno2]][[pheno1]] <- !sig1[candidate2]
+      }
+    }
   }
-  snps_to_use <- purrr::map(colnames(sumstats$beta_hat), run_pheno)
-  names(snps_to_use) <- colnames(sumstats$beta_hat)
-  return(snps_to_use)
+  return(selected_snps)
 }
 
 
@@ -223,7 +233,7 @@ shrink_local <- function(R_tce, SE_tce, width=100){
 #' @param shrink Boolean. True to shrink estimates of R_tce to 0.
 #' @param verbose Bpplean. True to print progress.
 #' @param ... Additional parameters to pass to mr_method.
-fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps"),
+fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", "egger", "mbe"),
                     min_instruments = 5, shrink = FALSE, verbose = FALSE, ...) {
   mr_method_func <- switch(mr_method,
     mean = naive_ma,
@@ -233,6 +243,16 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps"),
     },
     raps = function(...) {
       mr.raps::mr.raps(over.dispersion = TRUE, loss.function = "huber", ...)
+    },
+    egger = function(b_exp, b_out, se_exp, se_out, ...) {
+      input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
+      egger_res <- MendelianRandomization::mr_egger(input)
+      return(list("beta.hat" = egger_res$Estimate, "beta.se" = egger_res$StdError.Est))
+    },
+    mbe = function(b_exp, b_out, se_exp, se_out, ...){
+      input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
+      mbe_res <- MendelianRandomization::mr_mbe(input, seed = NA, iterations = 0)
+      return(list("beta.hat" = mbe_res$Estimate, "beta.se" = mbe_res$StdError))
     }
   )
 
@@ -260,10 +280,9 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps"),
     run_tce_entry <- function(beta_out, se_out, out) {
       snp_mask <- get(out, snps_to_use) & !is.na(beta_out) & !is.na(beta_exp)
       n_instruments <- sum(snp_mask)
-      if (n_instruments < min_instruments) {
+      if ((n_instruments < min_instruments) | (exp == out)){
         list("R" = NA, "SE" = NA, "N" = n_instruments)
-      }
-      else {
+      } else {
         tryCatch(
           {
             mr_res <- mr_method_func(

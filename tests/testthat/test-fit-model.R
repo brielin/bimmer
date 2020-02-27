@@ -1,12 +1,8 @@
-set.seed(123)
-N <- 1000
-D <- 3
-dataset <- generate_dataset(
-  N, D, D,
-  p_beta = 1.0, p_net = 0.5, noise = 0.0, pleiotropy = FALSE, sd_net = 0.2
-)
+load("../testdata/dataset.Rdata")
+load("../testdata/dataset_exact.Rdata")
 sumstats <- generate_sumstats(dataset$X, dataset$Y)
 R <- dataset$R
+D <- nrow(R)
 
 test_that("fit_exact_inverse", {
   expect_equal(
@@ -26,27 +22,19 @@ test_that("fit_regularized_works", {
 
 test_that("fit_regularized_cv_works", {
   R_tce <- get_tce(get_observed(R))
-  fit_res <- cv_fit_regularized(R_tce)
-  R_hat <- fit_res$R_hat
-  R_tce_inv <- fit_res$R_tce_inv
-  expect_equal(dim(R_hat), c(D, D))
+  lambda_res <- cv_fit_regularized(R_tce)
+  expect_equal(lambda_res$lambda, 1e-4)
+  expect_equal(length(lambda_res$scores), 7)
 })
 
 test_that("welch_test_works", {
   b1 <- 0
-  b2 <- 1
+  b2 <- 0.1
   s1 <- 0.01
   s2 <- 0.01
-  expect_false(welch_test(b1, s1, b2, s2))
-  expect_true(welch_test(b2, s2, b1, s1))
-})
-
-test_that("welch_test_wrapper_works", {
-  b1 <- 0
-  b2 <- 1
-  s1 <- 0.01
-  s2 <- 0.01
-  expect_false(welch_filter_both_sig(b2, s2, b1, s1, sig2 = c(1)))
+  expect_equal(welch_test(b1, s1, b2, s2), -1)
+  expect_equal(welch_test(b2, s2, b1, s1), 1)
+  expect_equal(welch_test(b1, 10*s1, b2, 10*s2), 0)
 })
 
 test_that("select_snps_works", {
@@ -63,13 +51,13 @@ test_that("select_snps_works", {
 test_that("shinkage_works", {
   selected <- select_snps_oracle(dataset$beta)
   tce_res <- fit_tce(sumstats, selected, "mean", min_instruments = 1)
-  R_shrunk <- shrink_R(tce_res$R_tce, tce_res$SE_tce, tce_res$N_obs)
+  R_shrunk <- shrink_R(tce_res$R_tce, tce_res$SE_tce)
   expect_true(all(abs(R_shrunk) <= abs(tce_res$R_tce)))
 })
 
 test_that("fit_tce_min_instruments", {
   selected <- select_snps(sumstats)
-  R_tce_hat <- fit_tce(sumstats, selected, "mean")$R_tce
+  R_tce_hat <- fit_tce(sumstats, selected, "mean", min_instruments = 10)$R_tce
   expect_is(R_tce_hat, "matrix")
   expect_equal(sum(is.na(R_tce_hat)), D * (D - 1))
 })
@@ -91,6 +79,20 @@ test_that("fit_tce_mean_works", {
 test_that("fit_tce_raps_works", {
   selected <- select_snps_oracle(dataset$beta)
   R_tce_hat <- fit_tce(sumstats, selected, "ps", min_instruments = 1)$R_tce
+  expect_is(R_tce_hat, "matrix")
+  expect_false(any(is.na(R_tce_hat)))
+})
+
+test_that("fit_tce_egger_works", {
+  selected <- select_snps_oracle(dataset$beta)
+  R_tce_hat <- fit_tce(sumstats, selected, "egger", min_instruments = 1)$R_tce
+  expect_is(R_tce_hat, "matrix")
+  expect_false(any(is.na(R_tce_hat)))
+})
+
+test_that("fit_tce_mbe_works", {
+  selected <- select_snps_oracle(dataset$beta)
+  R_tce_hat <- fit_tce(sumstats, selected, "mbe", min_instruments = 1)$R_tce
   expect_is(R_tce_hat, "matrix")
   expect_false(any(is.na(R_tce_hat)))
 })
@@ -131,12 +133,6 @@ test_that("filter_tce_drops", {
 })
 
 test_that("fit_error_exactly_zero", {
-  M <- 20
-  dataset_exact <- generate_dataset(
-    N, M, D,
-    p_beta = 1.0, p_net = 0.5, noise = 0.0, pleiotropy = FALSE,
-    sd_net = 0.2, whiten = TRUE
-  )
   Y_sds <- apply(dataset_exact$Y, 2, sd)
   sumstats_exact <- generate_sumstats(dataset_exact$X, dataset_exact$Y)
   selected <- select_snps_oracle(dataset_exact$beta)

@@ -1,19 +1,11 @@
-set.seed(123)
+load("../testdata/dataset.Rdata")
 
 test_that("get_direct_observed_works", {
-  dataset <- generate_dataset(
-    100, 3, 3,
-    p_beta = 1.0, p_net = 0.5, noise = 0.0, pleiotropy = FALSE, sd_net = 0.5
-  )
   R <- dataset$R
   expect_equal(matrix(get_direct(get_observed(R))), matrix(R))
 })
 
 test_that("get_tce_fit_exact_works", {
-  dataset <- generate_dataset(
-    100, 3, 3,
-    p_beta = 1.0, p_net = 0.5, noise = 0.0, pleiotropy = FALSE, sd_net = 0.5
-  )
   R <- dataset$R
   expect_equal(matrix(fit_exact(get_tce(get_observed(R)))$R_hat), matrix(R))
 })
