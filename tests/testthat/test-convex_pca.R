@@ -1,5 +1,3 @@
-set.seed(123)
-
 test_that("make_weights_works", {
   SE <- matrix(c(0, 1, 2, NA), nrow = 2)
   weights <- make_weights(SE)

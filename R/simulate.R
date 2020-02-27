@@ -51,20 +51,14 @@ naive_ma <- function(b_exp, b_out, se_exp, se_out) {
 #' Generates sparse effects and Mendelian randomization conditioning statistic.
 #'
 #' @description
-#' Generates an MxD matrix of SNP effects with p% non-zero in expectation. Also
-#' returns a vector of MR conditioning, the maximum ratio of the effect size of
-#' any SNP on each gene relative to every other gene.
+#' Generates an MxD matrix of SNP effects with p% non-zero in expectation.
 #'
 #' @param M Integer. Number of SNPs to simulate.
 #' @param D Integer. Number of phenotypes to simulate.
 #' @param p Float. Proportion of non-zero effects.
 #' @param sd Float. Standard deviation normal distribution of effect sizes.
 #' @param pleiotropy Bool. TRUE to allow for SNPs to effect multiple phenotypes.
-#' @return A list,
-#'   beta: sparse float matrix of dimension MxD.
-#'   condition: float vector of length D.
 generate_beta <- function(M, D, p = 0.1, sd = 1.0, pleiotropy = FALSE) {
-  # TODO(brielin): Separate beta generation from condition analysis?
   beta <- Matrix::Matrix(
     stats::rnorm(M * D, sd = sd) * (stats::runif(M * D) < p), M, D,
     sparse = TRUE
@@ -75,16 +69,11 @@ generate_beta <- function(M, D, p = 0.1, sd = 1.0, pleiotropy = FALSE) {
   beta_non_zero <- beta[non_zero_index, ]
   beta_snp_max <- apply(abs(beta_non_zero), 1, max)
   beta_over_max <- abs(beta_non_zero) / beta_snp_max
-  max_index <- Matrix::which(beta_over_max == 1.0, arr.ind = TRUE)
   if (!pleiotropy) {
     beta_non_zero[Matrix::which(beta_over_max < 1.0, arr.ind = TRUE)] <- 0
     beta[non_zero_index] <- beta_non_zero
   }
-  beta_over_max[max_index] <- 0
-  second_max <- apply(abs(beta_over_max), 1, max)
-  beta_over_max[max_index] <- 1.0 / (second_max)
-  condition <- apply(beta_over_max, 2, max)
-  return(list("beta" = beta, "condition" = condition))
+  return(beta)
 }
 
 #' Generates and optionally normalizes causal graph.
@@ -225,7 +214,7 @@ generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2,
   # Generate the various components.
   if (is.null(fix_beta)) {
     beta <- generate_beta(
-      M, D, p_beta, pleiotropy = pleiotropy, sd = sd_beta)$beta
+      M, D, p_beta, pleiotropy = pleiotropy, sd = sd_beta)
   } else {
     beta <- fix_beta
   }

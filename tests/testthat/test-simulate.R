@@ -29,9 +29,8 @@ test_that("generate_beta_runs", {
   D <- 2
   p <- 0.5
   result <- generate_beta(M, D, p)
-  expect_equal(dim(result$beta), c(M, D))
-  expect_length((result$condition), D)
-  expect_is(result$beta, "sparseMatrix")
+  expect_equal(dim(result), c(M, D))
+  expect_is(result, "sparseMatrix")
 })
 
 test_that("generate_beta_no_pleiotropy", {
@@ -39,7 +38,7 @@ test_that("generate_beta_no_pleiotropy", {
   D <- 2
   p <- 0.5
   result <- generate_beta(M, D, p, pleiotropy = FALSE)
-  expect_equal(unname(Matrix::rowSums(abs(result$beta) > 0) <= 1), rep(TRUE, 5))
+  expect_equal(unname(Matrix::rowSums(abs(result) > 0) <= 1), rep(TRUE, 5))
 })
 
 test_that("generate_network_runs", {
