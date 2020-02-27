@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load Packages
 
 ```{r}
-require(MrNo)
+require(bimmer)
 require(mr.raps)
 require(tidyverse)
 require(foreach)
