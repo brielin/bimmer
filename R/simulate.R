@@ -342,8 +342,7 @@ fit_regularized_cheat <- function(R_tce, R) {
 #'
 #' @param selected A list of lists, output of `select_snps`.
 count_instruments <- function(selected) {
-  D <- length(selected[[1]])
   return(do.call(cbind, purrr::map(selected, function(pheno) {
-    return(purrr::map(pheno[-D], sum))
+    return(purrr::map(pheno[-1], sum))
   })))
 }

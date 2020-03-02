@@ -35,15 +35,15 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   sumstats_select = generate_sumstats(X_select, Y_select, N_ind)
   sumstats_fit = generate_sumstats(X_fit, Y_fit, N_ind)
 
-  foreach(method = c("oracle", "naive"), .combine = bind_rows) %do% {
+  foreach(method = c("oracle", "naive", "test"), .combine = bind_rows) %do% {
     if(method == "oracle"){
       selected <- select_snps_oracle(dataset$beta)    
     } else if (method == "naive"){
-      selected <- select_snps(sumstats_select, welch_thresh = NULL)
+      selected <- select_snps(sumstats_select, p_thresh = 1e-4, welch_thresh = NULL)
     } else if (method == "test"){
-      selected <- select_snps(sumstats_select, welch_thresh = 0.05)
+      selected <- select_snps(sumstats_select, p_thresh = 0.01, welch_thresh = 0.1)
     }
-    foreach(mr_method = c("raps", "egger"), .combine = bind_rows) %do% {
+    foreach(mr_method = c("raps"), .combine = bind_rows) %do% {
       tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
       # print(tce_res$R_tce)
       tibble(select_method = method, mr_method = mr_method, r1 = R_normed[1,2], r2 = R_normed[2, 1],
@@ -56,15 +56,17 @@ plot_tibble = unite(plot_tibble, "method", c("select_method", "mr_method"), sep 
 ```
 
 ```{r}
-plot_tibble %>% filter(method=="naive_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat))) #+ scale_color_gradient(limits=c(0, 5))
-plot_tibble %>% filter(method=="naive_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r2 - r2_hat))) #+ scale_color_gradient(limits=c(0, 0.5))
 plot_tibble %>% filter(method=="oracle_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat)))
 plot_tibble %>% filter(method=="oracle_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r2 - r2_hat)))
+plot_tibble %>% filter(method=="naive_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat))) #+ scale_color_gradient(limits=c(0, 5))
+plot_tibble %>% filter(method=="naive_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r2 - r2_hat))) #+ scale_color_gradient(limits=c(0, 0.5))
+plot_tibble %>% filter(method=="test_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat)))
+plot_tibble %>% filter(method=="test_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r2 - r2_hat)))
 
-plot_tibble %>% filter(method=="naive_egger") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat)))
-plot_tibble %>% filter(method=="naive_egger") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r2 - r2_hat)))
-plot_tibble %>% filter(method=="oracle_egger") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat)))
-plot_tibble %>% filter(method=="oracle_egger") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r2 - r2_hat)))
+# plot_tibble %>% filter(method=="naive_egger") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat)))
+# plot_tibble %>% filter(method=="naive_egger") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r2 - r2_hat)))
+# plot_tibble %>% filter(method=="oracle_egger") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat)))
+# plot_tibble %>% filter(method=="oracle_egger") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r2 - r2_hat)))
 ```
 
 
