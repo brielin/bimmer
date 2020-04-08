@@ -258,7 +258,7 @@ generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2,
 #' @return A list,
 #'   beta_hat: An M x D matrix of calculated effect sizes.
 #'   se_hat: An M x D matrix of corresponding estimated standard errors.
-generate_sumstats <- function(X, Y, N_ind=NULL) {
+generate_sumstats <- function(X, Y, N_ind = NULL, M_null = 0) {
   N <- dim(X)[1]
   M <- dim(X)[2]
   D <- dim(Y)[2]
@@ -291,8 +291,24 @@ generate_sumstats <- function(X, Y, N_ind=NULL) {
   }
 
   sumstats <- purrr::transpose(purrr::map(data.frame(Ys), sumstats_one_pheno))
-  return(list("beta_hat" = as.data.frame(sumstats[[1]]),
-              "se_hat" = as.data.frame(sumstats[[2]])))
+  beta_hat <- as.data.frame(sumstats[[1]])
+  se_hat <- as.data.frame(sumstats[[2]])
+  if(M_null > 0){
+    N_null <- rep(N, D)
+    if(!is.null(N_ind)){
+      N_null <- N_ind
+    }
+    beta_null <- t(matrix(stats::rnorm(
+      M_null*D, mean = 0, sd = 1/sqrt(N_null)), nrow = D))
+    se_null <- t(matrix(rep(1/sqrt(N_null), M_null), nrow = D))
+    rownames(beta_null) <- paste0("rs", (M+1):(M+M_null))
+    rownames(se_null) <- paste0("rs", (M+1):(M+M_null))
+    colnames(beta_null) <- colnames(beta_hat)
+    colnames(se_null) <- colnames(se_hat)
+    beta_hat <- rbind(beta_hat, beta_null)
+    se_hat <- rbind(se_hat, se_null)
+  }
+  return(list("beta_hat" = beta_hat, "se_hat" = se_hat))
 }
 
 #' Selects SNPs based on true effect sizes.
@@ -305,7 +321,7 @@ select_snps_oracle <- function(beta_true) {
       return(mask)
     })
     names(res) <- colnames(beta_true)
-    res$names <- rownames(beta_true)
+    res <- purrr::prepend(res, list("names" = rownames(beta_true)))
     return(res)
   }
   return(purrr::map(data.frame(as.matrix(beta_true)), select))
@@ -345,4 +361,26 @@ count_instruments <- function(selected) {
   return(do.call(cbind, purrr::map(selected, function(pheno) {
     return(purrr::map(pheno[-1], sum))
   })))
+}
+
+instrument_metrics <- function(selected, beta){
+  phenos <- names(selected)
+  beta <- as.matrix(beta)
+  all_snps <- unique(unlist(purrr::map(selected, function(pheno){pheno$names})))
+  null_snps <- all_snps[!(all_snps %in% rownames(beta))]
+  beta_null <- matrix(0L, nrow = length(null_snps), ncol = ncol(beta), dimnames = list(null_snps, colnames(beta)))
+  beta <- rbind(beta, beta_null)
+  purrr::imap(selected, function(select_pheno, pheno1){
+    names <- select_pheno$names
+    all_p1 <- sum(abs(beta[, pheno1]) > 0)
+    purrr::imap(select_pheno[-1], function(use, pheno2){
+      dir_eff <- abs(beta[names, , drop=FALSE][use, pheno1]) > 0
+      other_eff <- purrr::map_lgl(abs(beta[names, ,drop=FALSE][use, !(colnames(beta) %in% c(pheno1)), drop=FALSE])>0, any)
+      correct <- sum(dir_eff & !other_eff)
+      reversed <- sum(!dir_eff & other_eff)
+      total <- length(dir_eff)
+      # Precision, recall, reversed
+      return(c(correct/total, correct/all_p1, reversed/total))
+    })
+  })
 }

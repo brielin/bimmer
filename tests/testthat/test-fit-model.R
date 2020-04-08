@@ -11,21 +11,14 @@ test_that("fit_exact_inverse", {
   )
 })
 
-test_that("fit_regularized_works", {
+
+test_that("fit_inspre_works", {
   R_tce <- get_tce(get_observed(R))
-  fit_res <- fit_regularized(R_tce, lambda = 0)
-  R_hat <- fit_res$R_hat
-  R_tce_inv <- fit_res$R_tce_inv
+  fit_res <- fit_inspre(R_tce, lambda = 0, verbose = 0)
+  R_hat <- fit_res$R_hat[,,1]
   expect_equal(as.matrix(R), R_hat, tolerance = 0.01)
-  expect_equal(dim(R_tce_inv), c(D, D), tolerance = 0.01)
 })
 
-test_that("fit_regularized_cv_works", {
-  R_tce <- get_tce(get_observed(R))
-  lambda_res <- cv_fit_regularized(R_tce)
-  expect_equal(lambda_res$lambda, 1e-4)
-  expect_equal(length(lambda_res$scores), 7)
-})
 
 test_that("welch_test_works", {
   b1 <- 0
@@ -48,12 +41,6 @@ test_that("select_snps_works", {
   expect_equal(length(get("P2", get("P1", snps))), D)
 })
 
-test_that("shinkage_works", {
-  selected <- select_snps_oracle(dataset$beta)
-  tce_res <- fit_tce(sumstats, selected, "mean", min_instruments = 1)
-  R_shrunk <- shrink_R(tce_res$R_tce, tce_res$SE_tce)
-  expect_true(all(abs(R_shrunk) <= abs(tce_res$R_tce)))
-})
 
 test_that("fit_tce_min_instruments", {
   selected <- select_snps(sumstats)
@@ -97,16 +84,6 @@ test_that("fit_tce_mbe_works", {
   expect_false(any(is.na(R_tce_hat)))
 })
 
-test_that("resample_cde_works", {
-  selected <- select_snps_oracle(dataset$beta)
-  tce_res <- fit_tce(sumstats, selected, "ps", min_instruments = 1)
-  tce_res$SE_tce[is.na(tce_res$SE_tce)] <- 0.1
-  rs_res <- resample_cde(tce_res$R_tce, tce_res$SE_tce, fit_exact, niter = 10)
-  expect_is(rs_res$R_cde, "matrix")
-  expect_equal(dim(rs_res$R_cde), dim(tce_res$R_tce))
-  expect_is(rs_res$SE_cde, "matrix")
-  expect_equal(dim(rs_res$SE_cde), dim(tce_res$SE_tce))
-})
 
 
 test_that("delta_cde_runs", {

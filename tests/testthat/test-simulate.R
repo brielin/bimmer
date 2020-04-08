@@ -132,13 +132,6 @@ test_that("generate_dataset_with_confounding", {
 
 
 test_that("generate_sumstats_works", {
-  N <- 10
-  D <- 2
-  M <- 2
-  p_beta <- 1.0
-  p_net <- 0.5
-  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net,
-                              pleiotropy = TRUE)
   sumstats <- generate_sumstats(dataset$X, dataset$Y)
   dataset$Y <- scale(dataset$Y)
   dataset$X <- scale(dataset$X)
@@ -160,6 +153,16 @@ test_that("generate_sumstats_works", {
   )
 })
 
+test_that("generate_sumstats_adds_null", {
+  sumstats <- generate_sumstats(dataset$X, dataset$Y, M_null = 10)
+  expect_equal(dim(sumstats$beta_hat), c(30, 3))
+  expect_equal(dim(sumstats$se_hat), c(30, 3))
+
+  sumstats <- generate_sumstats(dataset$X, dataset$Y, M_null = 10,
+                                N_ind = c(100, 200, 300))
+  expect_equal(dim(sumstats$beta_hat), c(30, 3))
+  expect_equal(dim(sumstats$se_hat), c(30, 3))
+})
 
 test_that("select_snps_oracle_works", {
   N <- 10

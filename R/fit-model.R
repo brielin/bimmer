@@ -5,89 +5,68 @@
 fit_exact <- function(R_tce) {
   D <- dim(R_tce)[1]
   R_tce_inv <- solve(R_tce)
-  R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
+  R_hat <- diag(D) - R_tce_inv / diag(R_tce_inv)
   return(list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv))
 }
 
-#' Fits L1-regularized approximate inverse model.
+#' Fits inverse sparse regression model.
 #'
-#' @param R_tce D x D matrix of "total causal effects".
-#' @param lambda Float. Regularization strength.
-fit_regularized <- function(R_tce, lambda = 0.01) {
-  D <- dim(R_tce)[1]
-  resp <- diag(D)
-  R_tce_inv <- matrix(0L, nrow = D, ncol = D)
-  for (d in 1:D) {
-    penalty_factor = rep(1, D)
-    penalty_factor[d] <- 0
-    fit <- glmnet::glmnet(R_tce, resp[, d],
-      alpha = 1.0, lambda = lambda,
-      standardize = FALSE, intercept = FALSE,
-      penalty.factor = penalty_factor
-    )
-    R_tce_inv[, d] <- matrix(fit$beta)
-  }
-  R_hat <- diag(D) - t((1 / diag(R_tce_inv)) * t(R_tce_inv))
-  colnames(R_hat) <- colnames(R_tce)
-  rownames(R_hat) <- rownames(R_tce)
-  return(list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv))
-}
-
-#' Fits L1-regularized approximate inverse model.
+#' See also inspre::inspre() for more details.
 #'
-#' @param R_tce D x D matrix of "total causal effects".
-#' @param weights Length D vector of per-row weights. Default is 1 for each
-#'   observation.
-#' @param k Number of zero-values to drop during CV.
-#' @param nfolds Number of folds. NULL for k=1 to use leave-one-out CV.
-#' @param lambda Vector of lambda values to try.
-#' @param verbose Boolean. True to print progress.
-cv_fit_regularized <- function(R_tce, weights = NULL, k = 1, nfolds = NULL,
-                               lambda = NULL, verbose = FALSE) {
-  if(is.null(lambda)){
-    lambda = c(0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001)
-  }
-
+#' @param R_tce D x D matrix of  "total causal effects".
+#' @param W DxD Matrix of weights.
+#' @param rho Float. Initial learning rate for ADMM.
+#' @param lambda Float, sequence of floats of NULL. L1 regularization strength
+#'   on inverse of X. If NULL, a logarithmicallly spaced set of values between
+#'   the maximimum absolute off diagonal element of X and lambda_min_ratio
+#'   times this value will be used.
+#' @param lambda_min_ratio Float, ratio of maximum lambda to minimum lambda.
+#' @param nlambda Integer. Number of lambda values to try.
+#' @param alpha Float between 0 and 1 or NULL. If > 0, the model will be fit
+#'   once with gamma = 0 to find L0, then all subsequent fits will use
+#'   gamma = alpha * L0 / D. Set to NULL to provide gamma directly.
+#' @param gamma Float or sequence of nlambda floats or NULL. Determinant
+#'   regularization strength to use (for each lambda value). It is recommended
+#'   to set alpha rather than setting this directly.
+#' @param its Integer. Maximum number of iterations.
+#' @param delta_target Float. Target change in solution.
+#' @param symmetrize True to force the output to be symmetric. If the input
+#'   is symmetric, the output isn't always perfectly symmetric due to numerical
+#'   issues.
+#' @param verbose 0, 1 or 2. 2 to print convergence progress for each lambda,
+#'   1 to print convergence result for each lambda, 0 for no output.
+#' @param train_prop Float between 0 and 1. Proportion of data to use for
+#'   training in cross-validation.
+#' @param cv_folds Integer. Number of cross-validation folds to perform.
+#' @param mu rho modification parameter for ADMM. Rho will be
+#'   increased/decreased when the dual constrant and primal constraint are off
+#'   by a factor of > mu.
+#' @param tau rho modification parameter for ADMM. When called for, rho will be
+#'   increased/decreased by the factor tau.
+#' @param solve_its Integer, number of iterations of bicgstab/lasso to run
+#'   for each U and V update.
+#' @param ncores Integer, number of cores to use.
+#' @export
+fit_inspre <- function(R_tce, W = NULL, rho = 1.0, lambda = NULL,
+                       lambda_min_ratio = 1e-2, nlambda = 20, alpha = 0,
+                       gamma = NULL, its = 100, delta_target = 1e-4,
+                       verbose = 1, train_prop = 0.8,
+                       cv_folds = 0, mu = 5, tau = 1.5, solve_its = 3,
+                       ncores = 1){
   D <- dim(R_tce)[1]
-  if (k == 1) {
-    nfolds <- D - 1
+  inspre_res <- inspre::inspre(
+    X = R_tce, W = W, rho = rho, lambda = lambda,
+    lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, alpha = alpha,
+    gamma = gamma, its = its, delta_target = delta_target, symmetrize = FALSE,
+    verbose = verbose, train_prop = train_prop, cv_folds = cv_folds, mu = mu,
+    tau = tau, solve_its = solve_its, ncores = ncores)
+  inspre_res$R_hat <- array(0L, dim = dim(inspre_res$V))
+  for(i in 1:length(inspre_res$lambda)){
+    inspre_res$R_hat[ , , i] <-
+      diag(D) - inspre_res$V[ , , i] / diag(inspre_res$V[ , , i])
   }
-  if (is.null(weights)) {
-    weights <- rep(1, D)
-  }
-
-  resp <- diag(D)
-  error <- matrix(0L, nrow = D * nfolds, ncol = length(lambda))
-  for (d in 1:D) {
-    # The d'th entry in response is 1.0, which we cannot drop.
-    if(verbose){
-      cat(sprintf("Fitting column %d.\n", d))
-    }
-    for (fold in 1:nfolds) {
-      if(verbose){
-        cat(sprintf("Fitting fold %d.\n", fold))
-      }
-      if (k == 1) {
-        index <- if (fold < d) fold else fold + 1
-      } else {
-        index <- sample(c(1:D)[-d], k)
-      }
-      penalty_factor = rep(1, D)
-      penalty_factor[d] <- 0
-      fit <- glmnet::glmnet(R_tce[-index, ], resp[-index, d],
-        alpha = 1.0, lambda = lambda, weights = weights[-index],
-        standardize = FALSE, intercept = FALSE, penalty.factor = penalty_factor
-      )
-      pred <- glmnet::predict.glmnet(fit, R_tce[index, , drop = FALSE])
-      pred_one <- glmnet::predict.glmnet(fit, R_tce[d, , drop = FALSE])
-      # Weight such that the zero-rows contribute D-1 entries to score.
-      fold_err <- colSums(pred**2) * round((D - 1) / k) + (1 - pred_one)**2
-      error[d * fold, ] <- fold_err
-    }
-  }
-  scores <- colSums(error)
-  best_lambda <- lambda[which.min(scores)]
-  return(list("lambda" = best_lambda, "scores" = scores))
+  dimnames(inspre_res$R_hat) <- list(rownames(R_tce), colnames(R_tce), inspre_res$lambda)
+  return(inspre_res)
 }
 
 
@@ -129,8 +108,9 @@ welch_test <- function(beta1, se1, beta2, se2, welch_thresh = 0.05) {
 #' @param welch_thresh Float or NULL, p-value threshold for Welch test of equal
 #'   betas.
 #' @param verbose Bool. If true, print phenotype label during iteration.
+#' @export
 select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
-                        welch_thresh = 0.05, verbose = FALSE) {
+                        welch_thresh = 0.1, verbose = FALSE) {
   z_scores <- as.matrix(abs(sumstats$beta_hat / sumstats$se_hat))
   p_vals <- 2 * (1 - stats::pnorm(z_scores))
   sig_p_vals <- dplyr::as_tibble(p_vals < p_thresh)
@@ -160,6 +140,8 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
       sig2 <- dplyr::pull(sig_p_vals, pheno2)
       candidate1 <- sig1 & mask1
       candidate2 <- sig2 & mask2
+      candidate1[is.na(candidate1)] <- FALSE
+      candidate2[is.na(candidate2)] <- FALSE
       selected_snps[[pheno1]]$names <- snps[candidate1]
       selected_snps[[pheno2]]$names <- snps[candidate2]
       if(!is.null(welch_thresh)){
@@ -181,45 +163,9 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
   return(selected_snps)
 }
 
-
-#' Shrinks the estimate of the total causal effect matrix.
-#'
-#' @param R_tce A matrix of floats with diagonals equal to 1.0. The estimate
-#'   of R_tce to be shunk.
-#' @param SE_tce A matrix of floats, standard errors of the entries in `R_tce`.
-#' @param lambda Float less than 1.0 or NULL. Amount of shrinkage. NULL
-#'   computes shrinkage automatically.
-shrink_R <- function(R_tce, SE_tce, lambda = NULL) {
-  if (is.null(lambda)) {
-    # Diagonal of SE_tce should be 0.
-    var_tce <- SE_tce^2
-    numerator <- sum(var_tce, na.rm = TRUE)
-    denominator <- sum(R_tce^2, na.rm = TRUE) - dim(R_tce)[1]
-    lambda <- numerator / denominator
-    lambda_s <- max(0, min(1, lambda))
-  } else {
-    lambda_s <- lambda
-  }
-  R_tce <- (1 - lambda_s) * R_tce
-  diag(R_tce) <- 1.0
-  return(R_tce)
-}
-
-shrink_local <- function(R_tce, SE_tce, width=100){
-  nnans <- sum(is.na(SE_tce))
-  sort_order <- order(SE_tce)
-  se <- SE_tce[sort_order]
-  r <- R_tce[sort_order]
-  calc_lambda <- function(index){
-    sum(se[(index-width/2):(index+width/2)]**2)/sum(r[(index-width/2):(index+width/2)]**2)
-  }
-  start = 1+(width)/2
-  end = length(SE_tce) - nnans - width/2
-  lambdas <- purrr::map_dbl(start:end, calc_lambda)
-  c(rep(lambdas[1], width/2), lambdas, rep(lambdas[length(lambdas)], width/2))
-}
-
 #' Calculates matrix of total causal effects using a specified method.
+#'
+#' TODO(brielin): Remove shrinkage option and related code?
 #'
 #' @param sumstats List representing summary statistics from the second
 #'   dataset. Must include entries "beta_hat" and "se_hat".
@@ -233,7 +179,8 @@ shrink_local <- function(R_tce, SE_tce, width=100){
 #' @param shrink Boolean. True to shrink estimates of R_tce to 0.
 #' @param verbose Bpplean. True to print progress.
 #' @param ... Additional parameters to pass to mr_method.
-fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", "egger", "mbe"),
+#' @export
+fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", "egger", "egger_p", "mbe"),
                     min_instruments = 5, shrink = FALSE, verbose = FALSE, ...) {
   mr_method_func <- switch(mr_method,
     mean = naive_ma,
@@ -244,9 +191,14 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
     raps = function(...) {
       mr.raps::mr.raps(over.dispersion = TRUE, loss.function = "huber", ...)
     },
+    egger_p = function(b_exp, b_out, se_exp, se_out, ...) {
+      input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
+      egger_res <- MendelianRandomization::mr_egger(input, robust = FALSE, penalized = TRUE)
+      return(list("beta.hat" = egger_res$Estimate, "beta.se" = egger_res$StdError.Est))
+    },
     egger = function(b_exp, b_out, se_exp, se_out, ...) {
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
-      egger_res <- MendelianRandomization::mr_egger(input)
+      egger_res <- MendelianRandomization::mr_egger(input, robust = FALSE, penalized = FALSE)
       return(list("beta.hat" = egger_res$Estimate, "beta.se" = egger_res$StdError.Est))
     },
     mbe = function(b_exp, b_out, se_exp, se_out, ...){
@@ -335,114 +287,14 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
               "N_obs" = as.matrix(N_obs)))
 }
 
-#' Resample TCE estimates using observed SEs while imputing missing values.
-#'
-#' @param R_tce Matrix.
-#' @param SE_tce Matrix, same dimensnions as `R_tce`.
-#' @param niter Integer, number of resampling iterations.
-#' @param impute_function Function to use to impute values of R_tce.
-#' @param rmse_target Float. Target RMSE change per iteration to stop.
-#' @param verbose Bool. True to print progress.
-resample_tce <- function(R_tce, SE_tce, niter = 100, impute_function = NULL,
-                         rmse_target = 1e-4, verbose = FALSE) {
-  if (any(is.na(R_tce)) && is.null(impute_function)) {
-    stop("There are NA values in the R_tce, matrix.
-         You must provide an imputation function.")
-  }
-  run_sum <- rep(0, length(R_tce))
-  run_sum_sq <- rep(0, length(R_tce))
-  SE <- rep(0, length(R_tce))
-  R <- rep(0, length(R_tce))
-  for (i in 1:niter) {
-    R_tce_i <- stats::rnorm(length(R_tce),
-      mean = as.vector(R_tce),
-      sd = as.vector(SE_tce)
-    )
-    R_tce_i <- matrix(R_tce_i, nrow = nrow(R_tce))
-    if (!is.null(impute_function)) {
-      R_tce_i <- impute_function(R_tce_i)
-    }
-    run_sum <- run_sum + as.vector(R_tce_i)
-    run_sum_sq <- run_sum_sq + as.vector(R_tce_i)^2
-
-    R <- run_sum / i
-    if (i > 1) {
-      SE_next <- sqrt((run_sum_sq / i - R^2) * (i / (i - 1)))
-      rmse_change <- sqrt(mean((SE - SE_next)^2, na.rm = TRUE))
-      if (rmse_change < rmse_target){
-        break
-      }
-      SE <- SE_next
-    }
-    if (verbose) {
-      print(c(i, rmse_change))
-    }
-  }
-  R <- matrix(R, nrow = nrow(R_tce))
-  SE <- matrix(SE, nrow = nrow(R_tce))
-  return(list("R_tce" = R, "SE_tce" = SE))
-}
-
-#' Resample CDE estimate using observed standard errors of TCE.
-#'
-#' @param R_tce DxD matrix of floats. Estimates of R_tce to resample.
-#' @param SE_tce DxD matrix of floats. Standard errors of entries in R_tce.
-#' @param fit_method_func Function. Method for inferring R_cde given R_tce.
-#'   Must return a list with entry "R_hat".
-#' @param impute_function Function. Method to use for imputing missing values in
-#'   `R_tce`.
-#' @param niter Integer. Maximum number of resampling iterations.
-#' @param rmse_target Float. Stop when change in SE of CDE is below this.
-#' @param verbose Boolean. True to print convergence progress.
-resample_cde <- function(R_tce, SE_tce, fit_method_func, impute_function = NULL,
-                         niter = 100, rmse_target = 1e-3, verbose = FALSE) {
-  if (any(is.na(R_tce)) && is.null(impute_function)) {
-    stop("There are NA values in the R_tce, matrix.
-         You must provide an imputation function.")
-  }
-  run_sum <- rep(0, length(R_tce))
-  run_sum_sq <- rep(0, length(R_tce))
-  SE_cde <- rep(0, length(R_tce))
-  R_cde <- rep(0, length(R_tce))
-  rmse_change <- NA
-  for (i in 1:niter) {
-    R_tce_i <- stats::rnorm(length(R_tce),
-      mean = as.vector(R_tce),
-      sd = as.vector(SE_tce)
-    )
-    R_tce_i <- matrix(R_tce_i, nrow = nrow(R_tce))
-    if (!is.null(impute_function)) {
-      R_tce_i <- impute_function(R_tce_i)
-    }
-    R_cde_i <- fit_method_func(R_tce_i)$R_hat
-    run_sum <- run_sum + as.vector(R_cde_i)
-    run_sum_sq <- run_sum_sq + as.vector(R_cde_i)^2
-
-    R_cde <- run_sum / i
-    if (i > 1) {
-      SE_cde_next <- sqrt((run_sum_sq / i - R_cde^2) * (i / (i - 1)))
-      rmse_change <- sqrt(mean((SE_cde - SE_cde_next)^2, na.rm = TRUE))
-      if (rmse_change < rmse_target){
-        break
-      }
-      SE_cde <- SE_cde_next
-    }
-    if (verbose) {
-      print(c(i, rmse_change))
-    }
-  }
-  R_cde <- matrix(R_cde, nrow = nrow(R_tce))
-  SE_cde <- matrix(SE_cde, nrow = nrow(R_tce))
-  return(list("R_cde" = R_cde, "SE_cde" = SE_cde))
-}
-
 #' Uses delta method to calculate CDE standard error.
 #'
 #' @param R_tce_inv DxD matrix. Inverse or approximate inverse of the TCE.
 #' @param SE_tce DxD matrix. Standard error of the TCE.
-delta_cde <- function(R_tce_inv, SE_tce) {
+#' @export
+delta_cde <- function(R_tce_inv, SE_tce, na.rm = FALSE) {
   delta_one_entry <- function(Ri_row_k, Ri_col_j) {
-    return(sum((SE_tce**2) * outer(Ri_row_k**2, Ri_col_j**2)))
+    return(sum((SE_tce**2) * outer(Ri_row_k**2, Ri_col_j**2), na.rm = na.rm))
   }
   delta_one_row <- function(Ri_col_j) {
     return(apply(R_tce_inv, 1, delta_one_entry, Ri_col_j = Ri_col_j))
@@ -465,6 +317,7 @@ delta_cde <- function(R_tce_inv, SE_tce) {
 #' @param max_SE Float. Set all entries where `SE_tce > max_SE` to `NA`.
 #' @param max_nan_perc Float. Remove columns and rows that are more than
 #'   `max_nan_perc` NAs.
+#' @export
 filter_tce <- function(R_tce, SE_tce, R_tce_true = NULL, max_R = 1.5,
                        max_SE = 3, max_nan_perc = 0.5) {
   R_tce[is.nan(SE_tce)] <- NA

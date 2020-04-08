@@ -1,0 +1,304 @@
+20401	Ever addicted to any substance or behaviour	141	Addictions	1
+1558	Alcohol intake frequency.	100051	Alcohol	1
+21021	Pulse wave Arterial Stiffness index	100007	Arterial stiffness	1
+30600	Albumin	17518	Blood biochemistry	1
+30610	Alkaline phosphatase	17518	Blood biochemistry	1
+30620	Alanine aminotransferase	17518	Blood biochemistry	1
+30630	Apolipoprotein A	17518	Blood biochemistry	1
+30640	Apolipoprotein B	17518	Blood biochemistry	1
+30650	Aspartate aminotransferase	17518	Blood biochemistry	1
+30660	Direct bilirubin	17518	Blood biochemistry	1
+30670	Urea	17518	Blood biochemistry	1
+30680	Calcium	17518	Blood biochemistry	1
+30690	Cholesterol	17518	Blood biochemistry	1
+30700	Creatinine	17518	Blood biochemistry	1
+30710	C-reactive protein	17518	Blood biochemistry	1
+30720	Cystatin C	17518	Blood biochemistry	1
+30730	Gamma glutamyltransferase	17518	Blood biochemistry	1
+30740	Glucose	17518	Blood biochemistry	1
+30750	Glycated haemoglobin (HbA1c)	17518	Blood biochemistry	1
+30760	HDL cholesterol	17518	Blood biochemistry	1
+30770	IGF-1	17518	Blood biochemistry	1
+30780	LDL direct	17518	Blood biochemistry	1
+30790	Lipoprotein A	17518	Blood biochemistry	1
+30800	Oestradiol	17518	Blood biochemistry	1
+30810	Phosphate	17518	Blood biochemistry	1
+30820	Rheumatoid factor	17518	Blood biochemistry	1
+30830	SHBG	17518	Blood biochemistry	1
+30840	Total bilirubin	17518	Blood biochemistry	1
+30850	Testosterone	17518	Blood biochemistry	1
+30860	Total protein	17518	Blood biochemistry	1
+30870	Triglycerides	17518	Blood biochemistry	1
+30880	Urate	17518	Blood biochemistry	1
+30890	Vitamin D	17518	Blood biochemistry	1
+30000	White blood cell (leukocyte) count	100081	Blood count	1
+30010	Red blood cell (erythrocyte) count	100081	Blood count	1
+30020	Haemoglobin concentration	100081	Blood count	1
+30030	Haematocrit percentage	100081	Blood count	1
+30040	Mean corpuscular volume	100081	Blood count	1
+30050	Mean corpuscular haemoglobin	100081	Blood count	1
+30060	Mean corpuscular haemoglobin concentration	100081	Blood count	1
+30070	Red blood cell (erythrocyte) distribution width	100081	Blood count	1
+30080	Platelet count	100081	Blood count	1
+30090	Platelet crit	100081	Blood count	1
+30100	Mean platelet (thrombocyte) volume	100081	Blood count	1
+30110	Platelet distribution width	100081	Blood count	1
+30120	Lymphocyte count	100081	Blood count	1
+30130	Monocyte count	100081	Blood count	1
+30140	Neutrophill count	100081	Blood count	1
+30150	Eosinophill count	100081	Blood count	1
+30160	Basophill count	100081	Blood count	1
+30170	Nucleated red blood cell count	100081	Blood count	1
+30180	Lymphocyte percentage	100081	Blood count	1
+30190	Monocyte percentage	100081	Blood count	1
+30200	Neutrophill percentage	100081	Blood count	1
+30210	Eosinophill percentage	100081	Blood count	1
+30220	Basophill percentage	100081	Blood count	1
+30230	Nucleated red blood cell percentage	100081	Blood count	1
+30240	Reticulocyte percentage	100081	Blood count	1
+30250	Reticulocyte count	100081	Blood count	1
+30260	Mean reticulocyte volume	100081	Blood count	1
+30270	Mean sphered cell volume	100081	Blood count	1
+30280	Immature reticulocyte fraction	100081	Blood count	1
+30290	High light scatter reticulocyte percentage	100081	Blood count	1
+30300	High light scatter reticulocyte count	100081	Blood count	1
+4079	Diastolic blood pressure, automated reading	100011	Blood pressure	1
+4080	Systolic blood pressure, automated reading	100011	Blood pressure	1
+48	Waist circumference	100010	Body size measures	1
+49	Hip circumference	100010	Body size measures	1
+12144	Height	100010	Body size measures	1
+20015	Sitting height	100010	Body size measures	1
+21001	Body mass index (BMI)	100010	Body size measures	1
+21002	Weight	100010	Body size measures	1
+78	Heel bone mineral density (BMD) T-score, automated	100018	Bone-densitometry of heel	1
+2316	Wheeze or whistling in the chest in last year	100037	Breathing	1
+4717	Shortness of breath walking on level ground	100037	Breathing	1
+20453	Ever taken cannabis	143	Cannabis use	1
+4728	Leg pain on walking	100038	Claudication and peripheral artery disease	1
+40007	Age at death	100093	Death register	1
+1289	Cooked vegetable intake	100052	Diet	1
+1299	Salad / raw vegetable intake	100052	Diet	1
+1309	Fresh fruit intake	100052	Diet	1
+1319	Dried fruit intake	100052	Diet	1
+1329	Oily fish intake	100052	Diet	1
+1339	Non-oily fish intake	100052	Diet	1
+1349	Processed meat intake	100052	Diet	1
+1359	Poultry intake	100052	Diet	1
+1369	Beef intake	100052	Diet	1
+1379	Lamb/mutton intake	100052	Diet	1
+1389	Pork intake	100052	Diet	1
+1408	Cheese intake	100052	Diet	1
+1418	Milk type used	100052	Diet	1
+1428	Spread type	100052	Diet	1
+1438	Bread intake	100052	Diet	1
+1448	Bread type	100052	Diet	1
+1458	Cereal intake	100052	Diet	1
+1468	Cereal type	100052	Diet	1
+1478	Salt added to food	100052	Diet	1
+1488	Tea intake	100052	Diet	1
+1498	Coffee intake	100052	Diet	1
+1508	Coffee type	100052	Diet	1
+1518	Hot drink temperature	100052	Diet	1
+1528	Water intake	100052	Diet	1
+1538	Major dietary changes in the last 5 years	100052	Diet	1
+1548	Variation in diet	100052	Diet	1
+2654	Non-butter spread type details	100052	Diet	1
+3680	Age when last ate meat	100052	Diet	1
+6144	Never eat eggs, dairy, wheat, sugar	100052	Diet	1
+1677	Breastfed as a baby	100033	Early life factors	1
+1687	Comparative body size at age 10	100033	Early life factors	1
+1697	Comparative height size at age 10	100033	Early life factors	1
+1777	Part of a multiple birth	100033	Early life factors	1
+1787	Maternal smoking around birth	100033	Early life factors	1
+20022	Birth weight	100072	Early life factors	1
+5983	ECG, heart rate	100012	ECG during exercise	1
+6015	Chest pain felt during physical activity	100012	ECG during exercise	1
+6016	Chest pain felt outside physical activity	100012	ECG during exercise	1
+6138	Qualifications	100063	Education	1
+1120	Weekly usage of mobile phone in last 3 months	100053	Electronic device use	1
+2237	Plays computer games	100053	Electronic device use	1
+22599	Number of jobs held	130	Employment history	1
+22601	Job coding	130	Employment history	1
+22604	Work hours - lumped category	130	Employment history	1
+22606	Workplace very noisy	130	Employment history	1
+22607	Workplace very cold	130	Employment history	1
+22608	Workplace very hot	130	Employment history	1
+22609	Workplace very dusty	130	Employment history	1
+22610	Workplace full of chemical or other fumes	130	Employment history	1
+22611	Workplace had a lot of cigarette smoke from other people smoking	130	Employment history	1
+22612	Worked with materials containing asbestos	130	Employment history	1
+22613	Worked with paints, thinners or glues	130	Employment history	1
+22614	Worked with pesticides	130	Employment history	1
+22615	Workplace had a lot of diesel exhaust	130	Employment history	1
+22616	Breathing problems during period of job	130	Employment history	1
+22620	Job involved shift work	130	Employment history	1
+22630	Day shifts worked	130	Employment history	1
+22640	Mixture of day and night shifts worked	130	Employment history	1
+22650	Night shifts worked	130	Employment history	1
+22660	Gap coding	130	Employment history	1
+20016	Fluid intelligence score	100027	Fluid intelligence / reasoning	1
+2178	Overall health rating	100042	General health	1
+2188	Long-standing illness, disability or infirmity	100042	General health	1
+2296	Falls in the last year	100042	General health	1
+2306	Weight change compared with 1 year ago	100042	General health	1
+20458	General happiness	147	Happiness and subjective well-being	1
+20459	General happiness with own health	147	Happiness and subjective well-being	1
+20460	Belief that own life is meaningful	147	Happiness and subjective well-being	1
+3393	Hearing aid user	100043	Hearing	1
+4792	Cochlear implant	100043	Hearing	1
+4803	Tinnitus	100043	Hearing	1
+20019	Speech-reception-threshold (SRT) estimate (left)	100049	Hearing test	1
+20021	Speech-reception-threshold (SRT) estimate (right)	100049	Hearing test	1
+738	Average total household income before tax	100066	Household	1
+23099	Body fat percentage	100009	Impedance measures	1
+23105	Basal metabolic rate	100009	Impedance measures	1
+23127	Trunk fat percentage	100009	Impedance measures	1
+23000	1gG antigen for Herpes Simplex virus-1	1307	Infectious Disease Antigens	1
+23001	2mgG unique antigen for Herpes Simplex virus-2	1307	Infectious Disease Antigens	1
+23002	gE / gI antigen for Varicella Zoster Virus 	1307	Infectious Disease Antigens	1
+23003	VCA p18 antigen for Epstein-Barr Virus	1307	Infectious Disease Antigens	1
+23004	EBNA-1 antigen for Epstein-Barr Virus	1307	Infectious Disease Antigens	1
+23005	ZEBRA antigen for Epstein-Barr Virus	1307	Infectious Disease Antigens	1
+23006	EA-D antigen for Epstein-Barr Virus	1307	Infectious Disease Antigens	1
+23007	pp150 Nter antigen for Human Cytomegalovirus	1307	Infectious Disease Antigens	1
+23008	pp 52 antigen for Human Cytomegalovirus	1307	Infectious Disease Antigens	1
+23009	pp 28 antigen for Human Cytomegalovirus	1307	Infectious Disease Antigens	1
+23010	IE1A antigen for Human Herpesvirus-6	1307	Infectious Disease Antigens	1
+23011	IE1B antigen for Human Herpesvirus-6	1307	Infectious Disease Antigens	1
+23012	p101 k antigen for Human Herpesvirus-6	1307	Infectious Disease Antigens	1
+23013	U14 antigen for Human Herpesvirus-7	1307	Infectious Disease Antigens	1
+23014	LANA antigen for Kaposi's Sarcoma-Associated Herpesvirus	1307	Infectious Disease Antigens	1
+23015	K8.1 antigen for Kaposi's Sarcoma-Associated Herpesvirus	1307	Infectious Disease Antigens	1
+23016	HBc antigen for Hepatitis B Virus	1307	Infectious Disease Antigens	1
+23017	HBe antigen for Hepatitis B Virus	1307	Infectious Disease Antigens	1
+23018	Core antigen for Hepatitis C Virus	1307	Infectious Disease Antigens	1
+23019	NS3 antigen for Hepatitis C Virus	1307	Infectious Disease Antigens	1
+23020	p22 antigen for Toxoplasma gondii	1307	Infectious Disease Antigens	1
+23021	sag1 antigen for Toxoplasma gondii	1307	Infectious Disease Antigens	1
+23022	HTLV-1 gag antigen for Human T-Lymphotropic Virus 1	1307	Infectious Disease Antigens	1
+23023	HTLV-1 env antigen for Human T-Lymphotropic Virus 1	1307	Infectious Disease Antigens	1
+23024	HIV-1 gag antigen for Human Immunodeficiency Virus	1307	Infectious Disease Antigens	1
+23025	HIV-1 env antigen for Human Immunodeficiency Virus	1307	Infectious Disease Antigens	1
+23026	BK VP1 antigen for Human Polyomavirus BKV	1307	Infectious Disease Antigens	1
+23027	JC VP1 antigen for Human Polyomavirus JCV	1307	Infectious Disease Antigens	1
+23028	MC VP1 antigen for Merkel Cell Polyomavirus	1307	Infectious Disease Antigens	1
+23029	L1 antigen for Human Papillomavirus type-16	1307	Infectious Disease Antigens	1
+23030	E6 antigen for Human Papillomavirus type-16	1307	Infectious Disease Antigens	1
+23031	E7 antigen for Human Papillomavirus type-16	1307	Infectious Disease Antigens	1
+23032	L1 antigen for Human Papillomavirus type-18	1307	Infectious Disease Antigens	1
+23033	momp D antigen for Chlamydia trachomatis	1307	Infectious Disease Antigens	1
+23034	momp A antigen for Chlamydia trachomatis	1307	Infectious Disease Antigens	1
+23035	tarp-D F1 antigen for Chlamydia trachomatis	1307	Infectious Disease Antigens	1
+23036	tarp-D F2 antigen for Chlamydia trachomatis	1307	Infectious Disease Antigens	1
+23037	PorB antigen for Chlamydia trachomatis	1307	Infectious Disease Antigens	1
+23038	pGP3 antigen for Chlamydia trachomatis	1307	Infectious Disease Antigens	1
+23039	CagA antigen for Helicobacter pylori	1307	Infectious Disease Antigens	1
+23040	VacA antigen for Helicobacter pylori	1307	Infectious Disease Antigens	1
+23041	OMP antigen for Helicobacter pylori	1307	Infectious Disease Antigens	1
+23042	GroEL antigen for Helicobacter pylori	1307	Infectious Disease Antigens	1
+23043	Catalase antigen for Helicobacter pylori	1307	Infectious Disease Antigens	1
+23044	UreA antigen for Helicobacter pylori	1307	Infectious Disease Antigens	1
+23048	Antigen assay date	1307	Infectious Disease Antigens	1
+23049	Antigen assay QC indicator	1307	Infectious Disease Antigens	1
+23050	HSV-1 seropositivity for Herpes Simplex virus-1	51428	Infectious Diseases	1
+23051	HSV-2 seropositivity for Herpes Simplex virus-2	51428	Infectious Diseases	1
+23052	VZV seropositivity for Varicella Zoster Virus 	51428	Infectious Diseases	1
+23053	EBV seropositivity for Epstein-Barr Virus	51428	Infectious Diseases	1
+23054	CMV seropositivity for Human Cytomegalovirus	51428	Infectious Diseases	1
+23055	HHV-6 overall seropositivity for Human Herpesvirus-6	51428	Infectious Diseases	1
+23056	HHV-6A seropositivity for Human Herpesvirus-6	51428	Infectious Diseases	1
+23057	HHV-6B seropositivity for Human Herpesvirus-6	51428	Infectious Diseases	1
+23058	HHV-7 seropositivity for Human Herpesvirus-7	51428	Infectious Diseases	1
+23059	KSHV seropositivity for Kaposi's Sarcoma-Associated Herpesvirus	51428	Infectious Diseases	1
+23060	HBV seropositivity for Hepatitis B Virus	51428	Infectious Diseases	1
+23061	HCV seropositivity for Hepatitis C Virus	51428	Infectious Diseases	1
+23062	T. gondii seropositivity for Toxoplasma gondii	51428	Infectious Diseases	1
+23063	HTLV-1 seropositivity for Human T-Lymphotropic Virus 1	51428	Infectious Diseases	1
+23064	HIV-1 seropositivity for Human Immunodeficiency Virus	51428	Infectious Diseases	1
+23065	BKV seropositivity for Human Polyomavirus BKV	51428	Infectious Diseases	1
+23066	JCV seropositivity for Human Polyomavirus JCV	51428	Infectious Diseases	1
+23067	MCV seropositivity for Merkel Cell Polyomavirus	51428	Infectious Diseases	1
+23068	HPV 16 Definition I seropositivity for Human Papillomavirus type-16	51428	Infectious Diseases	1
+23069	HPV 18 seropositivity for Human Papillomavirus type-18	51428	Infectious Diseases	1
+23070	C. trachomatis Definition I seropositivity for Chlamydia trachomatis	51428	Infectious Diseases	1
+23071	C. trachomatis Definition II seropositivity for Chlamydia trachomatis	51428	Infectious Diseases	1
+23073	H. pylori Definition I seropositivity for Helicobacter pylori	51428	Infectious Diseases	1
+23074	H. pylori Definition II seropositivity for Helicobacter pylori	51428	Infectious Diseases	1
+23075	HPV 16 Definition II seropositivity for Human Papillomavirus type-16	51428	Infectious Diseases	1
+22032	IPAQ activity group	54	MET Scores	1
+6149	Mouth/teeth dental problems	100046	Mouth	1
+4282	Maximum digits remembered correctly	100029	Numeric memory	1
+6159	Pain type(s) experienced in last month	100048	Pain	1
+399	Number of incorrect matches in round	100030	Pairs matching	1
+20018	Prospective memory result	100031	Prospective memory	1
+20023	Mean time to correctly identify matches	100032	Reaction time	1
+24003	Nitrogen dioxide air pollution; 2010	114	Residential air pollution	1
+24004	Nitrogen oxides air pollution; 2010	114	Residential air pollution	1
+24005	Particulate matter air pollution (pm10); 2010	114	Residential air pollution	1
+24008	Particulate matter air pollution 2.5-10um; 2010	114	Residential air pollution	1
+24010	Inverse distance to the nearest road	114	Residential air pollution	1
+24012	Inverse distance to the nearest major road	114	Residential air pollution	1
+24020	Average daytime sound level of noise pollution	115	Residential noise pollution	1
+24021	Average evening sound level of noise pollution	115	Residential noise pollution	1
+24022	Average night-time sound level of noise pollution	115	Residential noise pollution	1
+20479	Ever thought that life not worth living	146	Self-harm behaviours	1
+20483	Ever attempted suicide	146	Self-harm behaviours	1
+20485	Ever contemplated self-harm	146	Self-harm behaviours	1
+2139	Age first had sexual intercourse	100056	Sexual factors	1
+2149	Lifetime number of sexual partners	100056	Sexual factors	1
+2159	Ever had same-sex intercourse	100056	Sexual factors	1
+1160	Sleep duration	100057	Sleep	1
+1180	Morning/evening person (chronotype)	100057	Sleep	1
+1200	Sleeplessness / insomnia	100057	Sleep	1
+20161	Pack years of smoking	100058	Smoking	1
+1031	Frequency of friend/family visits	100061	Social support	1
+2110	Able to confide	100061	Social support	1
+6160	Leisure/social activities	100061	Social support	1
+10740	Frequency of friend/family visits (pilot)	100061	Social support	1
+3062	Forced vital capacity (FVC)	100020	Spirometry	1
+3063	Forced expiratory volume in 1-second (FEV1)	100020	Spirometry	1
+41219	Anaesthetics administered during delivery	2003	Summary Maternity	1
+41221	Delivery methods	2003	Summary Maternity	1
+41286	Mother age on date of delivery	2003	Summary Maternity	1
+41215	Detention categories	2004	Summary Psychiatric	1
+1050	Time spend outdoors in summer	100055	Sun exposure	1
+1060	Time spent outdoors in winter	100055	Sun exposure	1
+1717	Skin colour	100055	Sun exposure	1
+1727	Ease of skin tanning	100055	Sun exposure	1
+1737	Childhood sunburn occasions	100055	Sun exposure	1
+1747	Hair colour (natural, before greying)	100055	Sun exposure	1
+1757	Facial ageing	100055	Sun exposure	1
+2267	Use of sun/uv protection	100055	Sun exposure	1
+2277	Frequency of solarium/sunlamp use	100055	Sun exposure	1
+20487	Felt hated by family member as a child	145	Traumatic events	1
+20488	Physically abused by family as a child	145	Traumatic events	1
+20489	Felt loved as a child	145	Traumatic events	1
+20490	Sexually molested as a child	145	Traumatic events	1
+20491	Someone to take to doctor when needed as a child	145	Traumatic events	1
+20494	Felt irritable or had angry outbursts in past month	145	Traumatic events	1
+20495	Avoided activities or situations because of previous stressful experience in past month	145	Traumatic events	1
+20496	Felt distant from other people in past month	145	Traumatic events	1
+20497	Repeated disturbing thoughts of stressful experience in past month	145	Traumatic events	1
+20498	Felt very upset when reminded of stressful experience in past month	145	Traumatic events	1
+20521	Belittlement by partner or ex-partner as an adult	145	Traumatic events	1
+20522	Been in a confiding relationship as an adult	145	Traumatic events	1
+20523	Physical violence by partner or ex-partner as an adult	145	Traumatic events	1
+20524	Sexual interference by partner or ex-partner without consent as an adult	145	Traumatic events	1
+20525	Able to pay rent/mortgage as an adult	145	Traumatic events	1
+20526	Been in serious accident believed to be life-threatening	145	Traumatic events	1
+20527	Been involved in combat or exposed to war-zone	145	Traumatic events	1
+20528	Diagnosed with life-threatening illness	145	Traumatic events	1
+20529	Victim of physically violent crime	145	Traumatic events	1
+20530	Witnessed sudden violent death	145	Traumatic events	1
+20531	Victim of sexual assault	145	Traumatic events	1
+30500	Microalbumin in urine	100083	Urine assays	1
+30505	Microalbumin in urine result flag	100083	Urine assays	1
+30510	Creatinine (enzymatic) in urine	100083	Urine assays	1
+30515	Creatinine (enzymatic) in urine result flag	100083	Urine assays	1
+30520	Potassium in urine	100083	Urine assays	1
+30525	Potassium in urine result flag	100083	Urine assays	1
+30530	Sodium in urine	100083	Urine assays	1
+30535	Sodium in urine result flag	100083	Urine assays	1
+5201	logMAR, final (right)	100017	Visual acuity	1
+5208	logMAR, final (left)	100017	Visual acuity	1
+20084	Vitamin and/or mineral supplement use	100112	Vitamin/mineral supplements yesterday	1

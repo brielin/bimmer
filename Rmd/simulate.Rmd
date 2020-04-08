@@ -20,33 +20,35 @@ require(ggplot2)
 
 ```{r warning=FALSE}
 # Basic set-up for simulation.
-N = 5000
+N = 10000
 M = 1000
-D = 10
-C = 0
+M_null = 100000
+D = 100
+C = 1
 sd_net = 0.7
 p_beta = 0.2
-p_net = 0.05
-symmetric = FALSE
+p_net = 0.1
 pleiotropy = FALSE
-niter = 500
-sigma_g = matrix(1L, D, D)
+niter = 100
+sigma_g = 1
 
 plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   # Randomly choose noise proportion.
-  noise <- runif(1, 0, 0.7)
-  conf_ratio <- 0 # runif(1, 0, 0.5)
+  noise <- runif(1, 0.3, 0.7)
+  conf_ratio <- runif(1, 0.3, 0.7)
   total_noise <- conf_ratio*(1-noise) + noise
   print(c(i, noise, conf_ratio, total_noise))
-  dataset <- generate_dataset(N, M, D, C, noise = noise, sd_net = sd_net, p_net = p_net, p_beta = p_beta,
-                              symmetric = symmetric, conf_ratio = conf_ratio, sigma_g = sigma_g, pleiotropy = pleiotropy)
+  dataset <- generate_dataset(
+    N = N, M = M, D = D, C = C, noise = noise, sd_net = sd_net, p_net = p_net,
+    p_beta = p_beta, conf_ratio = conf_ratio, sigma_g = sigma_g,
+    pleiotropy = pleiotropy)
   Y_sds <- apply(dataset$Y, 2, sd)
 
   # Calculate the rank of R to track during simulations.
   eigenv_R <- eigen(dataset$R, only.values = TRUE)$values
   rank_R <- sum(abs(eigenv_R) > 1e-10)
 
-  # Calculate the self-influence of each nose to track during simulations.
+  # Calculate the self-influence of each node to track during simulations.
   R_obs = get_observed(dataset$R)
   self_norm = 1 + diag(R_obs)
   min_abs_self = min(abs(self_norm))
@@ -67,7 +69,7 @@ plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
   sumstats_select = generate_sumstats(X_select, Y_select)
   sumstats_fit = generate_sumstats(X_fit, Y_fit)
 
-  # Select SNPs via sumstats and by cheating.
+  # Select SNPs via ??
   selected <- select_snps(sumstats_select)
   selected_oracle <- select_snps_oracle(dataset$beta)
   

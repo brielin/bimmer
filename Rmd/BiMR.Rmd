@@ -5,57 +5,159 @@ require(devtools)
 devtools::load_all()
 ```
 
-```{r, warning = FALSE, echo = FALSE, results = 'hide'}
+```{r}
 N = 20000
 N_ind = c(2500, 10000)
-M = 500
+M = 1000
 D = 2
 noise = 0.5
 sd_net = 0.5
-sd_beta = 0.5
-p_net = 0.9
+sd_beta = 0.4
+p_net = 0.8
 p_beta = 0.4
-niter = 200
+niter = 1000
+M_null = 100000
+mr_methods = c("raps", "egger")
 
-plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
-  dataset = generate_dataset(N, M, D, noise = noise, p_net = p_net, sd_beta = sd_beta,
-                             p_beta = p_beta, sd_net = sd_net,
-                             pleiotropy = FALSE)
+doMC::registerDoMC(cores = 32)
+plot_tibble <- foreach(i = 1:niter, .combine = bind_rows, .inorder = FALSE) %dopar% {
+  dataset = generate_dataset(
+    N, M, D, noise = noise, p_net = p_net,
+    sd_beta = sd_beta, p_beta = p_beta, sd_net = sd_net, pleiotropy = FALSE)
   Y_sds <- apply(dataset$Y, 2, sd)
   R_obs = get_observed(dataset$R)
   R_tce = get_tce(R_obs, normalize=Y_sds)
   R_normed <- fit_exact(R_tce)$R_hat
-  print(c(i, R_normed[1,2], R_normed[2,1]))
 
   sample <- sample.int(n = N, size = floor(N/2), replace = FALSE)
   X_select = dataset$X[sample, ]
   Y_select = dataset$Y[sample, ]
   X_fit = dataset$X[-sample, ]
   Y_fit = dataset$Y[-sample, ]
-  sumstats_select = generate_sumstats(X_select, Y_select, N_ind)
-  sumstats_fit = generate_sumstats(X_fit, Y_fit, N_ind)
+  sumstats_select = generate_sumstats(X_select, Y_select, N_ind = N_ind, M_null = M_null)
+  sumstats_fit = generate_sumstats(X_fit, Y_fit, N_ind = N_ind, M_null = M_null)
 
-  foreach(method = c("oracle", "naive", "test"), .combine = bind_rows) %do% {
-    if(method == "oracle"){
-      selected <- select_snps_oracle(dataset$beta)    
-    } else if (method == "naive"){
-      selected <- select_snps(sumstats_select, p_thresh = 1e-4, welch_thresh = NULL)
-    } else if (method == "test"){
-      selected <- select_snps(sumstats_select, p_thresh = 0.01, welch_thresh = 0.1)
-    }
-    foreach(mr_method = c("raps"), .combine = bind_rows) %do% {
-      tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
-      # print(tce_res$R_tce)
-      tibble(select_method = method, mr_method = mr_method, r1 = R_normed[1,2], r2 = R_normed[2, 1],
-             r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
-             n1_inst = sum(selected$P1$P2), n2_inst = sum(selected$P2$P1))
+  selected <- select_snps_oracle(dataset$beta)
+  metrics <- instrument_metrics(selected, dataset$beta)
+  oracle_res <- foreach(mr_method = mr_methods, .combine = bind_rows) %do% {
+    tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
+    tibble(iter=i, mr_method = mr_method, p_thresh = 0, w_thresh = 0, 
+           r1 = R_normed[1,2], r2 = R_normed[2, 1],
+           r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
+           n1_inst = sum(selected$P1$P2), n2_inst = sum(selected$P2$P1),
+           n1_precision = metrics$P1$P2[1], n2_precision = metrics$P2$P1[1],
+           n1_recall = metrics$P1$P2[2], n2_recall = metrics$P2$P1[2],
+           n1_reversed = metrics$P1$P2[3], n2_reversed = metrics$P2$P1[3])
+  }
+
+  select_res <- foreach(p_thresh = 0.5*0.1^seq(1, 7), .combine = bind_rows) %do% {
+    foreach(w_thresh = c(1, 0.5^seq(1, 15))) %do% {
+      w_thresh_use = w_thresh
+      if(w_thresh == 1){
+        w_thresh_use = NULL
+      }
+      selected <- select_snps(sumstats_select, p_thresh = p_thresh, welch_thresh = w_thresh_use)
+      metrics <- instrument_metrics(selected, dataset$beta)
+      foreach(mr_method = mr_methods, .combine = bind_rows) %do% {
+        tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
+        tibble(iter=i, mr_method = mr_method, p_thresh = p_thresh, w_thresh = w_thresh,
+              conf_ratio = conf_ratio,
+              r1 = R_normed[1,2], r2 = R_normed[2, 1],
+              r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
+              n1_inst = sum(selected$P1$P2), n2_inst = sum(selected$P2$P1),
+              n1_precision = metrics$P1$P2[1], n2_precision = metrics$P2$P1[1],
+              n1_recall = metrics$P1$P2[2], n2_recall = metrics$P2$P1[2],
+              n1_reversed = metrics$P1$P2[3], n2_reversed = metrics$P2$P1[3])
+      }
     }
   }
+  dplyr::bind_rows(oracle_res, select_res)
 }
-plot_tibble = unite(plot_tibble, "method", c("select_method", "mr_method"), sep = "_", remove = FALSE)
 ```
 
 ```{r}
+plot_tibble <- unite(plot_tibble, "thresh", c("p_thresh", "w_thresh"), sep = "_", remove = FALSE)
+plot_tibble <- plot_tibble %>% mutate(thresh = if_else(thresh == "0_0", "oracle", thresh))
+plot_tibble <- plot_tibble %>% mutate(thresh = if_else(w_thresh == 1, paste0(as.character(p_thresh), "_na"), thresh))
+plot_tibble <- unite(plot_tibble, "method", c("mr_method", "thresh"), sep = "_", remove = FALSE)
+plot_tibble <- plot_tibble %>% mutate(obs_both = !is.na(r1_hat) & !is.na(r2_hat))
+
+
+plot_tibble <- plot_tibble %>% group_by(method) %>% mutate(
+  r1_mae=mean(abs(r1_hat - r1), na.rm=T),
+  r2_mae=mean(abs(r2_hat - r2), na.rm=T),
+  r1_me=mean(r1_hat - r1, na.rm=T),
+  r2_me=mean(r2_hat - r2, na.rm=T),
+  total_mae=mean(abs(r1-r1_hat) + abs(r2-r2_hat), na.rm=T),
+  r1_95=quantile(abs(r1_hat - r1), probs = 0.95, na.rm=T),
+  r2_95=quantile(abs(r2_hat - r2), probs = 0.95, na.rm=T),
+  total_95=quantile(abs(r1_hat - r1) + abs(r2_hat - r2), probs = 0.95, na.rm=T),
+  r1_obs_perc=sum(!is.na(r1_hat))/niter,
+  r2_obs_perc=sum(!is.na(r2_hat))/niter,
+  obs_both_perc=sum(obs_both)/niter,
+  n1_inst_ave = mean(n1_inst),
+  n2_inst_ave = mean(n2_inst),
+  n1_rev_ave = mean(n1_reversed, na.rm=T),
+  n2_rev_ave = mean(n2_reversed, na.rm=T),
+  n1_prec_ave = mean(n1_precision, na.rm=T),
+  n2_prec_ave = mean(n2_precision, na.rm=T),
+  n1_recall_ave = mean(n1_recall),
+  n2_recall_ave = mean(n2_recall)) %>% ungroup()
+
+save(plot_tibble, file = "../saved_rdata/threshold_results.Rdata")
+```
+
+```{r}
+# Method related results.
+res_by_method <- plot_tibble %>% distinct(mr_method, thresh, r1_mae, r2_mae, total_mae, r1_me, r2_me, r1_95, r2_95, total_95, obs_both_perc, n1_rev_ave, n2_rev_ave) %>%
+  pivot_wider(names_from=mr_method, values_from =c(r1_mae, r2_mae, total_mae, r1_me, r2_me, r1_95, r2_95, total_95, obs_both_perc, n1_rev_ave, n2_rev_ave))
+
+# Plots split by p-cutoff colored by w-thresh.
+plot_tibble %>% filter(p_thresh == "5e-04") %>%
+  ggplot() + geom_point(aes(x=n1_recall, y=n1_precision, color = reorder(as.character(w_thresh), w_thresh)), alpha=0.01) +
+  geom_point(aes(x=n1_recall_ave, y=n1_prec_ave, color = reorder(as.character(w_thresh), w_thresh)))
+plot_tibble %>% filter(p_thresh == "5e-04") %>%
+  ggplot() + geom_point(aes(x=n2_recall, y=n2_reversed, color = reorder(as.character(w_thresh), w_thresh)), alpha=0.01) + 
+  geom_point(aes(x=n2_recall_ave, y=n2_rev_ave, color = reorder(as.character(w_thresh), w_thresh)))
+
+# SNP selection results.
+res_by_thresh <- plot_tibble %>% distinct(thresh,
+  p_thresh, w_thresh, obs_both_perc, r1_obs_perc, r2_obs_perc, n1_inst_ave,
+  n2_inst_ave, n1_rev_ave, n2_rev_ave, n1_prec_ave, n2_prec_ave,
+  n1_recall_ave, n2_recall_ave)
+
+res_by_thresh %>% filter(w_thresh != 0 & p_thresh != 0 ) %>%
+  ggplot() + geom_tile(aes(x=reorder(as.character(w_thresh), w_thresh), y=reorder(as.character(p_thresh), p_thresh), fill = obs_both_perc))
+res_by_thresh %>% filter(w_thresh != 0 & p_thresh != 0 ) %>%
+  ggplot() + geom_tile(aes(x=reorder(as.character(w_thresh), w_thresh), y=reorder(as.character(p_thresh), p_thresh), fill = n1_prec_ave))
+res_by_thresh %>% filter(w_thresh != 0 & p_thresh != 0 & w_thresh != 1.0) %>%
+  ggplot() + geom_point(aes(x=n1_recall_ave, y=n1_prec_ave, color = as.character(p_thresh)))
+
+plot_tibble %>% filter(w_thresh != 0 & p_thresh != 0 & w_thresh != 1.0) %>%
+  ggplot() + geom_point(aes(x=n1_recall, y=n1_precision, color = as.character(p_thresh)))
+
+metrics <- plot_tibble %>% distinct(mr_method, thresh,
+  p_thresh, w_thresh, obs_both_perc, r1_obs_perc, r2_obs_perc, n1_inst_ave,
+  n2_inst_ave, n1_rev_ave, n2_rev_ave, n1_prec_ave, n2_prec_ave,
+  n1_recall_ave, n2_recall_ave, r1_mae, r2_mae, total_mae, r1_95,  r2_95, total_95)
+
+for(p_thresh in c(5e-4, 5e-8)){
+  plot_tibble %>% filter(p_thresh == p_thresh) %>% ggplot() + geom_violin(aes(x = reorder(as.character(w_thresh), w_thresh), y = abs(r1 - r1_hat), color = mr_method))
+  
+  plot_tibble_one %>% filter(p_thresh == p_thresh) %>% ggplot(aes(x = n1_precision, y=n1_reversed, color=thresh)) + geom_point()
+  plot_tibble_one %>% filter(p_thresh == p_thresh) %>% ggplot(aes(x = n2_precision, y=n2_reversed, color=thresh)) + geom_point()
+  plot_tibble_one %>% filter(p_thresh == p_thresh) %>% ggplot(aes(x = n1_precision, y=n1_recall, color=thresh)) + geom_point()
+  plot_tibble_one %>% filter(p_thresh == p_thresh) %>% ggplot(aes(x = n2_precision, y=n2_recall, color=thresh)) + geom_point()
+}
+
+avg_by_method <- plot_tibble %>% distinct(
+    method, r1_mae, r2_mae, total_mae, r1_95, r2_95, total_95, r1_obs_perc, r2_obs_perc, n1_inst_ave, n2_inst_ave,
+    n1_rev_ave, n2_rev_ave, n1_prec_ave, n2_prec_ave,
+    n1_recall_ave, n2_recall_ave)
+plot_tibble %>% filter(mr_method == "raps") %>% ggplot(aes(x = n2_precision, y=n2_recall, color=select)) + geom_point()
+plot_tibble %>% filter(mr_method == "raps") %>% ggplot(aes(x = n2_precision, y=n2_reversed, color=select)) + geom_point()
+
+method_mae <- plot_tibble %>% filter(mr_method == "raps") %>% group_by(method) %>% mutate(r1_mae=mean(abs(r1_hat - r1), na.rm=T), r2_mae=mean(abs(r2_hat - r2), na.rm=T)) %>% distinct(method, r1_mae, r2_mae)
 plot_tibble %>% filter(method=="oracle_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat)))
 plot_tibble %>% filter(method=="oracle_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r2 - r2_hat)))
 plot_tibble %>% filter(method=="naive_raps") %>% ggplot(aes(x = r1, y = r2)) + geom_point(aes(color=abs(r1 - r1_hat))) #+ scale_color_gradient(limits=c(0, 5))
@@ -71,27 +173,26 @@ plot_tibble %>% filter(method=="test_raps") %>% ggplot(aes(x = r1, y = r2)) + ge
 
 
 ```{r}
+# Plot to show success/failure of raps/egger on completely NULL SNPs. 
+N1 = 10000
+N2 = 10000
+Ninst = 100
+niter = 100
 
-null_test_raps <- function(N1, N2, Ninst){
+plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
+  print(i)
   b1 = rnorm(Ninst, 0, 1/sqrt(N1))
   b2 = rnorm(Ninst, 0, 1/sqrt(N2))
   s1 = rep(1/sqrt(N1), Ninst)
   s2 = rep(1/sqrt(N2), Ninst)
-  mr.raps::mr.raps(b1, b2, s1, s2, loss.function = "huber")
-}
-
-null_test_mr <- function(N1, N2, Ninst){
-  b1 = rnorm(Ninst, 0, 1/sqrt(N1))
-  b2 = rnorm(Ninst, 0, 1/sqrt(N2))
-  s1 = rep(1/sqrt(N1), Ninst)
-  s2 = rep(1/sqrt(N2), Ninst)
-  print(b1)
-  print(b2)
-  
-  print(mr.raps::mr.raps.all(b1, b2, s1, s2))
   input <- MendelianRandomization::mr_input(bx = b1, bxse = s1, by = b2, byse = s2)
-  print(MendelianRandomization::mr_allmethods(input, method = "all",  seed = NA))
-  print(MendelianRandomization::mr_mbe(input,  seed = NA))
+  raps_res <- mr.raps::mr.raps(b1, b2, s1, s2, loss.function = "huber")
+  egger_res <- MendelianRandomization::mr_egger(input)
+  tibble(method=c("raps", "egger"),
+         beta=c(raps_res$beta.hat, egger_res$Estimate),
+         se=c(raps_res$beta.se, egger_res$StdError.Est))
 }
 
+summary <- plot_tibble %>% group_by(method) %>% mutate(mean_abs_beta = mean(abs(beta)), mean_se = mean(se), max_se = max(se)) %>% distinct(method, mean_abs_beta, mean_se, max_se)
+plot_tibble %>% ggplot(aes(x=se), color=method) + geom_density() + xlim(0, 100)
 ```

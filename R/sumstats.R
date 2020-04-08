@@ -8,9 +8,20 @@ read_gz_tsv <- function(filename) {
 
 #' Wrapper for read_gz_tsv to read all files matching pattern.
 #'
+#' One of file_pattern and file_list must be provided.
+#'
 #' @param file_pattern A string representing a glob pattern of files to match.
-read_file_pattern <- function(file_pattern) {
-  files <- Sys.glob(file_pattern)
+#' @param file_list A list of files to open.
+read_files <- function(file_pattern = NULL, file_list = NULL) {
+  if(!is.null(file_pattern)){
+    files <- Sys.glob(file_pattern)
+  } else if (!is.null(file_list)){
+    files <- file_list
+  }
+  else {
+    stop("One of file_pattern or file_list must be provided!")
+  }
+
   names <- sapply(strsplit(sapply(
     strsplit(files, "/"), function(x) {
       x[length(x)]
@@ -76,8 +87,9 @@ parse_sumstats_multi_trait <- function(sumstats) {
 #'
 #' @param file_pattern A glob string specifying the files to read.
 #' @param chunk_size Number of phenotypes to pivot at a time.
-read_ukbbss_neale <- function(file_pattern, chunk_size = 20) {
-  sumstats <- read_file_pattern(file_pattern)
+read_ukbbss_neale <- function(file_pattern = NULL, file_list = NULL,
+                              chunk_size = 20) {
+  sumstats <- read_files(file_pattern, file_list)
 
   # Ideally, we would rbind sumstats and then pivot off the columns we want
   # to get matrices. However they are too big and this breaks tidyr. Instead

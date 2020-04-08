@@ -6,6 +6,8 @@
 #
 # Args:
 #   $1: Directory with sumstats files to search.
+#   $2: variants.tsv.bgz file containing variant information.
+#   $3: File containing list of all SNPs that will be used in the analysis.
 
 # This needs to be run to get the SNPS_TO_USE arugment first!
 # cat "${clump_dir}/"*"/snps_to_use.txt" | sort | uniq > "${filtered_dir}/all.snps_to_use.txt"
