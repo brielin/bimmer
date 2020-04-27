@@ -4,10 +4,10 @@
 \alias{select_snps_oracle}
 \title{Selects SNPs based on true effect sizes.}
 \usage{
-select_snps_oracle(beta_true)
+select_snps_oracle(beta)
 }
 \arguments{
-\item{beta_true}{M x D matrix of true effect sizes.}
+\item{beta}{M x D matrix of true effect sizes.}
 }
 \description{
 Selects SNPs based on true effect sizes.

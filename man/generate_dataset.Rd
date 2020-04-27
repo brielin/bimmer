@@ -6,70 +6,48 @@
 \usage{
 generate_dataset(
   N,
-  M,
   D,
-  C = 0,
-  p_beta = 0.2,
-  p_net = 0.2,
-  noise = 0,
-  conf_ratio = 0,
-  pleiotropy = FALSE,
-  whiten = FALSE,
-  symmetric = NULL,
-  sd_net = 1,
-  sd_beta = 1,
-  sigma_g = 1,
+  M_total,
+  M_s,
+  M_p,
+  prop_shared,
+  rho,
+  noise,
+  p_net,
+  sd_net,
   fix_R = NULL,
   fix_beta = NULL
 )
 }
 \arguments{
-\item{N}{Integer. Number of individuals to simulate.}
-
-\item{M}{Integer. Number of SNPs to simulate.}
+\item{N}{Integer or array of integers of length D. Number of individuals to simulate.}
 
 \item{D}{Integer. Number of phenotypes to simulate.}
 
-\item{C}{Integer. Number of confounding components to simulate.}
+\item{M_total}{Integer. Total number of SNPs to simulate.}
 
-\item{p_beta}{Float. Proportion of SNPs with non-zero effect size.}
+\item{M_s}{Integer. Number of shared SNPs to simulate per pair.}
+
+\item{M_p}{Integer or sequence of two integers. Number of private SNPs to
+simulate per phenotype pair.}
+
+\item{prop_shared}{NULL, float between 0 and 1 or sequence thereof of length D.
+proportion of the variance explained by shared SNPs.}
+
+\item{rho}{Float. Correlation of shared SNPs.}
+
+\item{noise}{Float. Proportion of variance explained by environmental and
+measurement noise.}
 
 \item{p_net}{Float. Proportion of non-zero network edges.}
 
-\item{noise}{Float between 0 and 1. Proportion of variance in phenotype
-attributable to noise. 0 for no noise, 1 for all noise with no
-genetic/network/confounding component.}
-
-\item{conf_ratio}{Float between 0 and 1. Ratio of genetic vs confounding
-component prior to mixing by R and adding noiose.}
-
-\item{pleiotropy}{Bool. TRUE to allow for SNPs to effect multiple phenotypes.}
-
-\item{whiten}{Bool. TRUE to whiten generated genotypes. See
-generate_genotypes for more information.}
-
-\item{symmetric}{Bool or NULL. Whether to enforce a symmetry constraint on
-generated network. See generate_network for more.}
-
 \item{sd_net}{Float. Standard deviation of network edge weights.}
-
-\item{sd_beta}{Float. Standard deviation of SNP effect sizes.}
-
-\item{sigma_g}{Float or CxC matrix of floats. Variance or covariance matrix
-of confounding effects.}
 
 \item{fix_R}{Null or DxD matrix. Use to provide R in order to repeatedly
 resample from the same model.}
 
 \item{fix_beta}{Null or MxD matrix. Use to provide beta in order to
 repeatedly resample from the same model.}
-}
-\value{
-A list:
-  Y: N x D matrix of observed phenotypes.
-  X: N x M matrix of genotypes.
-  beta: M x D matrix of genotype effect sizes.
-  R: D x D network effect matrix.
 }
 \description{
 Generates a network mendelian randomization dataset with observed phenotypes,

@@ -1,4 +1,4 @@
 library(testthat)
-library(MrNo)
+library(bimmer)
 
-test_check("MrNo")
+test_check("bimmer")

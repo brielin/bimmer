@@ -4,7 +4,7 @@
 \alias{delta_cde}
 \title{Uses delta method to calculate CDE standard error.}
 \usage{
-delta_cde(R_tce_inv, SE_tce)
+delta_cde(R_tce_inv, SE_tce, na.rm = FALSE)
 }
 \arguments{
 \item{R_tce_inv}{DxD matrix. Inverse or approximate inverse of the TCE.}

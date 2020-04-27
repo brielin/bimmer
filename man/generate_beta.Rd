@@ -2,28 +2,20 @@
 % Please edit documentation in R/simulate.R
 \name{generate_beta}
 \alias{generate_beta}
-\title{Generates sparse effects and Mendelian randomization conditioning statistic.}
+\title{Generates many pairs of optionally correlated SNP effects}
 \usage{
-generate_beta(M, D, p = 0.1, sd = 1, pleiotropy = FALSE)
+generate_beta(M_s, M_p, D, rho)
 }
 \arguments{
-\item{M}{Integer. Number of SNPs to simulate.}
+\item{M_s}{Integer. Number of shared direct effects to simulate per phenotype.}
 
-\item{D}{Integer. Number of phenotypes to simulate.}
+\item{M_p}{Integer or sequence of two integers. Number of private SNPs to
+simulate per phenotype pair.}
 
-\item{p}{Float. Proportion of non-zero effects.}
+\item{D}{Integer >= 2. Number of phenotypes to simulate.}
 
-\item{sd}{Float. Standard deviation normal distribution of effect sizes.}
-
-\item{pleiotropy}{Bool. TRUE to allow for SNPs to effect multiple phenotypes.}
-}
-\value{
-A list,
-  beta: sparse float matrix of dimension MxD.
-  condition: float vector of length D.
+\item{rho}{Float in [-1, 1]. Correlation of each pair of phenotypes.}
 }
 \description{
-Generates an MxD matrix of SNP effects with p% non-zero in expectation. Also
-returns a vector of MR conditioning, the maximum ratio of the effect size of
-any SNP on each gene relative to every other gene.
+Generates many pairs of optionally correlated SNP effects
 }

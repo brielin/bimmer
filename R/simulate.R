@@ -1,3 +1,51 @@
+#' Fits exact model to data.
+#'
+#' @param R_tce D x D matrix of "total causal effects".
+#' @return D x D matrix with zero diagonal of deconvoluted direct effects.
+fit_exact <- function(R_tce) {
+  D <- dim(R_tce)[1]
+  R_tce[is.na(R_tce)] <- 0
+  R_tce_inv <- solve(R_tce)
+  R_hat <- diag(D) - R_tce_inv / diag(R_tce_inv)
+  return(list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv))
+}
+
+#' Fit's MVMR model to data.
+#'
+#' @importFrom foreach %do%
+#'
+#' @param sumstats_fit List with elements beta_hat and se_hat.
+#' @param snps_to_use List of per-phenotype pair SNP to use.
+fit_mvmr <- function(sumstats_fit, snps_to_use){
+  snps_to_use <- purrr::transpose(snps_to_use)
+  snp_names <- snps_to_use$names
+  snps_to_use$names <- NULL
+  pheno_names <- names(snps_to_use)
+
+  out = NULL
+  R_hat <- as.matrix(foreach::foreach(out = pheno_names, .combine = dplyr::bind_rows) %do% {
+    exp_snps <- dplyr::setdiff(unique(unlist(snp_names[names(snp_names) != out])),  snp_names[[out]])
+    exp_phenos <- pheno_names[pheno_names != out]
+    betaX <- as.matrix(sumstats_fit$beta_hat[exp_snps, exp_phenos])
+    betaXse <- as.matrix(sumstats_fit$se_hat[exp_snps, exp_phenos])
+    betaY <- sumstats_fit$beta_hat[exp_snps, out]
+    names(betaY) <- rownames(betaX)
+    betaYse <- sumstats_fit$se_hat[exp_snps, out]
+    names(betaY) <- rownames(betaXse)
+
+
+    mrinput <- MendelianRandomization::mr_mvinput(bx = betaX, bxse = betaXse, by = betaY, byse = betaYse)
+    mr_res <- as.vector(MendelianRandomization::mr_mvegger(mrinput)$Estimate)
+    names(mr_res) <- exp_phenos
+    self <- c(0.0)
+    names(self) = out
+    return(c(self, mr_res))
+  })
+
+  rownames(R_hat) <- colnames(R_hat)
+  return(list("R_hat" = R_hat))
+}
+
 #' Gets matrix of TCE from observed network.
 #'
 #' @param R_obs D x D matrix of observed effects.
@@ -21,7 +69,7 @@ get_tce <- function(R_obs, normalize = NULL) {
 #' @return D x D matrix of observed effects.
 get_observed <- function(R) {
   D <- dim(R)[1]
-  return(as.matrix(R %*% solve(diag(D) - R)))
+  return(solve(diag(D) - R, R))
 }
 
 #' Gets direct network from observed effects.
@@ -30,49 +78,52 @@ get_observed <- function(R) {
 #' @return D x D matrix of observed effects.
 get_direct <- function(R_obs) {
   D <- dim(R_obs)[1]
-  return(R_obs %*% solve(diag(D) + R_obs))
+  return(solve(diag(D) + R_obs, R_obs))
 }
 
-#' Uses naive meta analysis method for TCE estimation with multiple SNPs.
+#' Generates pairs of optionally correleated SNP effects.
 #'
-#' @param b_exp Vector of SNP effects on exposure variable.
-#' @param b_out Vector of SNP effects on outcome variable.
-#' @param se_exp Vector of SNP effects on exposure variable.
-#' @param se_out Vector of SNP effects on outcome variable.
-#' @return A list with two elements.
-#'   tce_hat: The total causal efffect estimate.
-#'   se_tce: The standard error of the estimate.
-naive_ma <- function(b_exp, b_out, se_exp, se_out) {
-  tce_hat <- mean(b_out / b_exp)
-  se_tce <- stats::sd(b_out / b_exp) / sqrt(length(b_exp))
-  return(list("beta.hat" = tce_hat, "beta.se" = se_tce))
-}
-
-#' Generates sparse effects and Mendelian randomization conditioning statistic.
-#'
-#' @description
-#' Generates an MxD matrix of SNP effects with p% non-zero in expectation.
-#'
-#' @param M Integer. Number of SNPs to simulate.
-#' @param D Integer. Number of phenotypes to simulate.
-#' @param p Float. Proportion of non-zero effects.
-#' @param sd Float. Standard deviation normal distribution of effect sizes.
-#' @param pleiotropy Bool. TRUE to allow for SNPs to effect multiple phenotypes.
-generate_beta <- function(M, D, p = 0.1, sd = 1.0, pleiotropy = FALSE) {
-  beta <- Matrix::Matrix(
-    stats::rnorm(M * D, sd = sd) * (stats::runif(M * D) < p), M, D,
-    sparse = TRUE
-  )
-  colnames(beta) <- paste0("P", 1:D)
-  rownames(beta) <- paste0("rs", 1:M)
-  non_zero_index <- !apply(abs(beta) == 0, 1, all)
-  beta_non_zero <- beta[non_zero_index, ]
-  beta_snp_max <- apply(abs(beta_non_zero), 1, max)
-  beta_over_max <- abs(beta_non_zero) / beta_snp_max
-  if (!pleiotropy) {
-    beta_non_zero[Matrix::which(beta_over_max < 1.0, arr.ind = TRUE)] <- 0
-    beta[non_zero_index] <- beta_non_zero
+#' @param M_s Integer. Number of shared SNPs.
+#' @param M_p Integer or sequence of two integers. Number of private SNPs to
+#'  simulate per phenotype pair.
+#' @param rho Float [-1, 1]. Correlation of shared SNPs.
+generate_beta_pair <- function(M_s, M_p, rho){
+  beta_s <- mvtnorm::rmvnorm(M_s, mean = c(0, 0), sigma = matrix(c(1, rho, rho, 1), nrow = 2))
+  if(length(M_p) > 1){
+    beta_p1 <- stats::rnorm(M_p[1])
+    beta_p2 <- stats::rnorm(M_p[2])
+    beta <- rbind(cbind(beta_p1, rep(0, M_p[1])), cbind(rep(0, M_p[2]), beta_p2), beta_s)
+  } else{
+    beta_p1 <- stats::rnorm(M_p)
+    beta_p2 <- stats::rnorm(M_p)
+    beta <- rbind(cbind(beta_p1, rep(0, M_p)), cbind(rep(0, M_p), beta_p2), beta_s)
   }
+  return(beta)
+}
+
+#' Generates many pairs of optionally correlated SNP effects
+#'
+#'
+#' @param M_s Integer. Number of shared direct effects to simulate per phenotype.
+#' @param M_p Integer or sequence of two integers. Number of private SNPs to
+#'  simulate per phenotype pair.
+#' @param D Integer >= 2. Number of phenotypes to simulate.
+#' @param rho Float in [-1, 1]. Correlation of each pair of phenotypes.
+generate_beta <- function(M_s, M_p, D, rho) {
+  beta <- generate_beta_pair(M_s, M_p, rho)
+  if(D > 3){
+    for( i in 1:(floor(D/2)-1) ){
+      beta_pair <- generate_beta_pair(M_s, M_p, rho)
+      beta <- rbind(cbind(beta, matrix(0L, nrow = nrow(beta), ncol = 2)),
+                    cbind(matrix(0L, nrow = nrow(beta_pair), ncol = ncol(beta)), beta_pair))
+    }
+  }
+  if(D%%2==1){
+    beta <- rbind(cbind(beta, matrix(0L, nrow = nrow(beta), ncol = 1)),
+                  cbind(matrix(0L, nrow = M_p[1], ncol = ncol(beta)), stats::rnorm(M_p[1])))
+  }
+  colnames(beta) <- paste0("P", 1:ncol(beta))
+  rownames(beta) <- paste0("rs", 1:nrow(beta))
   return(beta)
 }
 
@@ -88,13 +139,10 @@ generate_beta <- function(M, D, p = 0.1, sd = 1.0, pleiotropy = FALSE) {
 #'   eigenvalues with modulus between -1 and 1.
 #' @param epsilon Float. Number to add to maximum eigenvalue to better-condition
 #'   normalization.
-#' @param symmetric Bool. TRUE to force the returned matrix to be
-#'   symmetric, false for anti-symmetric, and NULL for no symmetry enforcement.
 #' @param sd Float. Standard deviation of network edge weights. NA for binary
 #'   matrices with equal probability of
 #' @return A DxD sparse matrix.
-generate_network <- function(D, p = 0.1, normalize = TRUE, epsilon = 0.1,
-                             symmetric = NULL, sd = 1.0) {
+generate_network <- function(D, p = 0.1, normalize = TRUE, epsilon = 0.1, sd = 1.0) {
   if (is.na(sd)) {
     R <- matrix((2 * stats::rbinom(D * D, 1, 0.5) - 1) *
       (stats::runif(D * D) < p), D, D)
@@ -102,21 +150,6 @@ generate_network <- function(D, p = 0.1, normalize = TRUE, epsilon = 0.1,
     R <- matrix(stats::rnorm(D * D, sd = sd) * (stats::runif(D * D) < p), D, D)
   }
   diag(R) <- 0.0
-  if (!is.null(symmetric)) {
-    if (symmetric) {
-      R[lower.tri(R)] <- 0
-      R <- R + t(R)
-    }
-    else if (!symmetric) {
-      # TODO(brielin): Fix this so that it evenly sets upper and lower indices
-      #   to 0 and preserves fraction of non-zeros.
-      mutual_ut <- which(
-        (abs(R)[upper.tri(R)] > 0) & (t(abs(R))[upper.tri(R)] > 0)
-      )
-      R[upper.tri(R)][mutual_ut] <- 0
-    }
-  }
-  R <- Matrix::Matrix(R, sparse = TRUE)
   colnames(R) <- paste0("P", 1:D)
   rownames(R) <- paste0("P", 1:D)
   if (normalize == TRUE) {
@@ -129,47 +162,25 @@ generate_network <- function(D, p = 0.1, normalize = TRUE, epsilon = 0.1,
   return(R)
 }
 
-#' Generates genotypes.
+#' Generates sumstats.
 #'
-#' @param N Integer. Number of individuals to simulate.
-#' @param M Integer. Number of SNPs to simulate.
-#' @param whiten Bool. TRUE to whiten such that the observed covariance is
-#'   exactly 0. This should only be used for testing.
-#' @return and NxM matrix of simulated genotypes.
-generate_genotypes <- function(N, M, whiten = FALSE) {
-  # TODO(brielin): Get real genotypes from Biobank.
-  X <- matrix(stats::rnorm(N * M), N, M)
-  if (whiten) {
-    X <- t(t(X) - colMeans(X))
-    X_svd <- svd(X)
-    X <- sqrt(N - 1) * X_svd$u %*% t(X_svd$v)
-  }
-  rownames(X) <- paste0("N", 1:N)
-  colnames(X) <- paste0("rs", 1:M)
-  return(X)
-}
+#' @param beta M x D matrix of effect sizes.
+#' @param M_null Integer. Adds M_null additional SNPs with null effects.
+#' @param N Integer or array of integers of length D. Number of samples for each
+#'   phenotype.
+generate_sumstats <- function(beta, M_null, N){
+  M <- nrow(beta)
+  D <- ncol(beta)
+  beta_eff <- t(matrix(stats::rnorm(length(beta), mean = t(beta), sd = 1/sqrt(N)), nrow = D))
+  beta_null <- t(matrix(stats::rnorm(M_null * D, mean = 0, sd = 1/sqrt(N)), nrow = D))
+  beta_hat <- rbind(beta_eff, beta_null)
+  se_hat <- t(matrix(rep(1/sqrt(N), D/length(N)*(M + M_null)), nrow = D))
 
-#' Generates (optionally correlated) environmental confounding.
-#'
-#' Note that this is different from the (always uncorrelated) measurement error
-#' since it is mixed by the network with the genetic component.
-#'
-#' @param N Integer, number of individuals.
-#' @param C Integer, dimensionality of confounding.
-#' @param D Integer, number of phenotypes.
-#' @param sigma_g Float or D x D matrix of floats. If a single value it will be
-#'   taken as the variance of the generated effect size. If a CxC matrix it will
-#'   be the covariance.
-generate_confounding <- function(N, C, D, sigma_g) {
-  U <- matrix(stats::rnorm(N * C), N, C)
-  if (is.null(dim(sigma_g))) {
-    gamma <- matrix(stats::rnorm(C * D, sd = sqrt(sigma_g)), C, D)
-  } else if (identical(sigma_g, matrix(1L, D, D))) {
-    gamma <- matrix(rep(stats::rnorm(C, sd = sqrt(sigma_g)), D), nrow = C)
-  } else {
-    gamma <- MASS::mvrnorm(C, mu = rep(0, D), Sigma = sigma_g)
-  }
-  U %*% gamma
+  colnames(beta_hat) <- paste0("P", 1:ncol(beta_hat))
+  rownames(beta_hat) <- paste0("rs", 1:nrow(beta_hat))
+  colnames(se_hat) <- paste0("P", 1:ncol(se_hat))
+  rownames(se_hat) <- paste0("rs", 1:nrow(se_hat))
+  return(list("beta_hat" = data.frame(beta_hat), "se_hat" = data.frame(se_hat)))
 }
 
 #' Generates dataset.
@@ -177,182 +188,107 @@ generate_confounding <- function(N, C, D, sigma_g) {
 #' Generates a network mendelian randomization dataset with observed phenotypes,
 #' genotypes, true network effects and true effect sizes.
 #'
-#' @param N Integer. Number of individuals to simulate.
-#' @param M Integer. Number of SNPs to simulate.
+#' @param N Integer or array of integers of length D. Number of individuals to simulate.
 #' @param D Integer. Number of phenotypes to simulate.
-#' @param C Integer. Number of confounding components to simulate.
-#' @param p_beta Float. Proportion of SNPs with non-zero effect size.
+#' @param M_total Integer. Total number of SNPs to simulate.
+#' @param M_s Integer. Number of shared SNPs to simulate per pair.
+#' @param M_p Integer or sequence of two integers. Number of private SNPs to
+#'   simulate per phenotype pair.
+#' @param prop_shared NULL, float between 0 and 1 or sequence thereof of length D.
+#'   proportion of the variance explained by shared SNPs.
+#' @param rho Float. Correlation of shared SNPs.
 #' @param p_net Float. Proportion of non-zero network edges.
-#' @param noise Float between 0 and 1. Proportion of variance in phenotype
-#'   attributable to noise. 0 for no noise, 1 for all noise with no
-#'   genetic/network/confounding component.
-#' @param conf_ratio Float between 0 and 1. Ratio of genetic vs confounding
-#'   component prior to mixing by R and adding noiose.
-#' @param pleiotropy Bool. TRUE to allow for SNPs to effect multiple phenotypes.
-#' @param whiten Bool. TRUE to whiten generated genotypes. See
-#'   generate_genotypes for more information.
-#' @param symmetric Bool or NULL. Whether to enforce a symmetry constraint on
-#'   generated network. See generate_network for more.
 #' @param sd_net Float. Standard deviation of network edge weights.
-#' @param sd_beta Float. Standard deviation of SNP effect sizes.
-#' @param sigma_g Float or CxC matrix of floats. Variance or covariance matrix
-#'   of confounding effects.
+#' @param noise Float. Proportion of variance explained by environmental and
+#'   measurement noise.
 #' @param fix_R Null or DxD matrix. Use to provide R in order to repeatedly
 #'   resample from the same model.
 #' @param fix_beta Null or MxD matrix. Use to provide beta in order to
 #'   repeatedly resample from the same model.
-#' @return A list:
-#'   Y: N x D matrix of observed phenotypes.
-#'   X: N x M matrix of genotypes.
-#'   beta: M x D matrix of genotype effect sizes.
-#'   R: D x D network effect matrix.
-generate_dataset <- function(N, M, D, C = 0, p_beta = 0.2, p_net = 0.2,
-                             noise = 0.0, conf_ratio = 0.0, pleiotropy = FALSE,
-                             whiten = FALSE, symmetric = NULL, sd_net = 1.0,
-                             sd_beta = 1.0, sigma_g = 1.0, fix_R = NULL,
-                             fix_beta = NULL) {
+generate_dataset <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, p_net, sd_net,
+                             fix_R = NULL, fix_beta = NULL) {
+  if(M_total < D*M_p + floor(D/2)*M_s){
+    stop("Total number of SNPs less than combined shared and private SNPs.")
+  }
+
   # Generate the various components.
-  if (is.null(fix_beta)) {
-    beta <- generate_beta(
-      M, D, p_beta, pleiotropy = pleiotropy, sd = sd_beta)
-  } else {
-    beta <- fix_beta
-  }
-  if (is.null(fix_R)) {
-    R <- generate_network(D, p_net, symmetric = symmetric, sd = sd_net)
-  } else {
-    R <- fix_R
-  }
-  X <- generate_genotypes(N, M, whiten = whiten)
-  genetic <- X %*% beta
-
-  # Normalize the confouding contribution to have equal variance to the genetic.
-  if (C > 0) {
-    confounding <- generate_confounding(N, C, D, sigma_g = sigma_g)
-    genetic_var <- apply(genetic, 2, stats::var)
-    confounding_var <- apply(confounding, 2, stats::var)
-    confounding <- t(t(confounding) * sqrt(genetic_var / confounding_var))
-  }
-  else {
-    confounding <- 0
+  beta <- fix_beta
+  if (is.null(beta)) {
+    beta <- generate_beta(M_s = M_s, M_p = M_p, D = D, rho = rho)
   }
 
-  # Calculate the direct and mixed effect plus noise to produce Y.
-  direct <- sqrt(1 - conf_ratio) * genetic + sqrt(conf_ratio) * confounding
-  network <- direct %*% solve(diag(D) - R)
-  network_var <- apply(network, 2, stats::var)
-  epsilon <- t(t(matrix(stats::rnorm(N * D), N, D)) * sqrt(network_var))
-  Y <- sqrt(1 - noise) * network + sqrt(noise) * epsilon
+  R <- fix_R
+  if (is.null(R)) {
+    R <- generate_network(D = D, p = p_net, sd = sd_net)
+  }
 
-  return(list("Y" = as.matrix(Y), "X" = X, "beta" = beta, "R" = R))
+  mix_mat <- solve(diag(D) - R)
+  beta_obs <- beta %*% mix_mat
+
+  if(!is.null(prop_shared)){
+    for(i in seq(1, 2*floor(D/2), 2)){
+      prop_1 = prop_shared[i]
+      prop_2 = prop_shared[i+1]
+      eff1 <- (abs(beta[, i]) > 0)
+      eff2 <- (abs(beta[, i+1]) > 0)
+      shared <- eff1 & eff2
+      private_1 = eff1 & !eff2
+      private_2 = eff2 & !eff1
+
+      M_s1_eff <- sum(beta_obs[shared, i]**2)
+      M_s2_eff <- sum(beta_obs[shared, i+1]**2)
+      M_p1_eff <- sum(beta_obs[private_1, i]**2)
+      M_p2_eff <- sum(beta_obs[private_2, i+1]**2)
+      v1s = M_s1_eff/(M_s1_eff + M_p1_eff)
+      v1p = M_p1_eff/(M_s1_eff + M_p1_eff)
+      v2s = M_s2_eff/(M_s2_eff + M_p2_eff)
+      v2p = M_p2_eff/(M_s2_eff + M_p2_eff)
+
+      beta_obs[shared, i] = sqrt(prop_1/v1s)*beta_obs[shared, i]
+      beta_obs[private_1, i] = sqrt((1-prop_1)/v1p)*beta_obs[private_1, i]
+      beta_obs[shared, i+1] = sqrt(prop_2/v2s)*beta_obs[shared, i+1]
+      beta_obs[private_2, i+1] = sqrt((1-prop_2)/v2p)*beta_obs[private_2, i+1]
+    }
+  }
+
+  Y_var <- colSums(beta_obs**2)
+  beta_scale <- t(t(beta_obs) / sqrt(Y_var)) * sqrt(1-noise)
+
+  colnames(beta_scale) = colnames(beta)
+  sumstats_select <- generate_sumstats(beta_scale, M_total - nrow(beta), N)
+  sumstats_fit <- generate_sumstats(beta_scale, M_total - nrow(beta), N)
+
+  R_tce = get_tce(get_observed(R), normalize=sqrt(Y_var))
+  R_normed <- fit_exact(R_tce)$R_hat
+  return(list("sumstats_select" = sumstats_select,
+              "sumstats_fit" = sumstats_fit,
+              "R_cde" = R_normed,
+              "R_tce" = R_tce,
+              "beta" = beta))
 }
 
-#' Generate summary statistics.
-#'
-#' Note that this always returns values on the normalized (per-variance) scale.
-#'
-#' @param X N x M matrix of genotypes.
-#' @param Y N x D matrix of phenotypes.
-#' @param N_ind Length D vector with each entry specifying the number of samples
-#'   from each phenotype to use.
-#' @return A list,
-#'   beta_hat: An M x D matrix of calculated effect sizes.
-#'   se_hat: An M x D matrix of corresponding estimated standard errors.
-generate_sumstats <- function(X, Y, N_ind = NULL, M_null = 0) {
-  N <- dim(X)[1]
-  M <- dim(X)[2]
-  D <- dim(Y)[2]
-
-  if(!is.null(N_ind)){
-    select_function <- function(y, n){
-      drop = sample.int(N, size=(N-n))
-      y[drop] = NA
-      return(y)
-    }
-    Y <- as.matrix(purrr::map2_dfr(data.frame(Y), N_ind, select_function))
-  }
-
-  Xs <- scale(X)
-  Ys <- scale(Y)
-  sumstats_one_pheno <- function(y){
-    mask <- !is.na(y)
-    N_mask <- sum(mask)
-    y_mask <- y[mask]
-    if(any(!mask)){
-      X_mask <- scale(X[mask, ])
-    } else {
-      X_mask <- Xs
-    }
-    beta_hat <- c((t(X_mask) %*% y_mask)/(N_mask-1))
-    names(beta_hat) <- colnames(X_mask)
-    eps2sum <- colSums((y_mask - t(t(X_mask) * beta_hat))**2)
-    se_hat <- sqrt(eps2sum/((N_mask - 1)*(N_mask - 2)))
-    return(list(beta_hat, se_hat))
-  }
-
-  sumstats <- purrr::transpose(purrr::map(data.frame(Ys), sumstats_one_pheno))
-  beta_hat <- as.data.frame(sumstats[[1]])
-  se_hat <- as.data.frame(sumstats[[2]])
-  if(M_null > 0){
-    N_null <- rep(N, D)
-    if(!is.null(N_ind)){
-      N_null <- N_ind
-    }
-    beta_null <- t(matrix(stats::rnorm(
-      M_null*D, mean = 0, sd = 1/sqrt(N_null)), nrow = D))
-    se_null <- t(matrix(rep(1/sqrt(N_null), M_null), nrow = D))
-    rownames(beta_null) <- paste0("rs", (M+1):(M+M_null))
-    rownames(se_null) <- paste0("rs", (M+1):(M+M_null))
-    colnames(beta_null) <- colnames(beta_hat)
-    colnames(se_null) <- colnames(se_hat)
-    beta_hat <- rbind(beta_hat, beta_null)
-    se_hat <- rbind(se_hat, se_null)
-  }
-  return(list("beta_hat" = beta_hat, "se_hat" = se_hat))
-}
 
 #' Selects SNPs based on true effect sizes.
 #'
-#' @param beta_true M x D matrix of true effect sizes.
-select_snps_oracle <- function(beta_true) {
-  select <- function(beta) {
-    mask <- abs(beta) > 0
-    res <- purrr::map(colnames(beta_true), function(x) {
-      return(mask)
-    })
-    names(res) <- colnames(beta_true)
-    res <- purrr::prepend(res, list("names" = rownames(beta_true)))
-    return(res)
-  }
-  return(purrr::map(data.frame(as.matrix(beta_true)), select))
-}
-
-
-#' Fits L1-regularized approximate inverse while finding best lambda (cheating).
-#'
-#' @param R_tce DxD matrix of "total causal effects".
-#' @param R DxD matrix of true "causal direct effects".
-fit_regularized_cheat <- function(R_tce, R) {
-  mae <- Inf
-  best_R <- NULL
-  for (lambda in c(0.0, 0.0001, 0.001, 0.01, 0.1)) {
-    tce_res <- tryCatch(
-      fit_regularized(R_tce, lambda),
-      error = function(cond) {
-        return(NA)
+#' @param beta M x D matrix of true effect sizes.
+select_snps_oracle <- function(beta) {
+  non_pleio_snps <- (rowSums(abs(beta) > 0) == 1)
+  selected <- purrr::imap(as.data.frame(beta), function(b, name){
+    mask <- (abs(b) > 0) & (non_pleio_snps)
+    res <- purrr::map(colnames(beta), function(x) {
+      if(x == name){
+        return(rep(FALSE, sum(mask)))
+      } else{
+        return(rep(TRUE, sum(mask)))
       }
-    )
-    lam_mae <- mean(abs(R - tce_res$R_hat))
-    if (is.na(lam_mae)) {
-      lam_mae <- Inf
-    }
-    if (lam_mae < mae) {
-      mae <- lam_mae
-      best_R <- tce_res
-    }
-  }
-  return(best_R)
+    })
+    names(res) <- colnames(beta)
+    res <- purrr::prepend(res, list("names" = rownames(beta)[mask]))
+    return(res)
+  })
+  return(selected)
 }
+
 
 #' A simple helper function to count the number of instuments for each pair.
 #'
@@ -363,6 +299,8 @@ count_instruments <- function(selected) {
   })))
 }
 
+# TODO(brielin): Not updated for pleitropic SNPs, fix this if we want to
+# revisit these metrics.
 instrument_metrics <- function(selected, beta){
   phenos <- names(selected)
   beta <- as.matrix(beta)
@@ -383,4 +321,46 @@ instrument_metrics <- function(selected, beta){
       return(c(correct/total, correct/all_p1, reversed/total))
     })
   })
+}
+
+#' Calculates metrics for model evaluation.
+#'
+#' @param X DxD matrix of predicted parameters.
+#' @param X_true DxD matrix of true parameters
+#' @param eps float. Absolute values below eps will be considered 0.
+calc_metrics <- function(X, X_true, eps = 1e-10) {
+  D <- ncol(X)
+  X <- X[!diag(D)]
+  X_true <- X_true[!diag(D)]
+  X[abs(X) < eps] <- 0
+  X_true[abs(X_true) < eps] <- 0
+
+  rmse <- sqrt(mean((X - X_true)^2))
+  mae <- mean(abs(X - X_true))
+
+  sign_X <- sign(X)
+  sign_Xt <- sign(X_true)
+  TN <- sum(!(abs(sign_X) | abs(sign_Xt)))
+  TS <- sum(sign_X == sign_Xt) - TN
+  FN <- sum((1 - abs(sign_X)) & abs(sign_Xt))
+  FS <- sum(sign_X != sign_Xt) - FN
+
+  acc <- mean(sign_X == sign_Xt)
+  N_pos <- sum(X_true > 0)
+  N_neg <- sum(X_true < 0)
+  N_zero <- sum(X_true == 0)
+  weights <- sign_Xt
+  weights[sign_Xt > 0] <- 1 / N_pos
+  weights[sign_Xt < 0] <- 1 / N_neg
+  weights[sign_Xt == 0] <- 1 / N_zero
+  weight_acc <- sum((sign_X == sign_Xt) * weights) / sum(weights)
+  precision = TS / (TS + FS)
+  recall = TS / (TS + FN)
+  F1 <- 2*precision*recall/(precision + recall)
+  F1 <- dplyr::if_else(!is.na(F1), F1, 0.0)
+
+  return(list("precision" = precision, "recall" = recall,
+              "F1" = F1,
+              "rmse" = rmse, "mae" = mae, "acc" = acc,
+              "weight_acc" = weight_acc))
 }

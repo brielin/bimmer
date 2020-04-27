@@ -45,6 +45,8 @@ read_files <- function(file_pattern = NULL, file_list = NULL) {
 #' Note also that this only keeps the normalized scale beta and SE due to memory
 #' concerns. The number of samples and p-value can be backed out from these.
 #'
+#' @importFrom dplyr %>%
+#'
 #' @param sumstats Tibble. Must include ccolumns "minor_AF",
 #'   "low_confidence_variant", "tstat", "n_completet_samples", "beta", "se"
 #'   and "pval".
@@ -67,6 +69,8 @@ parse_ukbbss_neale <- function(sumstats) {
 #' This parses a list of sumstats tibbles into a list of matrices containing
 #' the relevant data for future analysis, ie that required by `fit_sumstats`.
 #'
+#' @importFrom dplyr %>%
+#'
 #' @param sumstats A list where each entry is a tibble of sumstats.
 parse_sumstats_multi_trait <- function(sumstats) {
   sumstats <- dplyr::bind_rows(sumstats, .id = "trait")
@@ -85,7 +89,12 @@ parse_sumstats_multi_trait <- function(sumstats) {
 
 #' Reads a pattern of summary statistics formatted according to the Neale lab.
 #'
-#' @param file_pattern A glob string specifying the files to read.
+#' @importFrom dplyr %>%
+#'
+#' @param file_pattern A glob string specifying the files to read or NULL to
+#'   use file_list instread.
+#' @param file_list A list of file names to use, or NULL to use file_pattern
+#'   instead.
 #' @param chunk_size Number of phenotypes to pivot at a time.
 read_ukbbss_neale <- function(file_pattern = NULL, file_list = NULL,
                               chunk_size = 20) {

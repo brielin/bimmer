@@ -7,7 +7,7 @@
 fit_tce(
   sumstats,
   selected_snps,
-  mr_method = c("raps", "ps", "aps", "egger", "mbe"),
+  mr_method = c("raps", "ps", "aps", "egger", "egger_p", "mbe"),
   min_instruments = 5,
   shrink = FALSE,
   verbose = FALSE,
@@ -27,8 +27,6 @@ estimate between every pair.}
 
 \item{min_instruments}{Integer. Return NA if there are less than
 this many instruments for a pair of phenotypes.}
-
-\item{shrink}{Boolean. True to shrink estimates of R_tce to 0.}
 
 \item{verbose}{Bpplean. True to print progress.}
 

@@ -8,7 +8,7 @@ select_snps(
   sumstats,
   snps_to_use = NULL,
   p_thresh = 1e-04,
-  welch_thresh = 0.05,
+  welch_thresh = 0.1,
   verbose = FALSE
 )
 }

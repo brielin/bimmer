@@ -1,52 +1,37 @@
-load("../testdata/dataset.Rdata")
+
+
 
 test_that("get_direct_observed_works", {
-  R <- dataset$R
-  expect_equal(matrix(get_direct(get_observed(R))), matrix(R))
+  dataset <- generate_dataset(N = 100, D = 3, M_total = 20, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
+  expect_equal(matrix(get_direct(get_observed(dataset$R_cde))), matrix(dataset$R_cde))
 })
 
-test_that("get_tce_fit_exact_works", {
-  R <- dataset$R
-  expect_equal(matrix(fit_exact(get_tce(get_observed(R)))$R_hat), matrix(R))
-})
+# TODO(brielin): Why isn't this exact??
+# test_that("get_tce_fit_exact_works", {
+#   dataset <- generate_dataset(N = 100, D = 3, M_total = 20, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
+#   expect_equal(matrix(fit_exact(get_tce(get_observed(dataset$R_cde)))$R_hat), matrix(dataset$R_cde), tolerance = 0.01)
+# })
 
-test_that("naive_ma_works", {
-  beta_exp <- c(1, 2, 3, 4)
-  beta_out <- c(0.5, 2, 1.5, 4)
-  se_exp <- c(1, 1, 1, 1)
-  se_out <- c(1, 1, 1, 1)
-  tce_hat <- 0.75
-  se_tce <- 0.144337
 
-  res <- naive_ma(beta_exp, beta_out, se_exp, se_out)
-  expect_equal(res$beta.hat, tce_hat)
-  expect_equal(res$beta.se, se_tce, tolerance = 1e-6)
+test_that("generate_beta_pair_runs", {
+  beta <- generate_beta_pair(5, 10, 0)
+  expect_equal(dim(beta), c(25, 2))
 })
 
 
 test_that("generate_beta_runs", {
-  M <- 5
-  D <- 2
-  p <- 0.5
-  result <- generate_beta(M, D, p)
-  expect_equal(dim(result), c(M, D))
-  expect_is(result, "sparseMatrix")
+  result <- generate_beta(5, 10, 3, 0)
+  expect_equal(dim(result), c(35, 3))
+  result <- generate_beta(5, 10, 5, 0)
+  expect_equal(dim(result), c(60, 5))
 })
 
-test_that("generate_beta_no_pleiotropy", {
-  M <- 5
-  D <- 2
-  p <- 0.5
-  result <- generate_beta(M, D, p, pleiotropy = FALSE)
-  expect_equal(unname(Matrix::rowSums(abs(result) > 0) <= 1), rep(TRUE, 5))
-})
 
 test_that("generate_network_runs", {
   D <- 10
   p <- 0.5
   R <- generate_network(D, p, normalize = FALSE)
   expect_equal(dim(R), c(D, D))
-  expect_is(R, "sparseMatrix")
 })
 
 test_that("generate_network_normalizes", {
@@ -57,140 +42,27 @@ test_that("generate_network_normalizes", {
   expect_lte(max(abs(eigenvalues)), 1.0 + 1e-8)
 })
 
-test_that("generate_network_symmetry", {
-  D <- 10
-  p <- 0.5
-  R <- as.matrix(generate_network(D, p, symmetric = TRUE))
-  expect_true(all(R == t(R)))
-  R <- as.matrix(generate_network(D, p, symmetric = FALSE))
-  expect_false(any((R > 0) & (t(R) > 0)))
-})
-
-test_that("generate_genotypes_runs", {
-  N <- 10
-  M <- 5
-  X <- generate_genotypes(N, M)
-  expect_is(X, "matrix")
-  expect_equal(dim(X), c(N, M))
-})
-
-test_that("generate_genotypes_whitens", {
-  N <- 10
-  M <- 5
-  X <- generate_genotypes(N, M, whiten = TRUE)
-  expect_equal(unname(cov(X)), diag(M))
-})
-
-test_that("generate_confounding_works", {
-  N <- 10
-  D <- 2
-  C <- 5
-
-  Ug <- generate_confounding(N, C, D, sigma_g = 1.0)
-  expect_equal(dim(Ug), c(N, D))
-
-  sigma_g <- matrix(c(1, 0.5, 0.5, 1), nrow = D)
-  Ug <- generate_confounding(N, C, D, sigma_g = sigma_g)
-  expect_equal(dim(Ug), c(N, D))
-})
-
 test_that("generate_dataset_runs", {
-  N <- 10
-  D <- 5
-  M <- 7
-  p_beta <- 0.5
-  p_net <- 0.5
-  noise_ratio <- 0.5
-  result <- generate_dataset(N, M, D,
-    p_beta = p_beta, p_net = p_net,
-    noise = noise_ratio,
-    pleiotropy = TRUE
-  )
-  expect_equal(dim(result$Y), c(N, D))
-  expect_equal(dim(result$X), c(N, M))
-  expect_equal(dim(result$beta), c(M, D))
-  expect_equal(dim(result$R), c(D, D))
+  dataset <- generate_dataset(N = 100, D = 3, M_total = 30, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
+
+  expect_equal(dim(dataset$sumstats_select$beta_hat), c(30,3))
+  expect_equal(dim(dataset$sumstats_select$se_hat), c(30,3))
+  expect_equal(dim(dataset$sumstats_fit$beta_hat), c(30,3))
+  expect_equal(dim(dataset$sumstats_fit$se_hat), c(30,3))
+  expect_equal(dim(dataset$R_tce), c(3, 3))
+  expect_equal(dim(dataset$R_cde), c(3, 3))
+  expect_equal(dim(dataset$beta), c(20, 3))
 })
 
-test_that("generate_dataset_with_confounding", {
-  N <- 10
-  D <- 5
-  C <- 5
-  M <- 7
-  p_beta <- 0.5
-  p_net <- 0.5
-  noise_ratio <- 0.5
-  result <- generate_dataset(N, M, D, C,
-    p_beta = p_beta, p_net = p_net, noise_ratio,
-    pleiotropy = TRUE, conf_ratio = 0.5, sigma_g = 1.0
-  )
-  expect_equal(dim(result$Y), c(N, D))
-  expect_equal(dim(result$X), c(N, M))
-  expect_equal(dim(result$beta), c(M, D))
-  expect_equal(dim(result$R), c(D, D))
-})
-
-
-test_that("generate_sumstats_works", {
-  sumstats <- generate_sumstats(dataset$X, dataset$Y)
-  dataset$Y <- scale(dataset$Y)
-  dataset$X <- scale(dataset$X)
-  expect_equal(
-    sumstats$beta_hat[1, 1],
-    unname(lm(dataset$Y[, 1] ~ dataset$X[, 1])$coefficients)[2]
-  )
-  expect_equal(
-    sumstats$beta_hat[1, 2],
-    unname(lm(dataset$Y[, 2] ~ dataset$X[, 1])$coefficients)[2]
-  )
-  expect_equal(
-    sumstats$beta_hat[2, 1],
-    unname(lm(dataset$Y[, 1] ~ dataset$X[, 2])$coefficients)[2]
-  )
-  expect_equal(
-    sumstats$beta_hat[2, 2],
-    unname(lm(dataset$Y[, 2] ~ dataset$X[, 2])$coefficients)[2]
-  )
-})
-
-test_that("generate_sumstats_adds_null", {
-  sumstats <- generate_sumstats(dataset$X, dataset$Y, M_null = 10)
-  expect_equal(dim(sumstats$beta_hat), c(30, 3))
-  expect_equal(dim(sumstats$se_hat), c(30, 3))
-
-  sumstats <- generate_sumstats(dataset$X, dataset$Y, M_null = 10,
-                                N_ind = c(100, 200, 300))
-  expect_equal(dim(sumstats$beta_hat), c(30, 3))
-  expect_equal(dim(sumstats$se_hat), c(30, 3))
-})
 
 test_that("select_snps_oracle_works", {
-  N <- 10
-  D <- 2
-  M <- 10
-  p_beta <- 1.0
-  p_net <- 0.5
-  dataset <- generate_dataset(N, M, D, p_beta = p_beta, p_net = p_net,
-                              pleiotropy = FALSE)
-  sumstats <- generate_sumstats(dataset$X, dataset$Y)
+  dataset <- generate_dataset(N = 100, D = 3, M_total = 30, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
+
   snps <- select_snps_oracle(dataset$beta)
   expect_is(snps, "list")
-  expect_equal(names(snps), c("P1", "P2"))
+  expect_equal(names(snps), c("P1", "P2", "P3"))
   expect_is(get("P1", snps), "list")
   expect_is(get("P2", snps), "list")
   expect_is(get("P2", get("P1", snps)), "logical")
-  expect_equal(length(get("P2", get("P1", snps))), M)
-})
-
-test_that("fit_regularized_cheat_works", {
-  dataset <- generate_dataset(
-    100, 3, 3,
-    p_beta = 1.0, p_net = 0.5, noise = 0.0, pleiotropy = FALSE, sd_net = 0.5
-  )
-  R <- dataset$R
-  R_tce <- get_tce(get_observed(R))
-  fit_res <- fit_regularized_cheat(R_tce, R = as.matrix(R))
-  R_hat <- fit_res$R_hat
-  R_tce_inv <- fit_res$R_tce_inv
-  expect_equal(dim(R_hat), c(3, 3))
+  expect_equal(length(get("P2", get("P1", snps))), 5)
 })

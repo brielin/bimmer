@@ -2,23 +2,18 @@
 % Please edit documentation in R/simulate.R
 \name{generate_sumstats}
 \alias{generate_sumstats}
-\title{Generate summary statistics.}
+\title{Generates sumstats.}
 \usage{
-generate_sumstats(X, Y, N_ind = NULL)
+generate_sumstats(beta, M_null, N)
 }
 \arguments{
-\item{X}{N x M matrix of genotypes.}
+\item{beta}{M x D matrix of effect sizes.}
 
-\item{Y}{N x D matrix of phenotypes.}
+\item{M_null}{Integer. Adds M_null additional SNPs with null effects.}
 
-\item{N_ind}{Length D vector with each entry specifying the number of samples
-from each phenotype to use.}
-}
-\value{
-A list,
-  beta_hat: An M x D matrix of calculated effect sizes.
-  se_hat: An M x D matrix of corresponding estimated standard errors.
+\item{N}{Integer or array of integers of length D. Number of samples for each
+phenotype.}
 }
 \description{
-Note that this always returns values on the normalized (per-variance) scale.
+Generates sumstats.
 }

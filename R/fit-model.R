@@ -1,14 +1,3 @@
-#' Fits exact model to data.
-#'
-#' @param R_tce D x D matrix of "total causal effects".
-#' @return D x D matrix with zero diagonal of deconvoluted direct effects.
-fit_exact <- function(R_tce) {
-  D <- dim(R_tce)[1]
-  R_tce_inv <- solve(R_tce)
-  R_hat <- diag(D) - R_tce_inv / diag(R_tce_inv)
-  return(list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv))
-}
-
 #' Fits inverse sparse regression model.
 #'
 #' See also inspre::inspre() for more details.
@@ -30,9 +19,6 @@ fit_exact <- function(R_tce) {
 #'   to set alpha rather than setting this directly.
 #' @param its Integer. Maximum number of iterations.
 #' @param delta_target Float. Target change in solution.
-#' @param symmetrize True to force the output to be symmetric. If the input
-#'   is symmetric, the output isn't always perfectly symmetric due to numerical
-#'   issues.
 #' @param verbose 0, 1 or 2. 2 to print convergence progress for each lambda,
 #'   1 to print convergence result for each lambda, 0 for no output.
 #' @param train_prop Float between 0 and 1. Proportion of data to use for
@@ -46,20 +32,22 @@ fit_exact <- function(R_tce) {
 #' @param solve_its Integer, number of iterations of bicgstab/lasso to run
 #'   for each U and V update.
 #' @param ncores Integer, number of cores to use.
+#' @param warm_start Logical. Whether to use previous lambda value result as
+#'   starting point for next fit.
 #' @export
 fit_inspre <- function(R_tce, W = NULL, rho = 1.0, lambda = NULL,
                        lambda_min_ratio = 1e-2, nlambda = 20, alpha = 0,
                        gamma = NULL, its = 100, delta_target = 1e-4,
                        verbose = 1, train_prop = 0.8,
                        cv_folds = 0, mu = 5, tau = 1.5, solve_its = 3,
-                       ncores = 1){
+                       ncores = 1, warm_start = TRUE){
   D <- dim(R_tce)[1]
   inspre_res <- inspre::inspre(
     X = R_tce, W = W, rho = rho, lambda = lambda,
     lambda_min_ratio = lambda_min_ratio, nlambda = nlambda, alpha = alpha,
     gamma = gamma, its = its, delta_target = delta_target, symmetrize = FALSE,
     verbose = verbose, train_prop = train_prop, cv_folds = cv_folds, mu = mu,
-    tau = tau, solve_its = solve_its, ncores = ncores)
+    tau = tau, solve_its = solve_its, ncores = ncores, warm_start = warm_start)
   inspre_res$R_hat <- array(0L, dim = dim(inspre_res$V))
   for(i in 1:length(inspre_res$lambda)){
     inspre_res$R_hat[ , , i] <-
@@ -165,7 +153,7 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
 
 #' Calculates matrix of total causal effects using a specified method.
 #'
-#' TODO(brielin): Remove shrinkage option and related code?
+#' @importFrom dplyr %>%
 #'
 #' @param sumstats List representing summary statistics from the second
 #'   dataset. Must include entries "beta_hat" and "se_hat".
@@ -176,14 +164,12 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
 #'   estimate between every pair.
 #' @param min_instruments Integer. Return NA if there are less than
 #'   this many instruments for a pair of phenotypes.
-#' @param shrink Boolean. True to shrink estimates of R_tce to 0.
 #' @param verbose Bpplean. True to print progress.
 #' @param ... Additional parameters to pass to mr_method.
 #' @export
 fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", "egger", "egger_p", "mbe"),
-                    min_instruments = 5, shrink = FALSE, verbose = FALSE, ...) {
+                    min_instruments = 5, verbose = FALSE, ...) {
   mr_method_func <- switch(mr_method,
-    mean = naive_ma,
     ps = mr.raps::mr.raps,
     aps = function(...) {
       mr.raps::mr.raps(over.dispersion = TRUE, ...)
@@ -194,24 +180,24 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
     egger_p = function(b_exp, b_out, se_exp, se_out, ...) {
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
       egger_res <- MendelianRandomization::mr_egger(input, robust = FALSE, penalized = TRUE)
-      return(list("beta.hat" = egger_res$Estimate, "beta.se" = egger_res$StdError.Est))
+      return(list("beta.hat" = egger_res$Estimate, "beta.se" = egger_res$StdError.Est, "beta.p.value" = egger_res$Pvalue.Est))
     },
     egger = function(b_exp, b_out, se_exp, se_out, ...) {
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
       egger_res <- MendelianRandomization::mr_egger(input, robust = FALSE, penalized = FALSE)
-      return(list("beta.hat" = egger_res$Estimate, "beta.se" = egger_res$StdError.Est))
+      return(list("beta.hat" = egger_res$Estimate, "beta.se" = egger_res$StdError.Est, "beta.p.value" = egger_res$Pvalue.Est))
     },
     mbe = function(b_exp, b_out, se_exp, se_out, ...){
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
       mbe_res <- MendelianRandomization::mr_mbe(input, seed = NA, iterations = 0)
-      return(list("beta.hat" = mbe_res$Estimate, "beta.se" = mbe_res$StdError))
+      return(list("beta.hat" = mbe_res$Estimate, "beta.se" = mbe_res$StdError, "beta.p.value" = mbe_res$Pvalue))
     }
   )
 
   # all.equal returns a STRING if they dont have the same length??
   if (!isTRUE(all.equal(names(sumstats$beta_hat), names(selected_snps)))) {
     common_phenotypes <- intersect(
-      names(sumstats$beta_hat), names(selected_snps))
+      colnames(sumstats$beta_hat), names(selected_snps))
     sumstats$beta_hat <- dplyr::select(
       sumstats$beta_hat, dplyr::one_of(common_phenotypes))
     sumstats$se_hat <- dplyr::select(
@@ -233,7 +219,7 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
       snp_mask <- get(out, snps_to_use) & !is.na(beta_out) & !is.na(beta_exp)
       n_instruments <- sum(snp_mask)
       if ((n_instruments < min_instruments) | (exp == out)){
-        list("R" = NA, "SE" = NA, "N" = n_instruments)
+        list("R" = NA, "SE" = NA, "N" = n_instruments, "p" = NA)
       } else {
         tryCatch(
           {
@@ -245,12 +231,12 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
               ...
             )
             return(list("R" = mr_res$beta.hat, "SE" = mr_res$beta.se,
-                        "N" = n_instruments))
+                        "N" = n_instruments, "p" = mr_res$beta.p.value))
           },
           error = function(cond) {
             message(c("Error when processing ", exp, " ", out))
             message(cond)
-            list("R" = NA, "SE" = NA, "N" = n_instruments)
+            list("R" = NA, "SE" = NA, "N" = n_instruments, "p" = NA)
           }
         )
       }
@@ -272,25 +258,24 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
     tidyr::pivot_wider(
       names_from = "out", values_from = "N", id_cols = "exp") %>%
     tibble::column_to_rownames("exp")
+  p_val <- tce_res %>%
+    tidyr::pivot_wider(
+      names_from = "out", values_from = "p", id_cols = "exp") %>%
+    tibble::column_to_rownames("exp")
   diag(R_tce) <- 1.0
   diag(SE_tce) <- 0.0
   diag(N_obs) <- 0.0
+  diag(p_val) <- 1.0
 
-  if (shrink) {
-    if (is.logical(shrink)) {
-      R_tce <- shrink_R(R_tce, SE_tce)
-    } else if (is.numeric(shrink)) {
-      R_tce <- shrink_R(R_tce, SE_tce, lambda = shrink)
-    }
-  }
   return(list("R_tce" = as.matrix(R_tce), "SE_tce" = as.matrix(SE_tce),
-              "N_obs" = as.matrix(N_obs)))
+              "N_obs" = as.matrix(N_obs), "p_val" = as.matrix(p_val)))
 }
 
 #' Uses delta method to calculate CDE standard error.
 #'
 #' @param R_tce_inv DxD matrix. Inverse or approximate inverse of the TCE.
 #' @param SE_tce DxD matrix. Standard error of the TCE.
+#' @param na.rm Logical. Pass through to sum if SE_tce matrix has NA values.
 #' @export
 delta_cde <- function(R_tce_inv, SE_tce, na.rm = FALSE) {
   delta_one_entry <- function(Ri_row_k, Ri_col_j) {
