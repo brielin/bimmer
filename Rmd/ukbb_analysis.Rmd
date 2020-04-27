@@ -10,14 +10,13 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load Packages
 
 ```{r}
-install.packages("/gpfs/commons/home/bbrown/ukbb_network/inspre", repos = NULL, type = "source")
+# install.packages("/gpfs/commons/home/bbrown/ukbb_network/inspre", repos = NULL, type = "source")
 require(inspre)
 require(MendelianRandomization)
 require(tidyverse)
 require(foreach)
-require(Matrix)
-require(ggplot2)
 require(qvalue)
+require(igraph)
 require(devtools)
 devtools::load_all()
 ```
@@ -33,6 +32,9 @@ save_snps = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_selected_
 save_select_sumstats = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_select_sumstats.Rdata"
 save_fit_sumstats = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_fit_sumstats.Rdata"
 save_tce_res = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_tce_res.Rdata"
+save_cde_res_wide = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_cde_res_wide.Rdata"
+save_cde_res_narrow = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_cde_res_narrow.Rdata"
+gencor_descriptions = "/gpfs/commons/projects/UKBB/sumstats/gencor_descriptions.txt"
 mr_method = "egger_p"
 p_thresh = 1e-4
 welch_thresh = 0.1
@@ -45,6 +47,199 @@ sumstats <- read_ukbbss_neale(file_list = file_list_gencor_male)
 save(sumstats, file = save_select_sumstats)
 rm(sumstats)
 sumstats <- read_ukbbss_neale(file_list = file_list_gencor_female)
+save(sumstats, file = save_fit_sumstats)
+rm(sumstats)
+```
+
+# Select instruments
+```{r}
+load(save_select_sumstats)
+snps_to_use <- read_snp_list(file_pattern_snp_list)
+selected_snps <- select_snps(sumstats, snps_to_use, p_thresh = p_thresh,
+                             welch_thresh = welch_thresh, verbose = TRUE)
+save(selected_snps, file = save_snps)
+```
+
+# Fit TCE matrix
+```{r}
+load(save_fit_sumstats)
+load(save_snps)
+tce_res <- fit_tce(sumstats, selected_snps, mr_method = mr_method,
+                   min_instruments = 5, shrink = FALSE, verbose = TRUE)
+save(tce_res, file = save_tce_res)
+```
+
+# Calculate some descriptive statistics for the TCE results.
+```{r}
+load(save_tce_res)
+
+### Filter down to non-overlapping phenotypes.
+# TODO(brielin): Do this way earlier in the pipeline!
+pheno_table <- read_delim(gencor_descriptions, "\t")
+use_phenos <- filter(pheno_table, use == 1)$code
+keep <- seq(1, dim(tce_res$R_tce)[1])[purrr::map_lgl(rownames(tce_res$R_tce), function(x){x %in% use_phenos})]
+R_tce <- tce_res$R_tce[keep, keep]
+SE_tce <- tce_res$SE_tce[keep, keep]
+N_obs <- tce_res$N_obs[keep, keep]
+###
+
+tce_filt <- filter_tce(R_tce, SE_tce, max_R = 1, max_SE = 0.5)
+R_tce <- tce_filt$R_tce
+SE_tce <- tce_filt$SE_tce
+N_obs <- N_obs[rownames(R_tce), rownames(R_tce)]
+
+pivot_tce <- function(R_tce, SE_tce, N_obs){
+  plot_data <- tidyr::pivot_longer(
+    as_tibble(R_tce, rownames="Exposure"), -Exposure,
+    names_to="Outcome", values_to = "R_tce")
+  plot_data$SE_tce <- tidyr::pivot_longer(
+    as_tibble(SE_tce, rownames="Exposure"), -Exposure,
+    names_to="Outcome", values_to = "SE_tce")[["SE_tce"]]
+  plot_data$N_obs <- tidyr::pivot_longer(
+    as_tibble(N_obs, rownames="Exposure"), -Exposure,
+    names_to="Outcome", values_to = "N_obs")[["N_obs"]]
+  plot_data <- plot_data %>% dplyr::mutate(
+    Z_scores = R_tce/SE_tce, p_vals = 2 * (1 - stats::pnorm(abs(Z_scores))))
+  plot_data$p_vals[is.infinite(plot_data$Z_scores)] = NA
+  return(plot_data)
+}
+
+N_phenos <- nrow(R_tce)
+data <- pivot_tce(R_tce, SE_tce, N_obs)
+
+n_nans = sum(is.na(R_tce))
+perc_nans = n_nans/(N_phenos*N_phenos - N_phenos)
+num_nominal_sig = sum(data$p_vals < 0.05, na.rm = TRUE)
+data$p_fdr <- stats::p.adjust(data$p_vals, method="fdr")
+num_fwer_sig = sum(stats::p.adjust(data$p_vals, method="holm") < 0.05, na.rm=TRUE)
+num_fdr_sig = sum(data$p_fdr < 0.05, na.rm=TRUE)
+num_qv_sig = sum(qvalue::qvalue(data$p_vals, fdr.level = 0.05)$significant, na.rm=TRUE)
+
+ggplot(data[data$SE_tce < 5,], aes(x=p_vals)) + geom_density()
+data %>% dplyr::filter(SE_tce < 5, N_obs < 10000) %>%
+  ggplot(aes(x=N_obs)) + geom_density() + scale_x_continuous(trans="log10")
+ggplot(data[data$SE_tce < 5,], aes(x=SE_tce)) + geom_density() + xlim(0, 1)
+ggplot(data[data$SE_tce < 5,], aes(x=R_tce)) + geom_density() + xlim(-1, 1)
+ggplot(data[data$p_fdr < 0.05,], aes(x=R_tce)) + geom_density() + xlim(-1, 1)
+data %>% dplyr::mutate(R_tce = ifelse(abs(R_tce) < 1.1, R_tce, NA)) %>%
+  ggplot(aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=R_tce)) + scale_fill_gradient2()
+```
+
+# Use inspre to find direct effects.
+```{r}
+load(save_tce_res)
+### Filter down to non-overlapping phenotypes.
+# TODO(brielin): Do this way earlier in the pipeline!
+pheno_table <- read_delim(gencor_descriptions, "\t")
+use_phenos <- filter(pheno_table, use == 1)$code
+keep <- seq(1, dim(tce_res$R_tce)[1])[purrr::map_lgl(rownames(tce_res$R_tce), function(x){x %in% use_phenos})]
+R_tce <- tce_res$R_tce[keep, keep]
+SE_tce <- tce_res$SE_tce[keep, keep]
+N_obs <- tce_res$N_obs[keep, keep]
+###
+
+tce_filt <- filter_tce(R_tce, SE_tce, max_R = 1, max_SE = 0.5)
+R_tce <- tce_filt$R_tce
+SE_tce <- tce_filt$SE_tce
+
+weights <- make_weights(SE_tce)
+
+cde_res_wide <- fit_inspre(R_tce, W = weights, verbose = 1, cv_folds = 10,
+                           nlambda = 10, ncores = 8, rho = 10, mu = 3, warm_start = FALSE)
+save(cde_res_wide, file = save_cde_res_wide)
+lambda_max <- cde_res_wide$lambda[which(cde_res_wide$D_hat > 0.01)[1]]
+lambda_min <- cde_res_wide$lambda[which(cde_res_wide$D_hat > 0.1)[1]-1]
+lambda <- exp(seq(log(lambda_max), log(lambda_min), length.out = 10))
+cde_res_narrow <- fit_inspre(R_tce, W = weights, verbose = 1, cv_folds = 10,
+                             lambda = lambda, ncores = 8, rho = 10, mu = 3, warm_start = FALSE)
+save(cde_res_narrow, file = save_cde_res_narrow)
+
+selected_index <- which(cde_res_narrow$D_hat - cde_res_narrow$D_hat_se > beta)[1]
+lambda <- cde_res_narrow$lambda[selected_index]
+R_hat_gc <- cde_res_narrow$R_hat[ , , selected_index]
+# SE_cde <- delta_cde(cde_res$V[ , , selected_index], SE_tce)
+```
+
+# Do some analysis on the directed graph.
+```{r}
+load(save_cde_res_narrow)
+selected_index <- which(cde_res_narrow$D_hat - cde_res_narrow$D_hat_se > beta)[1]
+lambda <- cde_res_narrow$lambda[selected_index]
+R_hat_gc <- cde_res_narrow$R_hat[ , , selected_index]
+
+graph_gc <- make_igraph(R_cde = R_hat_gc)
+U_hat <- cde_res_narrow$U[,,selected_index]
+rownames(U_hat) <- rownames(R_tce)
+colnames(U_hat) <- colnames(R_tce)
+U_long <- tidyr::pivot_longer(as.tibble(U_hat, rownames = "Exposure"), -Exposure, names_to = "Outcome", values_to = "U_hat")
+data$U_hat <- U_long$U_hat
+
+R_hat_wide <- tidyr::pivot_longer(as_tibble(R_hat_gc, rownames="Exposure"), -Exposure,
+                            names_to="Outcome", values_to = "R_hat")
+data$R_cde <- R_hat_wide
+data <- mutate(data, delta_tce = abs(R_tce - U_hat))
+
+distances <- distances(graph_gc, mode = "out")
+distances_long <- tidyr::pivot_longer(as.tibble(distances, rownames = "Exposure"), -Exposure, names_to = "Outcome", values_to = "log_dist")
+
+data$log_dist <- distances_long$log_dist
+data$dist <- 1/exp(distances_long$log_dist)
+data$path_length <- map2_int(data$Exposure, data$Outcome, function(x, y){length(shortest_paths(graph_gc, x, y, mode = "out")$vpath[[1]])})
+data <- data %>% mutate(path_length = ifelse(dist > 0, path_length, NA))
+data <- data %>% mutate(eff_explained = ifelse((Exposure != Outcome) & (dist > 0), abs(dist/U_hat), NA), omnigenicity = -log(eff_explained))
+
+data <- data %>% left_join(rename(select(pheno_table, code, desc), exp_desc = desc), by = c("Exposure" = "code")) %>% 
+  left_join(rename(select(pheno_table, code, desc), out_desc = desc), by = c("Outcome" = "code"))
+
+data <- data %>% group_by(Exposure) %>% mutate(exp_omnigenicity = mean(omnigenicity, na.rm=T)) %>% ungroup %>%
+  group_by(Outcome) %>% mutate(out_omnigenicity = mean(omnigenicity, na.rm=T)) %>% ungroup()
+
+pheno_omni <- data %>% distinct(Exposure, exp_desc, exp_omnigenicity) %>% select(pheno = Exposure, desc = exp_desc, exp_omnigenicity) %>% left_join(distinct(.data = data, Outcome, out_omnigenicity), by = c("pheno"="Outcome"))
+pheno_omni$out_deg <- degree(graph_gc, mode = "out")
+pheno_omni$in_deg <- degree(graph_gc, mode = "in")
+pheno_omni$deg <- degree(graph_gc, mode = "all")
+```
+
+
+```{r}
+R_hat_wide %>% ggplot(aes(x=R_hat)) + geom_density() + xlim(-1, 1)
+R_hat_wide %>% filter(abs(R_hat) > 1e-8) %>% ggplot(aes(x=R_hat)) + geom_density() + xlim(-1, 1)
+R_hat_wide %>% dplyr::mutate(R_hat = ifelse(abs(R_hat) < 1, R_hat, 1.0)) %>%
+  ggplot(aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=R_hat)) + scale_fill_gradient2()
+data %>% filter(!is.na(path_length)) %>% ggplot(aes(x=path_length)) + geom_bar()
+data %>% filter(!is.na(path_length) & p_fdr < 0.05) %>% ggplot(aes(x=path_length)) + geom_bar()
+data %>% filter(!is.na(eff_explained)) %>% ggplot(aes(x=eff_explained)) + geom_density() + xlim(0,1)
+data %>% filter(!is.na(eff_explained) & p_fdr < 0.05) %>% ggplot(aes(x=eff_explained)) + geom_density() + xlim(0,1)
+data %>% filter(!is.na(eff_explained)) %>% ggplot(aes(x=omnigenicity)) + geom_density()
+data %>% filter(!is.na(eff_explained) & p_fdr < 0.05) %>% ggplot(aes(x=omnigenicity)) + geom_density()
+
+data %>% filter(p_fdr < 0.05) %>% select(exp_desc, out_desc, omnigenicity) %>% arrange((abs(omnigenicity)))
+```
+
+
+# Next analysis focused on "broader" UKBB dataset.
+```{r}
+file_list_by_hand_male = readLines("/gpfs/commons/projects/UKBB/sumstats/by_hand_files.male.txt")
+file_list_by_hand_female = readLines("/gpfs/commons/projects/UKBB/sumstats/by_hand_files.female.txt")
+file_pattern_snp_list = "/gpfs/commons/projects/UKBB/sumstats/clumped/*/snps_to_use.txt"
+save_snps = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_selected_snps_egger.Rdata"
+save_select_sumstats = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_select_sumstats.Rdata"
+save_fit_sumstats = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_fit_sumstats.Rdata"
+save_tce_res = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_tce_res.Rdata"
+save_cde_res_wide = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_cde_res_wide.Rdata"
+save_cde_res_narrow = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_cde_res_narrow.Rdata"
+mr_method = "egger"
+p_thresh = 1e-4
+welch_thresh = 0.1
+beta = 0.05
+```
+
+# Preprocess summary statistics
+```{r}
+sumstats <- read_ukbbss_neale(file_list = file_list_by_hand_male)
+save(sumstats, file = save_select_sumstats)
+rm(sumstats)
+sumstats <- read_ukbbss_neale(file_list = file_list_by_hand_female)
 save(sumstats, file = save_fit_sumstats)
 rm(sumstats)
 ```
@@ -117,156 +312,16 @@ SE_tce <- tce_filt$SE_tce
 
 weights <- make_weights(SE_tce, max_min_ratio = 50000)
 
-cde_res <- fit_inspre(R_tce, W = weights, verbose = 1, cv_folds = 10, nlambda = 10, ncores = 16, rho = 1)
-# selected_index <- which(cde_res$D_hat - cde_res$D_hat_se > beta)[1]
+cde_res_wide <- fit_inspre(R_tce, W = weights, verbose = 1, cv_folds = 10, nlambda = 10, ncores = 8, rho = 10, mu = 3)
+save(cde_res_wide, file = save_cde_res_wide)
+lambda_max <- cde_res_wide$lambda[which(cde_res_wide$D_hat > 0.01)[1]]
+lambda_min <- cde_res_wide$lambda[which(cde_res_wide$D_hat > 0.1)[1]-1]
+lambda <- exp(seq(log(lambda_max), log(lambda_min), length.out = 10))
+cde_res_narrow <- fit_inspre(R_tce, W = weights, verbose = 1, cv_folds = 10, lambda = lambda, ncores = 8, rho = 10, mu = 3)
+save(cde_res_narrow, file = save_cde_res_narrow)
+selected_index <- which(cde_res_narrow$D_hat - cde_res_narrow$D_hat_se > beta)[1]
+lambda <- cde_res_narrow$lambda[selected_index]
 
-# R_hat <- cde_res$R_hat[ , , selected_index]
+R_hat_bh <- cde_res_narrow$R_hat[ , , selected_index]
 # SE_cde <- delta_cde(cde_res$V[ , , selected_index], SE_tce)
-```
-
-# Next analysis focused on "broader" UKBB dataset.
-```{r}
-file_list_by_hand_male = readLines("/gpfs/commons/projects/UKBB/sumstats/by_hand_files.male.txt")
-file_list_by_hand_female = readLines("/gpfs/commons/projects/UKBB/sumstats/by_hand_files.female.txt")
-file_pattern_snp_list = "/gpfs/commons/projects/UKBB/sumstats/clumped/*/snps_to_use.txt"
-save_snps = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_selected_snps.Rdata"
-save_select_sumstats = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_select_sumstats.Rdata"
-save_fit_sumstats = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_fit_sumstats.Rdata"
-save_tce_res = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/by_hand_tce_res_egger.Rdata"
-mr_method = "raps"
-p_thresh = 1e-6
-welch_thresh = 0.01
-```
-
-# Preprocess summary statistics
-```{r}
-sumstats <- read_ukbbss_neale(file_list = file_list_by_hand_male)
-save(sumstats, file = save_select_sumstats)
-rm(sumstats)
-sumstats <- read_ukbbss_neale(file_list = file_list_by_hand_female)
-save(sumstats, file = save_fit_sumstats)
-rm(sumstats)
-```
-
-# Select instruments
-```{r}
-load(save_select_sumstats)
-snps_to_use <- read_snp_list(file_pattern_snp_list)
-selected_snps <- select_snps(sumstats, snps_to_use, p_thresh = p_thresh,
-                             welch_thresh = welch_thresh, verbose = TRUE)
-save(selected_snps, file = save_snps)
-```
-
-# Fit TCE matrix
-```{r}
-load(save_fit_sumstats)
-tce_res <- fit_tce(sumstats, selected_snps, mr_method = mr_method,
-                   min_instruments = 5, shrink = FALSE, verbose = TRUE)
-save(tce_res, file = save_tce_res)
-```
-
-# Calculate some descriptive statistics for the TCE results.
-```{r}
-load(save_tce_res)
-
-pivot_tce <- function(tce_res){
-  plot_data <- tidyr::pivot_longer(
-    as_tibble(tce_res$R_tce, rownames="Exposure"), -Exposure,
-    names_to="Outcome", values_to = "R_tce")
-  plot_data$SE_tce <- tidyr::pivot_longer(
-    as_tibble(tce_res$SE_tce, rownames="Exposure"), -Exposure,
-    names_to="Outcome", values_to = "SE_tce")[["SE_tce"]]
-  plot_data$N_obs <- tidyr::pivot_longer(
-    as_tibble(tce_res$N_obs, rownames="Exposure"), -Exposure,
-    names_to="Outcome", values_to = "N_obs")[["N_obs"]]
-  plot_data <- plot_data %>% dplyr::mutate(
-    Z_scores = R_tce/SE_tce, p_vals = 2 * (1 - stats::pnorm(abs(Z_scores))))
-  plot_data$p_vals[is.infinite(plot_data$Z_scores)] = NA
-  return(plot_data)
-}
-
-R_tce <- tce_res$R_tce
-N_phenos <- nrow(R_tce)
-data <- pivot_tce(tce_res)
-
-n_nans = sum(is.na(R_tce))
-perc_nans = n_nans/(N_phenos*N_phenos - N_phenos)
-num_nominal_sig = sum(data$p_vals < 0.05, na.rm = TRUE)
-num_fwer_sig = sum(stats::p.adjust(data$p_vals, method="holm") < 0.05, na.rm=TRUE)
-num_fdr_sig = sum(stats::p.adjust(data$p_vals, method="fdr") < 0.05, na.rm=TRUE)
-num_qv_sig = sum(qvalue::qvalue(data$p_vals, fdr.level = 0.05)$significant, na.rm=TRUE)
-
-ggplot(data[data$SE_tce < 5,], aes(x=p_vals)) + geom_density()
-data %>% dplyr::filter(SE_tce < 5, N_obs < 10000) %>%
-  ggplot(aes(x=N_obs)) + geom_density() + scale_x_continuous(trans="log10")
-ggplot(data[data$SE_tce < 5,], aes(x=SE_tce)) + geom_density() + xlim(0, 1)
-ggplot(data[data$SE_tce < 5,], aes(x=R_tce)) + geom_density() + xlim(-1, 1)
-ggplot(data[data$p_adj_fdr < 0.05,], aes(x=R_tce)) + geom_density() + xlim(-1, 1)
-data %>% dplyr::mutate(R_tce = ifelse(abs(R_tce) < 1.1, R_tce, NA)) %>%
-  ggplot(aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=R_tce)) + scale_fill_gradient2()
-```
-
-# Use inspre to find direct effects.
-```{r}
-load(save_tce_res)
-tce_filt <- filter_tce(tce_res$R_tce, tce_res$SE_tce, max_R = 1, max_SE = 0.5)
-R_tce <- tce_filt$R_tce
-SE_tce <- tce_filt$SE_tce
-
-weights <- make_weights(SE_tce, max_min_ratio = 50000)
-
-cde_res <- fit_inspre(X = R_tce, W = weights, verbose = 2, cv_folds = 10, alpha = 0.5, nlambda = 100)
-selected_index <- which(cde_res$D_hat + cde_res$D_hat_se > beta)[1] - 1
-
-R_hat <- cde_res$R_hat[ , , selected_index]
-SE_cde <- delta_cde(cde_res$V[ , , selected_index], SE_tce)
-```
-
-# This is old code, copied here to facilitate eventual comparison of 1e-4, 0.1, egger with 1e-6, 0.01, raps (or something).
-```{r}
-tce_res <- filter_tce(tce_res_4$R_tce, tce_res_4$SE_tce)
-tce_res_6 <- filter_tce(tce_res_6$R_tce, tce_res_6$SE_tce)
-tce_res_8 <- filter_tce(tce_res_8$R_tce, tce_res_8$SE_tce)
-
-pivot_tce <- function(tce_res){
-  plot_data <- tidyr::pivot_longer(as_tibble(tce_res$R_tce, rownames="Exposure"), -Exposure, names_to="Outcome", values_to = "R_tce")
-  plot_data$SE_tce <- tidyr::pivot_longer(as_tibble(tce_res$SE_tce, rownames="Exposure"), -Exposure, names_to="Outcome", values_to = "SE_tce")[["SE_tce"]]
-  plot_data$N_obs <- tidyr::pivot_longer(as_tibble(tce_res$N_obs, rownames="Exposure"), -Exposure, names_to="Outcome", values_to = "N_obs")[["N_obs"]]
-  plot_data <- plot_data %>% dplyr::mutate(Z_scores = R_tce/SE_tce, p_vals = 2 * (1 - stats::pnorm(abs(Z_scores))))
-  plot_data$p_vals[is.infinite(plot_data$Z_scores)] = NA
-  return(plot_data)
-}
-
-data <- purrr::map(list("p4"=tce_res_4, "p6"=tce_res_6, "p8"=tce_res_8), pivot_tce) %>%
-  dplyr::bind_rows(.id = "Sig_level")
-data <- data %>% dplyr::group_by(Sig_level) %>% 
-  dplyr::mutate(n_nans = sum(is.na(R_tce)),
-                perc_nans = n_nans/(661*661-661),
-                num_nominal_sig = sum(p_vals < 0.05, na.rm = TRUE),
-                p_adj_fwer = stats::p.adjust(p_vals, method="holm"),
-                p_adj_fdr = stats::p.adjust(p_vals, method="fdr"),
-                num_fwer_sig = sum(p_adj_fwer < 0.05, na.rm=TRUE),
-                num_fdr_sig = sum(p_adj_fdr < 0.05, na.rm=TRUE),
-                num_qv_sig=sum(qvalue::qvalue(p_vals, fdr.level = 0.05)$significant, na.rm=TRUE))
-data %>% dplyr::distinct(
-  Sig_level, n_nans, perc_nans, num_nominal_sig, num_fwer_sig, num_fdr_sig, num_qv_sig)
-
-ggplot(data[data$SE_tce < 5,], aes(x=p_vals, color=Sig_level)) + geom_density()
-data %>% dplyr::filter(SE_tce < 5, N_obs < 10000) %>%
-  ggplot(aes(x=N_obs, color=Sig_level)) + geom_density() + scale_x_continuous(trans="log10")
-ggplot(data[data$SE_tce < 5,], aes(x=SE_tce, color=Sig_level)) + geom_density() +
-  xlim(0, 1)
-ggplot(data[data$SE_tce < 5,], aes(x=R_tce, color=Sig_level)) + geom_density() + xlim(-1, 1)
-ggplot(data[data$p_adj_fdr < 0.05,], aes(x=R_tce, color=Sig_level)) + geom_density() + xlim(-1, 1)
-data %>% dplyr::filter(Sig_level == "p4") %>%
-  dplyr::mutate(R_tce = ifelse(abs(R_tce) < 1.1, R_tce, NA)) %>%
-  ggplot(aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=R_tce)) + scale_fill_gradient2()
-pivoted <- data %>% dplyr::filter(abs(R_tce) < 1.1, R_tce != 1.0) %>% dplyr::select(Sig_level, Exposure, Outcome, R_tce) %>%
-  pivot_wider(names_from = Sig_level, values_from = R_tce) 
-ggplot(pivoted, aes(x=p4, y=p6)) + geom_point(alpha = 0.01)
-cor(pivoted$p6[(!is.na(pivoted$p6))&(!is.na(pivoted$p4))], pivoted$p4[(!is.na(pivoted$p6))&(!is.na(pivoted$p4))])
-ggplot(pivoted, aes(x=p4, y=p8)) + geom_point(alpha = 0.01)
-cor(pivoted$p4[(!is.na(pivoted$p4))&(!is.na(pivoted$p8))], pivoted$p8[(!is.na(pivoted$p4))&(!is.na(pivoted$p8))])
-ggplot(pivoted, aes(x=p6, y=p8)) + geom_point(alpha = 0.01)
-cor(pivoted$p6[(!is.na(pivoted$p6))&(!is.na(pivoted$p8))], pivoted$p8[(!is.na(pivoted$p6))&(!is.na(pivoted$p8))])
 ```
