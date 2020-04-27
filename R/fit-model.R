@@ -348,3 +348,15 @@ filter_tce <- function(R_tce, SE_tce, R_tce_true = NULL, max_R = 1.5,
                 "SE_tce" = SE_tce[!drop_cols, !drop_cols]))
   }
 }
+
+#' Creates an igraph from CDE matrix.
+make_igraph <- function(R_cde, min_edge_value = 0.001, max_edge_value = 0.999){
+  adj_matrix <- R_cde
+  adj_matrix[abs(adj_matrix) < min_edge_value] = 0
+  adj_matrix[abs(adj_matrix) > max_edge_value] = 0.999
+  zeros <- adj_matrix == 0
+  adj_matrix <- -log(abs(adj_matrix))
+  adj_matrix[zeros] = 0
+  return(igraph::graph_from_adjacency_matrix(
+    adj_matrix, mode = "directed", weighted = TRUE))
+}
