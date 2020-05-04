@@ -35,11 +35,13 @@ save_tce_res = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_tce_re
 save_cde_res_wide = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_cde_res_wide.Rdata"
 save_cde_res_narrow = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_cde_res_narrow.Rdata"
 gencor_descriptions = "/gpfs/commons/projects/UKBB/sumstats/gencor_descriptions.txt"
-mr_method = "egger_p"
-p_thresh = 1e-4
-welch_thresh = 0.1
+mr_method = "egger"
+p_thresh = 5e-5
+welch_thresh = 0.001
 beta = 0.05
+n_cores = 1
 ```
+
 
 # Preprocess summary statistics
 ```{r}
@@ -51,21 +53,23 @@ save(sumstats, file = save_fit_sumstats)
 rm(sumstats)
 ```
 
+
 # Select instruments
 ```{r}
 load(save_select_sumstats)
 snps_to_use <- read_snp_list(file_pattern_snp_list)
 selected_snps <- select_snps(sumstats, snps_to_use, p_thresh = p_thresh,
-                             welch_thresh = welch_thresh, verbose = TRUE)
+                             welch_thresh = welch_thresh, verbose = TRUE, n_cores = n_cores)
 save(selected_snps, file = save_snps)
 ```
+
 
 # Fit TCE matrix
 ```{r}
 load(save_fit_sumstats)
 load(save_snps)
 tce_res <- fit_tce(sumstats, selected_snps, mr_method = mr_method,
-                   min_instruments = 5, shrink = FALSE, verbose = TRUE)
+                   min_instruments = 5, verbose = TRUE)
 save(tce_res, file = save_tce_res)
 ```
 
@@ -73,20 +77,20 @@ save(tce_res, file = save_tce_res)
 ```{r}
 load(save_tce_res)
 
-### Filter down to non-overlapping phenotypes.
-# TODO(brielin): Do this way earlier in the pipeline!
-pheno_table <- read_delim(gencor_descriptions, "\t")
-use_phenos <- filter(pheno_table, use == 1)$code
-keep <- seq(1, dim(tce_res$R_tce)[1])[purrr::map_lgl(rownames(tce_res$R_tce), function(x){x %in% use_phenos})]
-R_tce <- tce_res$R_tce[keep, keep]
-SE_tce <- tce_res$SE_tce[keep, keep]
-N_obs <- tce_res$N_obs[keep, keep]
-###
+# ### Filter down to non-overlapping phenotypes.
+# # TODO(brielin): Do this way earlier in the pipeline!
+# pheno_table <- read_delim(gencor_descriptions, "\t")
+# use_phenos <- filter(pheno_table, use == 1)$code
+# keep <- seq(1, dim(tce_res$R_tce)[1])[purrr::map_lgl(rownames(tce_res$R_tce), function(x){x %in% use_phenos})]
+# R_tce <- tce_res$R_tce[keep, keep]
+# SE_tce <- tce_res$SE_tce[keep, keep]
+# N_obs <- tce_res$N_obs[keep, keep]
+# ###
 
-tce_filt <- filter_tce(R_tce, SE_tce, max_R = 1, max_SE = 0.5)
+tce_filt <- filter_tce(R_tce, SE_tce)
 R_tce <- tce_filt$R_tce
 SE_tce <- tce_filt$SE_tce
-N_obs <- N_obs[rownames(R_tce), rownames(R_tce)]
+N_obs <- tce_res$N_obs[rownames(R_tce), rownames(R_tce)]
 
 pivot_tce <- function(R_tce, SE_tce, N_obs){
   plot_data <- tidyr::pivot_longer(
@@ -130,22 +134,21 @@ data %>% dplyr::mutate(R_tce = ifelse(abs(R_tce) < 1.1, R_tce, NA)) %>%
 load(save_tce_res)
 ### Filter down to non-overlapping phenotypes.
 # TODO(brielin): Do this way earlier in the pipeline!
-pheno_table <- read_delim(gencor_descriptions, "\t")
-use_phenos <- filter(pheno_table, use == 1)$code
-keep <- seq(1, dim(tce_res$R_tce)[1])[purrr::map_lgl(rownames(tce_res$R_tce), function(x){x %in% use_phenos})]
-R_tce <- tce_res$R_tce[keep, keep]
-SE_tce <- tce_res$SE_tce[keep, keep]
-N_obs <- tce_res$N_obs[keep, keep]
-###
+# pheno_table <- read_delim(gencor_descriptions, "\t")
+# use_phenos <- filter(pheno_table, use == 1)$code
+# keep <- seq(1, dim(tce_res$R_tce)[1])[purrr::map_lgl(rownames(tce_res$R_tce), function(x){x %in% use_phenos})]
+# R_tce <- tce_res$R_tce[keep, keep]
+# SE_tce <- tce_res$SE_tce[keep, keep]
+# N_obs <- tce_res$N_obs[keep, keep]
+# ###
 
-tce_filt <- filter_tce(R_tce, SE_tce, max_R = 1, max_SE = 0.5)
+tce_filt <- filter_tce(tce_res$R_tce, tce_res$SE_tce)
 R_tce <- tce_filt$R_tce
 SE_tce <- tce_filt$SE_tce
 
 weights <- make_weights(SE_tce)
 
-cde_res_wide <- fit_inspre(R_tce, W = weights, verbose = 1, cv_folds = 10,
-                           nlambda = 10, ncores = 8, rho = 10, mu = 3, warm_start = FALSE)
+cde_res_wide <- fit_inspre(R_tce, W = weights, verbose = 2, cv_folds = 0, ncores = 8, warm_start = FALSE)
 save(cde_res_wide, file = save_cde_res_wide)
 lambda_max <- cde_res_wide$lambda[which(cde_res_wide$D_hat > 0.01)[1]]
 lambda_min <- cde_res_wide$lambda[which(cde_res_wide$D_hat > 0.1)[1]-1]

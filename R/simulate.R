@@ -10,6 +10,7 @@ fit_exact <- function(R_tce) {
   return(list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv))
 }
 
+
 #' Fit's MVMR model to data.
 #'
 #' @importFrom foreach %do%
@@ -46,6 +47,7 @@ fit_mvmr <- function(sumstats_fit, snps_to_use){
   return(list("R_hat" = R_hat))
 }
 
+
 #' Gets matrix of TCE from observed network.
 #'
 #' @param R_obs D x D matrix of observed effects.
@@ -72,6 +74,7 @@ get_observed <- function(R) {
   return(solve(diag(D) - R, R))
 }
 
+
 #' Gets direct network from observed effects.
 #'
 #' @param R_obs D x D matrix of direct effects.
@@ -80,6 +83,7 @@ get_direct <- function(R_obs) {
   D <- dim(R_obs)[1]
   return(solve(diag(D) + R_obs, R_obs))
 }
+
 
 #' Generates pairs of optionally correleated SNP effects.
 #'
@@ -100,6 +104,7 @@ generate_beta_pair <- function(M_s, M_p, rho){
   }
   return(beta)
 }
+
 
 #' Generates many pairs of optionally correlated SNP effects
 #'
@@ -127,6 +132,7 @@ generate_beta <- function(M_s, M_p, D, rho) {
   return(beta)
 }
 
+
 #' Generates and optionally normalizes causal graph.
 #'
 #' Generates a DxD sparse matrix with normally distributed edge weights.
@@ -134,30 +140,39 @@ generate_beta <- function(M_s, M_p, D, rho) {
 #' -1 and 1.
 #'
 #' @param D Integer. Number of phenotypes to simulate.
-#' @param p Float. Proportion of non-zero edges.
-#' @param normalize Bool. TRUE to normalize the generated matrix to have
-#'   eigenvalues with modulus between -1 and 1.
-#' @param epsilon Float. Number to add to maximum eigenvalue to better-condition
-#'   normalization.
-#' @param sd Float. Standard deviation of network edge weights. NA for binary
-#'   matrices with equal probability of
-#' @return A DxD sparse matrix.
-generate_network <- function(D, p = 0.1, normalize = TRUE, epsilon = 0.1, sd = 1.0) {
-  if (is.na(sd)) {
-    R <- matrix((2 * stats::rbinom(D * D, 1, 0.5) - 1) *
-      (stats::runif(D * D) < p), D, D)
-  } else {
-    R <- matrix(stats::rnorm(D * D, sd = sd) * (stats::runif(D * D) < p), D, D)
-  }
-  diag(R) <- 0.0
-  colnames(R) <- paste0("P", 1:D)
-  rownames(R) <- paste0("P", 1:D)
-  if (normalize == TRUE) {
-    values <- eigen(R, symmetric = FALSE, only.values = TRUE)$values
-    max_value <- max(abs(values))
-    if (max_value > 1.0) {
-      R <- R / (max_value + epsilon)
+generate_network <- function(D, graph, prob, g, v, orient = "random"){
+  R <- huge.generator(n = D, d = D, graph = graph, prob = prob, g = g, v = v)$omega
+  diag(R) = 0
+  adj <- matrix(abs(R) > 1e-8, nrow = D)
+  node_degree <- rowSums(adj)
+  for( i in 1:(D-1) ){
+    for(j in (i+1):D){
+      if(orient == "random"){
+        if(runif(1) > 0.5){
+          R[i, j] = 0
+        } else{
+          R[j, i] = 0
+        }
+      } else if(orient == "away"){
+        if(runif(1) > node_degree[i]/(node_degree[i] + node_degree[j])){
+          R[i, j] = 0
+        } else{
+          R[j, i] = 0
+        }
+      } else if(orient == "towards"){
+        if(runif(1) > node_degree[j]/(node_degree[i] + node_degree[j])){
+          R[i, j] = 0
+        } else{
+          R[j, i] = 0
+        }
+      }
     }
+  }
+
+  values <- eigen(R, symmetric = FALSE, only.values = TRUE)$values
+  max_value <- max(abs(values))
+  if (max_value > 1.0) {
+      R <- R / (max_value + 0.1)
   }
   return(R)
 }
@@ -205,7 +220,7 @@ generate_sumstats <- function(beta, M_null, N){
 #'   resample from the same model.
 #' @param fix_beta Null or MxD matrix. Use to provide beta in order to
 #'   repeatedly resample from the same model.
-generate_dataset <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, p_net, sd_net,
+generate_dataset <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, p_net = NULL, sd_net = NULL,
                              fix_R = NULL, fix_beta = NULL) {
   if(M_total < D*M_p + floor(D/2)*M_s){
     stop("Total number of SNPs less than combined shared and private SNPs.")
@@ -219,7 +234,8 @@ generate_dataset <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, p
 
   R <- fix_R
   if (is.null(R)) {
-    R <- generate_network(D = D, p = p_net, sd = sd_net)
+    stop(":-(")
+    # R <- generate_network(D = D, p = p_net, sd = sd_net)
   }
 
   mix_mat <- solve(diag(D) - R)

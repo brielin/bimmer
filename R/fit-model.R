@@ -35,11 +35,11 @@
 #' @param warm_start Logical. Whether to use previous lambda value result as
 #'   starting point for next fit.
 #' @export
-fit_inspre <- function(R_tce, W = NULL, rho = 1.0, lambda = NULL,
+fit_inspre <- function(R_tce, W = NULL, rho = 10.0, lambda = NULL,
                        lambda_min_ratio = 1e-2, nlambda = 20, alpha = 0,
                        gamma = NULL, its = 100, delta_target = 1e-4,
                        verbose = 1, train_prop = 0.8,
-                       cv_folds = 0, mu = 5, tau = 1.5, solve_its = 3,
+                       cv_folds = 0, mu = 10, tau = 2, solve_its = 3,
                        ncores = 1, warm_start = TRUE){
   D <- dim(R_tce)[1]
   inspre_res <- inspre::inspre(
@@ -82,6 +82,7 @@ welch_test <- function(beta1, se1, beta2, se2, welch_thresh = 0.05) {
   return(res)
 }
 
+
 #' Selects SNPs for inclusion in MR by comparing per-variance effect sizes.
 #'
 #' Notes: sumstats passed to this function must be computed on the per-variance
@@ -107,6 +108,7 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
   phenos <- colnames(sumstats$beta_hat)
   D <- length(phenos)
   snps <- rownames(sumstats$beta_hat)
+
   for(index in 1:D){
     pheno1 <- phenos[index]
     if(verbose){
@@ -117,22 +119,27 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
       p1_snps <- get(pheno1, snps_to_use)
       mask1 <- (snps %in% p1_snps)
     }
+    sig1 <- dplyr::pull(sig_p_vals, pheno1)
+    candidate1 <- sig1 & mask1
+    candidate1[is.na(candidate1)] <- FALSE
+    selected_snps[[pheno1]]$names <- snps[candidate1]
     for(pheno2 in phenos[index:D]){
       mask2 <- rep(TRUE, length(snps))
       if (!is.null(snps_to_use)) {
         p2_snps <- get(pheno2, snps_to_use)
         mask2 <- (snps %in% p2_snps)
       }
-
-      sig1 <- dplyr::pull(sig_p_vals, pheno1)
       sig2 <- dplyr::pull(sig_p_vals, pheno2)
-      candidate1 <- sig1 & mask1
       candidate2 <- sig2 & mask2
-      candidate1[is.na(candidate1)] <- FALSE
       candidate2[is.na(candidate2)] <- FALSE
-      selected_snps[[pheno1]]$names <- snps[candidate1]
       selected_snps[[pheno2]]$names <- snps[candidate2]
-      if(!is.null(welch_thresh)){
+      if(is.null(welch_thresh)){
+        selected_snps[[pheno1]][[pheno2]] <- rep(TRUE, sum(candidate1))
+        selected_snps[[pheno2]][[pheno1]] <- rep(TRUE, sum(candidate2))
+      } else if(welch_thresh == 0){
+        selected_snps[[pheno1]][[pheno2]] <- !sig2[candidate1]
+        selected_snps[[pheno2]][[pheno1]] <- !sig1[candidate2]
+      } else {
         keep <- candidate1 | candidate2
         b1 <- sumstats$beta_hat[keep, pheno1]
         b2 <- sumstats$beta_hat[keep, pheno2]
@@ -142,9 +149,6 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
 
         selected_snps[[pheno1]][[pheno2]] <- welch_res[candidate1[keep]] == 1
         selected_snps[[pheno2]][[pheno1]] <- welch_res[candidate2[keep]] == -1
-      } else{
-        selected_snps[[pheno1]][[pheno2]] <- !sig2[candidate1]
-        selected_snps[[pheno2]][[pheno1]] <- !sig1[candidate2]
       }
     }
   }
@@ -215,7 +219,7 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
     se_sub <- sumstats$se_hat[snps_to_use$names, ]
     beta_exp <- beta_sub[, exp]
     se_exp <- se_sub[, exp]
-    run_tce_entry <- function(beta_out, se_out, out) {
+    run_tce_entry <- function(beta_out, se_out, out){
       snp_mask <- get(out, snps_to_use) & !is.na(beta_out) & !is.na(beta_exp)
       n_instruments <- sum(snp_mask)
       if ((n_instruments < min_instruments) | (exp == out)){
@@ -296,42 +300,40 @@ delta_cde <- function(R_tce_inv, SE_tce, na.rm = FALSE) {
 #'
 #' @param R_tce Matrix or data.frame. Estimates of TCE.
 #' @param SE_tce Matrix or data.frame. Standard errors of the entries in R_tce.
-#' @param R_tce_true Matrix or data.frame. For simulation and testing, remove
-#'   columns/rows from the true R_tce as well as our estimate.
 #' @param max_R Float. Set all entries where `abs(R_tce) > max_R` to `NA`.
-#' @param max_SE Float. Set all entries where `SE_tce > max_SE` to `NA`.
 #' @param max_nan_perc Float. Remove columns and rows that are more than
 #'   `max_nan_perc` NAs.
 #' @export
-filter_tce <- function(R_tce, SE_tce, R_tce_true = NULL, max_R = 1.5,
-                       max_SE = 3, max_nan_perc = 0.5) {
+filter_tce <- function(R_tce, SE_tce, max_R = 1.25, max_nan_perc = 0.75) {
   R_tce[is.nan(SE_tce)] <- NA
   SE_tce[is.nan(SE_tce)] <- NA
 
+  R_tce <- tce_res$R_tce
+  SE_tce <- tce_res$SE_tce
   R_too_large <- abs(R_tce) > max_R
   R_tce[R_too_large] <- NA
   SE_tce[R_too_large] <- NA
 
-  SE_too_large <- SE_tce > max_SE
-  R_tce[SE_too_large] <- NA
-  SE_tce[SE_too_large] <- NA
-
-  drop_rows <- rowMeans(is.na(R_tce)) > max_nan_perc
-  R_tce <- R_tce[!drop_rows, !drop_rows, drop = FALSE]
-  SE_tce <- SE_tce[!drop_rows, !drop_rows, drop = FALSE]
-  drop_cols <- colMeans(is.na(R_tce)) > max_nan_perc
-
-  if (!is.null(R_tce_true)) {
-    R_tce_true <- R_tce_true[!drop_rows, !drop_rows]
-    R_tce_true <- R_tce_true[!drop_cols, !drop_cols]
-    return(list("R_tce" = R_tce[!drop_cols, !drop_cols],
-                "SE_tce" = SE_tce[!drop_cols, !drop_cols],
-                "R_tce_true" = R_tce_true))
+  row_nan_perc <- rowMeans(is.na(R_tce))
+  col_nan_perc <- colMeans(is.na(R_tce))
+  max_row_nan = max(row_nan_perc)
+  max_col_nan = max(col_nan_perc)
+  while((max_row_nan > max_nan_perc) | (max_col_nan > max_nan_perc)){
+    if(max_row_nan >= max_col_nan){
+      which_max_row_nan <- which.max(row_nan_perc)
+      R_tce <- R_tce[-which_max_row_nan, -which_max_row_nan]
+      SE_tce <- SE_tce[-which_max_row_nan, -which_max_row_nan]
+    } else{
+      which_max_col_nan <- which.max(col_nan_perc)
+      R_tce <- R_tce[-which_max_col_nan, -which_max_col_nan]
+      SE_tce <- SE_tce[-which_max_col_nan, -which_max_col_nan]
+    }
+    row_nan_perc <- rowMeans(is.na(R_tce))
+    col_nan_perc <- colMeans(is.na(R_tce))
+    max_row_nan = max(row_nan_perc)
+    max_col_nan = max(col_nan_perc)
   }
-  else {
-    return(list("R_tce" = R_tce[!drop_cols, !drop_cols],
-                "SE_tce" = SE_tce[!drop_cols, !drop_cols]))
-  }
+  return(list("R_tce" = R_tce, "SE_tce" = SE_tce))
 }
 
 #' Creates an igraph from CDE matrix.
