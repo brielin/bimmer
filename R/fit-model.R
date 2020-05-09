@@ -79,7 +79,25 @@ welch_test <- function(beta1, se1, beta2, se2, welch_thresh = 0.05) {
   sig_21 <- res_21 < welch_thresh
   res <- sig_12 - sig_21
   res[is.na(t_val)] <- 0
-  return(res)
+  return(list("pass" = res, "t" = t_val, "nu" = nu) )
+}
+
+
+egger_w <- function(b_exp, b_out, se_exp, se_out, weights){
+  lm_res <- summary(lm(sign(b_exp)*b_out ~ abs(b_exp), weights = weights/(mean(weights)*se_out)))
+  beta_hat <- lm_res$coefficients[2, 1]
+  beta_se <- lm_res$coefficients[2, 2]/min(lm_res$sigma, 1)
+  beta_p <- 2*(1-pnorm(abs(beta_hat/beta_se)))
+  return(list("beta.hat" = beta_hat, "beta.se" = beta_se, "beta.p.value" = beta_p))
+}
+
+
+egger <- function(b_exp, b_out, se_exp, se_out, weights){
+  lm_res <- summary(lm(sign(b_exp)*b_out ~ abs(b_exp), weights = 1/se_out**2))
+  beta_hat <- lm_res$coefficients[2, 1]
+  beta_se <- lm_res$coefficients[2, 2]/min(lm_res$sigma, 1)
+  beta_p <- 2*(1-pnorm(abs(beta_hat/beta_se)))
+  return(list("beta.hat" = beta_hat, "beta.se" = beta_se, "beta.p.value" = beta_p))
 }
 
 
@@ -99,7 +117,7 @@ welch_test <- function(beta1, se1, beta2, se2, welch_thresh = 0.05) {
 #' @param verbose Bool. If true, print phenotype label during iteration.
 #' @export
 select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
-                        welch_thresh = 0.1, verbose = FALSE) {
+                        welch_thresh = 0.1, verbose = FALSE, weight = FALSE) {
   z_scores <- as.matrix(abs(sumstats$beta_hat / sumstats$se_hat))
   p_vals <- 2 * (1 - stats::pnorm(z_scores))
   sig_p_vals <- dplyr::as_tibble(p_vals < p_thresh)
@@ -133,22 +151,33 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
       candidate2 <- sig2 & mask2
       candidate2[is.na(candidate2)] <- FALSE
       selected_snps[[pheno2]]$names <- snps[candidate2]
-      if(is.null(welch_thresh)){
-        selected_snps[[pheno1]][[pheno2]] <- rep(TRUE, sum(candidate1))
-        selected_snps[[pheno2]][[pheno1]] <- rep(TRUE, sum(candidate2))
-      } else if(welch_thresh == 0){
-        selected_snps[[pheno1]][[pheno2]] <- !sig2[candidate1]
-        selected_snps[[pheno2]][[pheno1]] <- !sig1[candidate2]
-      } else {
-        keep <- candidate1 | candidate2
-        b1 <- sumstats$beta_hat[keep, pheno1]
-        b2 <- sumstats$beta_hat[keep, pheno2]
-        s1 <- sumstats$se_hat[keep, pheno1]
-        s2 <- sumstats$se_hat[keep, pheno2]
-        welch_res <- welch_test(b1, s1, b2, s2, welch_thresh)
 
-        selected_snps[[pheno1]][[pheno2]] <- welch_res[candidate1[keep]] == 1
-        selected_snps[[pheno2]][[pheno1]] <- welch_res[candidate2[keep]] == -1
+      keep <- candidate1 | candidate2
+      b1 <- sumstats$beta_hat[keep, pheno1]
+      b2 <- sumstats$beta_hat[keep, pheno2]
+      s1 <- sumstats$se_hat[keep, pheno1]
+      s2 <- sumstats$se_hat[keep, pheno2]
+
+      welch_res <- welch_test(b1, s1, b2, s2, welch_thresh)
+      if(is.null(welch_thresh)){
+        if(weight){
+          selected_snps[[pheno1]][[pheno2]] = -ifelse(welch_res$t[candidate1[keep]] < -1.6, welch_res$t[candidate1[keep]], 0)
+          selected_snps[[pheno2]][[pheno1]] = ifelse(welch_res$t[candidate2[keep]] > 1.6, welch_res$t[candidate2[keep]], 0)
+        } else {
+          selected_snps[[pheno1]][[pheno2]] <- rep(TRUE, sum(candidate1))
+          selected_snps[[pheno2]][[pheno1]] <- rep(TRUE, sum(candidate2))
+        }
+      } else if(welch_thresh == 0){
+        if(weight){
+          selected_snps[[pheno1]][[pheno2]] = -ifelse(welch_res$t[candidate1[keep]] < -1.6, welch_res$t[candidate1[keep]], 0) * !sig2[candidate1]
+          selected_snps[[pheno2]][[pheno1]] = ifelse(welch_res$t[candidate2[keep]] > 1.6, welch_res$t[candidate2[keep]], 0) * !sig1[candidate2]
+        } else {
+          selected_snps[[pheno1]][[pheno2]] <- !sig2[candidate1]
+          selected_snps[[pheno2]][[pheno1]] <- !sig1[candidate2]
+        }
+      } else {
+        selected_snps[[pheno1]][[pheno2]] <- welch_res$pass[candidate1[keep]] == 1
+        selected_snps[[pheno2]][[pheno1]] <- welch_res$pass[candidate2[keep]] == -1
       }
     }
   }
@@ -176,26 +205,23 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
   mr_method_func <- switch(mr_method,
     ps = mr.raps::mr.raps,
     aps = function(...) {
-      mr.raps::mr.raps(over.dispersion = TRUE, ...)
+      mr.raps::mr.raps(over.dispersion = TRUE, suppress.warning = TRUE, ...)
     },
     raps = function(...) {
-      mr.raps::mr.raps(over.dispersion = TRUE, loss.function = "huber", ...)
+      mr.raps::mr.raps(over.dispersion = TRUE, loss.function = "huber", suppress.warning = TRUE, ...)
     },
     egger_p = function(b_exp, b_out, se_exp, se_out, ...) {
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
       egger_res <- MendelianRandomization::mr_egger(input, robust = FALSE, penalized = TRUE)
       return(list("beta.hat" = egger_res$Estimate, "beta.se" = egger_res$StdError.Est, "beta.p.value" = egger_res$Pvalue.Est))
     },
-    egger = function(b_exp, b_out, se_exp, se_out, ...) {
-      input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
-      egger_res <- MendelianRandomization::mr_egger(input, robust = FALSE, penalized = FALSE)
-      return(list("beta.hat" = egger_res$Estimate, "beta.se" = egger_res$StdError.Est, "beta.p.value" = egger_res$Pvalue.Est))
-    },
+    egger = egger,
     mbe = function(b_exp, b_out, se_exp, se_out, ...){
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
       mbe_res <- MendelianRandomization::mr_mbe(input, seed = NA, iterations = 0)
       return(list("beta.hat" = mbe_res$Estimate, "beta.se" = mbe_res$StdError, "beta.p.value" = mbe_res$Pvalue))
-    }
+    },
+    egger_w = egger_w
   )
 
   # all.equal returns a STRING if they dont have the same length??
@@ -220,7 +246,8 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
     beta_exp <- beta_sub[, exp]
     se_exp <- se_sub[, exp]
     run_tce_entry <- function(beta_out, se_out, out){
-      snp_mask <- get(out, snps_to_use) & !is.na(beta_out) & !is.na(beta_exp)
+      mask_or_weight = get(out, snps_to_use)
+      snp_mask <- (mask_or_weight > 0) & !is.na(beta_out) & !is.na(beta_exp)
       n_instruments <- sum(snp_mask)
       if ((n_instruments < min_instruments) | (exp == out)){
         list("R" = NA, "SE" = NA, "N" = n_instruments, "p" = NA)
@@ -232,6 +259,7 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
               b_out = beta_out[snp_mask],
               se_exp = se_exp[snp_mask],
               se_out = se_out[snp_mask],
+              weight = mask_or_weight[snp_mask],
               ...
             )
             return(list("R" = mr_res$beta.hat, "SE" = mr_res$beta.se,

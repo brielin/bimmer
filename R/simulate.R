@@ -147,23 +147,25 @@ generate_network <- function(D, graph, prob, g, v, orient = "random"){
   node_degree <- rowSums(adj)
   for( i in 1:(D-1) ){
     for(j in (i+1):D){
-      if(orient == "random"){
-        if(runif(1) > 0.5){
-          R[i, j] = 0
-        } else{
-          R[j, i] = 0
-        }
-      } else if(orient == "away"){
-        if(runif(1) > node_degree[i]/(node_degree[i] + node_degree[j])){
-          R[i, j] = 0
-        } else{
-          R[j, i] = 0
-        }
-      } else if(orient == "towards"){
-        if(runif(1) > node_degree[j]/(node_degree[i] + node_degree[j])){
-          R[i, j] = 0
-        } else{
-          R[j, i] = 0
+      if(R[i, j] > 0){
+        if(orient == "random"){
+          if(runif(1) > 0.5){
+            R[i, j] = 0
+          } else{
+            R[j, i] = 0
+          }
+        } else if(orient == "away"){
+          if(runif(1) > node_degree[i]/(node_degree[i] + node_degree[j])){
+            R[i, j] = 0
+          } else{
+            R[j, i] = 0
+          }
+        } else if(orient == "towards"){
+          if(runif(1) > node_degree[j]/(node_degree[i] + node_degree[j])){
+            R[i, j] = 0
+          } else{
+            R[j, i] = 0
+          }
         }
       }
     }
@@ -311,7 +313,7 @@ select_snps_oracle <- function(beta) {
 #' @param selected A list of lists, output of `select_snps`.
 count_instruments <- function(selected) {
   return(do.call(cbind, purrr::map(selected, function(pheno) {
-    return(purrr::map(pheno[-1], sum))
+    return(purrr::map(pheno[-1], function(x){sum(x>0)}))
   })))
 }
 

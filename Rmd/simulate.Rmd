@@ -20,7 +20,7 @@ devtools::load_all()
 
 
 ```{r}
-run_methods <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient){
+run_methods <- function(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient){
   R <- generate_network(D = D, graph = graph, prob = prob, g = g, v = v, orient = orient)
   dataset <- generate_dataset(N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, fix_R = R)
   sumstats_select <- dataset$sumstats_select
@@ -29,7 +29,6 @@ run_methods <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph,
   R_tce <- dataset$R_tce
   beta <- dataset$beta
   
-  
   # Calculate the self-influence of each node to track during simulations.
   R_obs = get_observed(R_cde)
   self_norm = 1 + diag(R_obs)
@@ -37,16 +36,18 @@ run_methods <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph,
   min_self = min(self_norm)
   max_self = max(self_norm)
   
-  selected_bimmer <- select_snps(sumstats_select, p_thresh = 5e-5, welch_thresh = 0.001)
+  selected_bimmer <- select_snps(sumstats_select, p_thresh = 5e-6, welch_thresh = 0, weight = TRUE)
   selected_standard <- select_snps(sumstats_select, p_thresh = 5e-8, welch_thresh = NULL)
-  tce_res <- fit_tce(sumstats_fit, selected_bimmer, mr_method = "egger")
+  tce_res <- fit_tce(sumstats_fit, selected_bimmer, mr_method = "egger_w")
   n_tce_nans <- sum(is.na(tce_res$R_tce))
   mae_tce <- mean(abs(tce_res$R_tce - R_tce), na.rm=T)
   rmse_tce <- sqrt(mean((tce_res$R_tce - R_tce)**2, na.rm=T))
   mean_missing <- mean(abs(R_tce[is.na(tce_res$R_tce)]))
   max_row_missing <- max(rowSums(is.na(tce_res$R_tce)))
   max_col_missing <- max(colSums(is.na(tce_res$R_tce)))
+  print(c(mae_tce, mean(purrr::map_int(selected_bimmer, function(x){length(x[["names"]])}))))
 
+  methods = c("inspre", "exact", "mvmr")
   result <- foreach(method = methods, .combine = bind_rows) %do% {
     D_hat = NULL
     lambda = NULL
@@ -58,7 +59,7 @@ run_methods <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph,
       R_hat <- array(R_hat, dim = c(D, D, 1))
     } else if (method == "inspre"){
       weights <- inspre::make_weights(tce_res$SE_tce)
-      cde_res <- fit_inspre(R_tce = tce_res$R_tce, W = weights, cv_folds = 10, verbose = 1, lambda_min_ratio = 0.05, nlambda = 50, warm_start = FALSE)
+      cde_res <- fit_inspre(R_tce = tce_res$R_tce, W = weights, cv_folds = 5, verbose = 1, lambda_min_ratio = 0.1, nlambda = 25, warm_start = FALSE)
       R_hat <- cde_res$R_hat
       D_hat <- cde_res$D_hat
       lambda <- cde_res$lambda
@@ -84,35 +85,7 @@ run_methods <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph,
 
 ```{r}
 # First simulation: ER graphs, random direction.
-n_iter = 120
-n_cores = 8
-N = 100000
-M_s = 1000
-M_p = 4000
-prop_shared = NULL
-M_total = 1000000
-D = 100
-graph = "random"
-prob = 0.05
-g = NULL
-v = 0.3
-orient = "random"
-
-rho = 0
-noise = 0.8 # 20% heritability
-
-methods = c("exact", "inspre", "mvmr")
-
-doMC::registerDoMC(cores = n_cores)
-plot_tibble_1 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-  run_methods(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
-}
-save(plot_tibble_1, file = "~/ukbb_network/plot_data/bimmer_sim_1.Rdata")
-```
-
-```{r}
-# Second simulation: ER graphs, towards direction.
-n_iter = 120
+n_iter = 24
 n_cores = 24
 N = 100000
 M_s = 1000
@@ -121,7 +94,35 @@ prop_shared = NULL
 M_total = 1000000
 D = 100
 graph = "random"
-prob = 0.05
+prob = 0.04
+g = NULL
+v = 0.3
+orient = "random"
+
+rho = 0
+noise = 0.8 # 20% heritability
+
+doMC::registerDoMC(cores = n_cores)
+plot_tibble_1 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
+# for(iter in 1:n_iter){
+  run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
+}
+save(plot_tibble_1, file = "~/ukbb_network/plot_data/bimmer_sim_1.Rdata")
+```
+
+
+```{r}
+# Second simulation: ER graphs, towards direction.
+n_iter = 24
+n_cores =24
+N = 100000
+M_s = 1000
+M_p = 4000
+prop_shared = NULL
+M_total = 1000000
+D = 100
+graph = "random"
+prob = 0.04
 g = NULL
 v = 0.3
 orient = "towards"
@@ -129,14 +130,14 @@ orient = "towards"
 rho = 0
 noise = 0.8 # 20% heritability
 
-methods = c("exact", "inspre", "mvmr")
-
 doMC::registerDoMC(cores = n_cores)
-plot_tibble_2 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-  run_methods(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
+# plot_tibble_2 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
+for(iter in 1:n_iter){
+  run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
 }
 save(plot_tibble_2, file = "~/ukbb_network/plot_data/bimmer_sim_2.Rdata")
 ```
+
 
 ```{r}
 # Third simulation: ER graphs, away direction.
@@ -149,7 +150,7 @@ prop_shared = NULL
 M_total = 1000000
 D = 100
 graph = "random"
-prob = 0.05
+prob = 0.04
 g = NULL
 v = 0.3
 orient = "away"
@@ -160,8 +161,9 @@ noise = 0.8 # 20% heritability
 methods = c("exact", "inspre", "mvmr")
 
 doMC::registerDoMC(cores = n_cores)
-plot_tibble_3 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-  run_methods(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
+# plot_tibble_3 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
+for(iter in 1:n_iter){
+  run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
 }
 save(plot_tibble_3, file = "~/ukbb_network/plot_data/bimmer_sim_3.Rdata")
 ```
@@ -190,7 +192,7 @@ methods = c("exact", "inspre", "mvmr")
 
 doMC::registerDoMC(cores = n_cores)
 plot_tibble_4 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-  run_methods(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
+  run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
 }
 save(plot_tibble_4, file = "~/ukbb_network/plot_data/bimmer_sim_4.Rdata")
 ```
@@ -218,7 +220,7 @@ methods = c("exact", "inspre", "mvmr")
 
 doMC::registerDoMC(cores = n_cores)
 plot_tibble_5 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-  run_methods(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
+  run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
 }
 save(plot_tibble_5, file = "~/ukbb_network/plot_data/bimmer_sim_5.Rdata")
 ```
@@ -246,7 +248,7 @@ methods = c("exact", "inspre", "mvmr")
 
 doMC::registerDoMC(cores = n_cores)
 plot_tibble_6 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-  run_methods(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
+  run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
 }
 save(plot_tibble_6, file = "~/ukbb_network/plot_data/bimmer_sim_6.Rdata")
 ```
@@ -275,7 +277,7 @@ methods = c("exact", "inspre", "mvmr")
 
 doMC::registerDoMC(cores = n_cores)
 plot_tibble_7 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-  run_methods(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
+  run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
 }
 save(plot_tibble_7, file = "~/ukbb_network/plot_data/bimmer_sim_7.Rdata")
 ```
@@ -304,7 +306,7 @@ methods = c("exact", "inspre", "mvmr")
 
 doMC::registerDoMC(cores = n_cores)
 plot_tibble_8 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-  run_methods(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
+  run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
 }
 save(plot_tibble_8, file = "~/ukbb_network/plot_data/bimmer_sim_8.Rdata")
 ```
@@ -332,7 +334,7 @@ methods = c("exact", "inspre", "mvmr")
 
 doMC::registerDoMC(cores = n_cores)
 plot_tibble_9 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-  run_methods(N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
+  run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
 }
 save(plot_tibble_9, file = "~/ukbb_network/plot_data/bimmer_sim_9.Rdata")
 ```
