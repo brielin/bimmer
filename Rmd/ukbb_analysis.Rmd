@@ -36,8 +36,7 @@ save_cde_res_wide = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_c
 save_cde_res_narrow = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_cde_res_narrow.Rdata"
 gencor_descriptions = "/gpfs/commons/projects/UKBB/sumstats/gencor_descriptions.txt"
 mr_method = "egger"
-p_thresh = 5e-5
-welch_thresh = 0.001
+p_thresh = 5e-6
 beta = 0.05
 n_cores = 1
 ```
@@ -59,18 +58,18 @@ rm(sumstats)
 load(save_select_sumstats)
 snps_to_use <- read_snp_list(file_pattern_snp_list)
 selected_snps <- select_snps(sumstats, snps_to_use, p_thresh = p_thresh,
-                             welch_thresh = welch_thresh, verbose = TRUE, n_cores = n_cores)
+                             welch_thresh = 0, verbose = TRUE, weight = TRUE)
 save(selected_snps, file = save_snps)
 ```
 
 
 # Fit TCE matrix
 ```{r}
-load(save_fit_sumstats)
-load(save_snps)
-tce_res <- fit_tce(sumstats, selected_snps, mr_method = mr_method,
+#load(save_fit_sumstats)
+#load(save_snps)
+tce_res_aps <- fit_tce(sumstats, selected_snps, mr_method = "aps",
                    min_instruments = 5, verbose = TRUE)
-save(tce_res, file = save_tce_res)
+save(tce_res_aps, file = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_tce_res_aps.Rdata")
 ```
 
 # Calculate some descriptive statistics for the TCE results.

@@ -4,62 +4,64 @@ require(foreach)
 require(scales)
 require(gridExtra)
 require(devtools)
+require(scales)
 devtools::load_all()
 ```
 
 
 ```{r}
-run_sim <- function(n_iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores){
+run_sim <- function(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores){
   fix_R =  matrix(c(0, r2, r1, 0), nrow = 2, ncol = 2)
-  doMC::registerDoMC(cores = n_cores)
-  result <- foreach(i = 1:n_iter, .combine = bind_rows) %dopar% {
-    dataset <- generate_dataset(N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, p_net = 0, sd_net = 1, fix_R = fix_R)
-    sumstats_select <- dataset$sumstats_select
-    sumstats_fit <- dataset$sumstats_fit
-    R_cde <- dataset$R_cde
-    R_tce <- dataset$R_tce
-    beta <- dataset$beta
+  dataset <- generate_dataset(N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, p_net = 0, sd_net = 1, fix_R = fix_R)
+  sumstats_select <- dataset$sumstats_select
+  sumstats_fit <- dataset$sumstats_fit
+  R_cde <- dataset$R_cde
+  R_tce <- dataset$R_tce
+  beta <- dataset$beta
   
-    # First do oracle SNPs and Egger
-    mr_method = "egger"
-    selected <- select_snps_oracle(beta)
+  # First do oracle SNPs and Egger
+  mr_method = "egger"
+  selected <- select_snps_oracle(beta)
+  inst_count <- count_instruments(selected)
+  metrics <- instrument_metrics(selected, beta)
+  tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
+  
+  oracle_res <- tibble(
+    iter=iter, mr_method = mr_method, p_thresh = NA, w_thresh = NA, 
+    r1_sim = r1, r2_sim = r2, r1 = R_tce[1,2], r2 = R_tce[2, 1],
+    r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
+    se1_hat = tce_res$SE_tce[1, 2], se2_hat = tce_res$SE_tce[1, 2],
+    p1 = tce_res$p_val[1,2], p2 = tce_res$p_val[2,1],
+    n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
+  
+  select_res <- foreach(p_thresh = 0.5*0.1^seq(3, 7), .combine = bind_rows) %do% {
+    # Do normal egger.
+    selected <- select_snps(sumstats_select, p_thresh = p_thresh, welch_thresh = NULL)
     inst_count <- count_instruments(selected)
-    metrics <- instrument_metrics(selected, beta)
     tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
-  
-    oracle_res <- tibble(
-      iter=i, mr_method = mr_method, p_thresh = NA, w_thresh = NA, 
+    normal_res <- tibble(
+      iter=iter, mr_method = mr_method, p_thresh = p_thresh, w_thresh = NA, 
       r1_sim = r1, r2_sim = r2, r1 = R_tce[1,2], r2 = R_tce[2, 1],
       r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
+      se1_hat = tce_res$SE_tce[1, 2], se2_hat = tce_res$SE_tce[1, 2],
       p1 = tce_res$p_val[1,2], p2 = tce_res$p_val[2,1],
       n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
-  
-    select_res <- foreach(p_thresh = 0.5*0.1^seq(1, 7), .combine = bind_rows) %do% {
-      selected <- select_snps(sumstats_select, p_thresh = p_thresh, welch_thresh = NULL)
-      inst_count <- count_instruments(selected)
-      tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
-      no_welch_res <- tibble(
-        iter=i, mr_method = mr_method, p_thresh = p_thresh, w_thresh = NA, 
-        r1_sim = r1, r2_sim = r2, r1 = R_tce[1,2], r2 = R_tce[2, 1],
-        r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
-        p1 = tce_res$p_val[1,2], p2 = tce_res$p_val[2,1],
-        n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
     
-      welch_res <- foreach(w_thresh = c(0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001, 0), .combine = bind_rows) %do% {
-        selected <- select_snps(sumstats_select, p_thresh = p_thresh, welch_thresh = w_thresh)
-        inst_count <- count_instruments(selected)
-        tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
-        tibble(
-          iter=i, mr_method = mr_method, p_thresh = p_thresh, w_thresh = w_thresh, 
-          r1_sim = r1, r2_sim = r2, r1 = R_tce[1,2], r2 = R_tce[2, 1],
-          r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
-          p1 = tce_res$p_val[1,2], p2 = tce_res$p_val[2,1],
-          n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
-      }
-      bind_rows(no_welch_res, welch_res)
-    }
-    bind_rows(oracle_res, select_res)
+    # Do weighted xor egger.
+    selected <- select_snps(sumstats_select, p_thresh = p_thresh, welch_thresh = 0, weight = TRUE)
+    inst_count <- count_instruments(selected)
+    tce_res <- fit_tce(sumstats_fit, selected, mr_method = "egger_w")
+    weight_res <- tibble(
+      iter=iter, mr_method =  "egger_w", p_thresh = p_thresh, w_thresh = 0, 
+      r1_sim = r1, r2_sim = r2, r1 = R_tce[1,2], r2 = R_tce[2, 1],
+      r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
+      se1_hat = tce_res$SE_tce[1, 2], se2_hat = tce_res$SE_tce[1, 2],
+      p1 = tce_res$p_val[1,2], p2 = tce_res$p_val[2,1],
+      n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
+    
+    return(bind_rows(normal_res, weight_res))
   }
+  result <- bind_rows(oracle_res, select_res)
   result <- unite(
     result, "thresh", c("p_thresh", "w_thresh"), sep = "_", remove = FALSE)
   result <- unite(
@@ -84,10 +86,10 @@ rho = 0
 noise = 0.8 # 20% heritability
 r1 = 0 # NULL
 r2 = 0
-plot_tibble_1 = run_sim(
-  n_iter = n_iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p,
-  prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2,
-  n_cores = n_cores)
+doMC::registerDoMC(cores = n_cores)
+plot_tibble_1 = foreach(iter = 1:n_iter, .combine = bind_rows) %dopar% {
+  run_sim(iter = iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2)
+}
 save(plot_tibble_1, file = "~/ukbb_network/plot_data/bimr_sim_1.Rdata")
 ```
 
@@ -108,7 +110,9 @@ noise = 0.8 # 20% heritability
 r1 = 0 # NULL
 r2 = 0
 
-plot_tibble_2 = run_sim(n_iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores)
+plot_tibble_2 = foreach(iter = 1:n_iter, .combine = bind_rows) %dopar% {
+  run_sim(iter = iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2)
+}
 save(plot_tibble_2, file = "~/ukbb_network/plot_data/bimr_sim_2.Rdata")
 ```
 
@@ -128,7 +132,9 @@ noise = 0.8 # 20% heritability
 r1 = 0 # NULL
 r2 = 0
 
-plot_tibble_3 = run_sim(n_iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores)
+plot_tibble_3 = foreach(iter = 1:n_iter, .combine = bind_rows) %dopar% {
+  run_sim(iter = iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2)
+}
 save(plot_tibble_3, file = "~/ukbb_network/plot_data/bimr_sim_3.Rdata")
 ```
 
@@ -146,11 +152,13 @@ D = 2
 
 rho = 0 # No genetic correlation.
 noise = 0.8 # 20% heritability
-r1_values <- c(0.01, 0.05, 0.11, 0.22, 0.35, 0.58) # seq(0.05, 0.8, 0.05)
+r1_values <- c(0.05, 0.1, 0.2, 0.31, 0.55, 0.85) # seq(0.05, 0.8, 0.05)
 r2 = 0
 
 plot_tibble_4 <- foreach(r1 = r1_values, .combine = bind_rows) %do% {
-  run_sim(n_iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores)
+  foreach(iter = 1:n_iter, .combine = bind_rows) %dopar% {
+    run_sim(iter = iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2)
+  }
 }
 save(plot_tibble_4, file = "~/ukbb_network/plot_data/bimr_sim_4.Rdata")
 ```
@@ -169,11 +177,13 @@ D = 2
 
 rho = 0 # No genetic correlation.
 noise = 0.8 # 20% heritability
-r1_values <-  c(0.01, 0.05, 0.11, 0.22, 0.35, 0.58)
+r1_values <-  c(0.05, 0.1, 0.2, 0.31, 0.55, 0.85)
 r2 = 0
 
 plot_tibble_5 <- foreach(r1 = r1_values, .combine = bind_rows) %do% {
-  run_sim(n_iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores)
+  foreach(iter = 1:n_iter, .combine = bind_rows) %dopar% {
+    run_sim(iter = iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2)
+  }
 }
 
 save(plot_tibble_5, file = "~/ukbb_network/plot_data/bimr_sim_5.Rdata")
@@ -193,11 +203,13 @@ D = 2
 
 rho = 0 # No genetic correlation.
 noise = 0.8 # 20% heritability
-r1_values <- c(0.01, 0.05, 0.11, 0.22, 0.35, 0.58)
+r1_values <- c(0.05, 0.1, 0.2, 0.31, 0.55, 0.85)
 r2 = 0
 
 plot_tibble_6 <- foreach(r1 = r1_values, .combine = bind_rows) %do% {
-  run_sim(n_iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores)
+  foreach(iter = 1:n_iter, .combine = bind_rows) %dopar% {
+    run_sim(iter = iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2)
+  }
 }
 save(plot_tibble_6, file = "~/ukbb_network/plot_data/bimr_sim_6.Rdata")
 ```
@@ -215,12 +227,14 @@ D = 2
 
 rho = 0 # No genetic correlation.
 noise = 0.8 # 20% heritability
-r1_values <- c(-0.58, -0.28, -0.1, 0.1, 0.28, 0.58)
-r2_values <- c(-0.58, -0.28, -0.1, 0.1, 0.28, 0.58)
+r1_values <- c(-0.55, -0.28, -0.1, 0.1, 0.28, 0.55)
+r2_values <- c(-0.55, -0.28, -0.1, 0.1, 0.28, 0.55)
 
 plot_tibble_7 <- foreach(r1 = r1_values, .combine = bind_rows) %do% {
   foreach(r2 = r2_values, .combine = bind_rows) %do% {
-    run_sim(n_iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores)
+    foreach(iter = 1:n_iter, .combine = bind_rows) %dopar% {
+      run_sim(iter = iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2)
+    }
   }
 }
 save(plot_tibble_7, file = "~/ukbb_network/plot_data/bimr_sim_7.Rdata")
@@ -239,12 +253,14 @@ D = 2
 
 rho = 0 # No genetic correlation.
 noise = 0.8 # 20% heritability
-r1_values <- c(-0.58, -0.28, -0.1, 0.1, 0.28, 0.58)
-r2_values <- c(-0.58, -0.28, -0.1, 0.1, 0.28, 0.58)
+r1_values <- c(-0.55, -0.28, -0.1, 0.1, 0.28, 0.55)
+r2_values <- c(-0.55, -0.28, -0.1, 0.1, 0.28, 0.55)
 
 plot_tibble_8 <- foreach(r1 = r1_values, .combine = bind_rows) %do% {
   foreach(r2 = r2_values, .combine = bind_rows) %do% {
-    run_sim(n_iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores)
+    foreach(iter = 1:n_iter, .combine = bind_rows) %dopar% {
+      run_sim(iter = iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2)
+    }
   }
 }
 save(plot_tibble_8, file = "~/ukbb_network/plot_data/bimr_sim_8.Rdata")
@@ -281,7 +297,6 @@ reverselog_trans <- function(base = exp(1)) {
                       log_breaks(base = base), domain = c(1e-100, Inf))
 }
 ```
-
 
 ```{r}
 # Load data and make summaries.
