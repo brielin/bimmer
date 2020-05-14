@@ -1,6 +1,8 @@
 ```{r}
 require(tidyverse)
 require(foreach)
+require(scales)
+require(gridExtra)
 require(devtools)
 require(scales)
 devtools::load_all()
@@ -270,10 +272,10 @@ se <- function(x, na.rm = FALSE){
   sqrt(var(x, na.rm = na.rm)/length(x))
 }
 
-make_summary_tibble <- function(plot_tibble, name1 = "fwer1", name2 = "fwer2"){
+make_summary_tibble <- function(plot_tibble){
   summary_tibble <- plot_tibble %>% group_by(method, r1_sim, r2_sim) %>% 
-    mutate(!!name1 := mean(p1 < 0.05, na.rm=T), !!name2 := mean(p2 < 0.05, na.rm=T),
-           !!paste0("se_", name1) := se(p1 < 0.05, na.rm=T), !!paste0("se_", name2) := se(p2 < 0.05, na.rm=T),
+    mutate(stat1 = mean(p1 < 0.05, na.rm=T), stat2 = mean(p2 < 0.05, na.rm=T),
+           se_stat1 := se(p1 < 0.05, na.rm=T), se_stat2 := se(p2 < 0.05, na.rm=T),
            mae1 = mean(abs(r1 - r1_hat), na.rm=T), mae2 = mean(abs(r2 - r2_hat), na.rm=T),
            se_mae1 = se(abs(r1 - r1_hat), na.rm=T), se_mae2 = se(abs(r2 - r2_hat), na.rm=T),
            r1_hat = mean(r1_hat, na.rm=T), r2_hat = mean(r2_hat, na.rm=T),
@@ -282,9 +284,9 @@ make_summary_tibble <- function(plot_tibble, name1 = "fwer1", name2 = "fwer2"){
            obs1 = mean(!is.na(r1_hat)), obs2 = mean(!is.na(r2_hat)),
            se_obs1 = se(!is.na(r1_hat)), se_obs2 = se(!is.na(r2_hat)),
            r1 = mean(r1), r2 = mean(r2)) %>% ungroup() %>%
-    distinct(method, mr_method, thresh, p_thresh, w_thresh, r1, r2, !!sym(name1), !!sym(name2),
-             !!sym(paste0("se_", name1)), !!sym(paste0("se_", name2)), mae1, mae2, se_mae1, se_mae2, r1_hat, r2_hat, se1_hat, se2_hat, n1_mean, n2_mean,
-             se_n1, se_n2, obs1, obs2, se_obs1, se_obs2)
+    distinct(method, mr_method, thresh, p_thresh, w_thresh, r1, r2, stat1, stat2,
+             se_stat1, se_stat2, mae1, mae2, se_mae1, se_mae2, r1_hat, r2_hat, se1_hat, se2_hat, n1_mean, n2_mean,
+             se_n1, se_n2, obs1, obs2, se_obs1, se_obs2, r1_sim, r2_sim)
   return(summary_tibble)
 }
 
@@ -298,344 +300,271 @@ reverselog_trans <- function(base = exp(1)) {
 
 ```{r}
 # Load data and make summaries.
-load("~/ukbb_network/plot_data/bimr_sim_1_raps.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_2_raps.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_3_raps.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_4_raps.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_5_raps.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_6_raps.Rdata")
+# load("~/ukbb_network/plot_data/bimr_sim_1.Rdata")
+# load("~/ukbb_network/plot_data/bimr_sim_2.Rdata")
+# load("~/ukbb_network/plot_data/bimr_sim_3.Rdata")
+# load("~/ukbb_network/plot_data/bimr_sim_4.Rdata")
+# load("~/ukbb_network/plot_data/bimr_sim_5.Rdata")
+# load("~/ukbb_network/plot_data/bimr_sim_6.Rdata")
+load("~/Work/plot_data/bimr_sim_1.Rdata")
+load("~/Work/plot_data/bimr_sim_2.Rdata")
+load("~/Work/plot_data/bimr_sim_3.Rdata")
+load("~/Work/plot_data/bimr_sim_4.Rdata")
+load("~/Work/plot_data/bimr_sim_5.Rdata")
+load("~/Work/plot_data/bimr_sim_6.Rdata")
+load("~/Work/plot_data/bimr_sim_7.Rdata")
+load("~/Work/plot_data/bimr_sim_8.Rdata")
 
-summary_tibble_1 <- make_summary_tibble(plot_tibble_1, name1 = "fwer1", name2 = "fwer2")
-summary_tibble_2 <- make_summary_tibble(plot_tibble_2, name1 = "fwer1", name2 = "fwer2")
-summary_tibble_3 <- make_summary_tibble(plot_tibble_3, name1 = "fwer1", name2 = "fwer2")
-summary_tibble_4 <- make_summary_tibble(plot_tibble_4, name1 = "power1", name2 = "fwer2")
-summary_tibble_5 <- make_summary_tibble(plot_tibble_5, name1 = "power1", name2 = "fwer2")
-summary_tibble_6 <- make_summary_tibble(plot_tibble_6, name1 = "power1", name2 = "fwer2")
-
+summary_tibble_1 <- make_summary_tibble(plot_tibble_1)
+summary_tibble_2 <- make_summary_tibble(plot_tibble_2)
+summary_tibble_3 <- make_summary_tibble(plot_tibble_3)
+summary_tibble_4 <- make_summary_tibble(plot_tibble_4)
+summary_tibble_5 <- make_summary_tibble(plot_tibble_5)
+summary_tibble_6 <- make_summary_tibble(plot_tibble_6)
+summary_tibble_7 <- make_summary_tibble(plot_tibble_7)
+summary_tibble_8 <- make_summary_tibble(plot_tibble_8)
 ```
+
+
+```{r, fig.width=10}
+# Fig 1
+p = 5e-06
+
+f1a <- summary_tibble_1 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
+  mutate(Direction = if_else(Direction == 1, "P1->P2", "P2->P1")) %>%
+  ggplot(aes(Direction, stat, fill = Method)) + 
+  geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat, color = Method), position = "dodge2") + 
+  geom_col(position = "dodge2") + 
+  labs(x = NULL, y = NULL, title = "a) Null: Uncorrelated pleiotropy") + ylim(0,1) + guides(fill = FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+
+f1b <- summary_tibble_2 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
+  mutate(Direction = if_else(Direction == 1, "P1->P2", "P2->P1")) %>%
+  ggplot(aes(Direction, stat, fill = Method)) + 
+  geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat, color = Method), position = "dodge2") + 
+  geom_col(position = "dodge2") + 
+  labs(x = NULL, y = NULL, title = "b) Null: Correlated pleiotropy")  + ylim(0,1) + guides(fill=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+
+f1c <- summary_tibble_3 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
+  mutate(Direction = if_else(Direction == 1, "P1->P2", "P2->P1")) %>%
+  ggplot(aes(Direction, stat, fill = Method)) + 
+  geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat, color = Method), position = "dodge2") + 
+  geom_col(position = "dodge2") + 
+  labs(x = NULL, y = NULL, title = "c) Null: Unequal power" ) + ylim(0,1) + theme(plot.title = element_text(size=10))
+
+f1d <- summary_tibble_4 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = rep(c("Oracle", "W-Egger", "Egger"), 6)) %>% 
+  pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
+  mutate(Direction = if_else(Direction == 1, "P1->P2 (Alt)", "P2->P1 (Null)")) %>%
+  ggplot(aes(r1, stat, color = Method, linetype = Direction)) + geom_point() + geom_line() + geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat)) +
+  labs(x = NULL, y = NULL, title = "d) One-way alt: Equal sample size")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+
+f1e <- summary_tibble_5 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = rep(c("Oracle", "W-Egger", "Egger"), 6)) %>% 
+  pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
+  mutate(Direction = if_else(Direction == 1, "P1->P2 (Alt)", "P2->P1 (Null)")) %>%
+  ggplot(aes(r1, stat, color = Method, linetype = Direction)) + geom_point() + geom_line() + geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat)) +
+  labs(x = NULL, y = NULL, title = "e) One-way alt: Larger sample 1")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+
+f1f <- summary_tibble_6 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = rep(c("Oracle", "W-Egger", "Egger"), 6)) %>% 
+  pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
+  mutate(Direction = if_else(Direction == 1, "P1->P2 (Alt)", "P2->P1 (Null)")) %>%
+  ggplot(aes(r1, stat, color = Method, linetype = Direction, )) + geom_point() + geom_line() + geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat)) +
+  labs(x = NULL, y = NULL, title = "f) One-way alt: Larger sample 2") + ylim(0, 1) + guides(color = FALSE) + theme(plot.title = element_text(size=10))
+
+f1 <- ggarrange(f1a, f1b, f1c, f1d, f1e, f1f, ncol = 3, left = "FWER (null) or Power (alt)")
+ggsave("~/Work/bimmer/manuscript/figures/figure1.pdf", plot = f1, dpi = 300, width = 10)
+```
+
+
+```{r, fig.width=10}
+# Fig 2
+r1_val <- c(rep(-0.5, 12), rep(-0.25, 12), rep(-0.1, 12), rep(0.1, 12), rep(0.25, 12), rep(0.5, 12))
+r2_val <- rep(c(-0.5, -0.5, -0.25, -0.25, -0.1, -0.1, 0.1, 0.1, 0.25, 0.25, 0.5, 0.5), 6)
+
+f2a <- summary_tibble_7 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
+  mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
+  mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
+  ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat1)) + scale_fill_gradient(limits = c(0, 1)) + facet_wrap(~ Method, ncol = 2) +
+  labs(x = NULL, y = NULL, title = "a) Equal sample sizes, P1->P2") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
+
+f2b <- summary_tibble_7 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
+  mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
+  mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
+  ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat2)) + scale_fill_gradient(limits = c(0, 1), name = "Power") + facet_wrap(~ Method, ncol = 2) +
+  labs(x = NULL, y = NULL, title = "b) Equal sample sizes, P2->P1")  + theme(plot.title = element_text(size=10))
+
+f2c <- summary_tibble_8 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
+  mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
+  mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
+  ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat1)) + scale_fill_gradient(limits = c(0, 1)) + facet_wrap(~ Method, ncol = 2) +
+  labs(x = NULL, y = NULL, title = "c) Larger sample 1, P1->P2") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
+
+f2d <- summary_tibble_8 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
+  mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
+  mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
+  ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat2)) + scale_fill_gradient(limits = c(0, 1)) + facet_wrap(~ Method, ncol = 2) +
+  labs(x = NULL, y = NULL, title = "d) Larger sample 1, P2->P1") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
+
+f2 <- ggarrange(f2a, f2b, f2c, f2d, ncol = 2, widths = c(1.05, 1))
+ggsave("~/Work/bimmer/manuscript/figures/figure2.pdf", plot = f2, dpi = 300, width = 10)
+```
+
 
 ```{r}
-# Figure 1 and Supplementary Figure 1 panels:
-load("~/ukbb_network/plot_data/bimr_sim_1.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_2.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_3.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_4.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_5.Rdata")
-load("~/ukbb_network/plot_data/bimr_sim_6.Rdata")
+t1 <- summary_tibble_1 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-summary_tibble_1 <- make_summary_fwer_tibble(plot_tibble_1)
-summary_tibble_2 <- make_summary_fwer_tibble(plot_tibble_2)
-summary_tibble_3 <- make_summary_fwer_tibble(plot_tibble_3)
-summary_tibble_4 <- make_summary_power_tibble(plot_tibble_4)
-summary_tibble_5 <- make_summary_power_tibble(plot_tibble_5)
-summary_tibble_6 <- make_summary_power_tibble(plot_tibble_6)
+t2 <- summary_tibble_2 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-# S1A
-summary_tibble_1 %>% filter(!is.na(p_thresh), !is.na(w_thresh), w_thresh != 0) %>%
-  ggplot(aes(w_thresh, fwer2, color = as.character(p_thresh))) + geom_line() +
-  geom_errorbar(aes(ymin=fwer2-se_fwer2, ymax=fwer2+se_fwer2)) +
-  scale_x_continuous(trans=reverselog_trans(10)) + 
-  labs(color='p threshold', x = 'q threshold') + ylim(0, 1)
+t3 <- summary_tibble_3 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-# S1B
-summary_tibble_2 %>% filter(!is.na(p_thresh), !is.na(w_thresh), w_thresh != 0) %>%
-  ggplot(aes(w_thresh, fwer2, color = as.character(p_thresh))) + geom_line() +
-  geom_errorbar(aes(ymin=fwer2-se_fwer2, ymax=fwer2+se_fwer2)) +
-  scale_x_continuous(trans=reverselog_trans(10)) + 
-  labs(color='p threshold', x = "q threshold") + ylim(0, 1)
+t4 <- summary_tibble_4 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-# S1C
-summary_tibble_3 %>% filter(!is.na(p_thresh), !is.na(w_thresh), w_thresh != 0) %>%
-  ggplot(aes(w_thresh, fwer2, color = as.character(p_thresh))) + geom_line() +
-  geom_errorbar(aes(ymin=fwer2-se_fwer2, ymax=fwer2+se_fwer2)) +
-  scale_x_continuous(trans=reverselog_trans(10)) + 
-  labs(color='p threshold', x = "q threshold") + ylim(0, 1)
+t5 <- summary_tibble_4 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-# S1D
-summary_tibble_4 %>% filter(r1_sim == 0.11, !is.na(p_thresh), !is.na(w_thresh), w_thresh != 0) %>%
-  ggplot(aes(w_thresh, power1, color = as.character(p_thresh))) + geom_line() +
-  geom_errorbar(aes(ymin=power1-se_power1, ymax=power1+se_power1)) +
-  scale_x_continuous(trans=reverselog_trans(10)) + 
-  labs(color='p threshold', x = 'q threshold') + ylim(0, 1)
+t6 <- summary_tibble_5 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-# S1E
-summary_tibble_5 %>% filter(r1_sim == 0.11, !is.na(p_thresh), !is.na(w_thresh), w_thresh != 0) %>%
-  ggplot(aes(w_thresh, power1, color = as.character(p_thresh))) + geom_line() +
-  geom_errorbar(aes(ymin=power1-se_power1, ymax=power1+se_power1)) +
-  scale_x_continuous(trans=reverselog_trans(10)) + 
-  labs(color='p threshold', x = 'q threshold') + ylim(0, 1)
+t7 <- summary_tibble_5 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-# S1F
-summary_tibble_6 %>% filter(r1_sim == 0.11, !is.na(p_thresh), !is.na(w_thresh), w_thresh != 0) %>%
-  ggplot(aes(w_thresh, power1, color = as.character(p_thresh))) + geom_line() +
-  geom_errorbar(aes(ymin=power1-se_power1, ymax=power1+se_power1)) +
-  scale_x_continuous(trans=reverselog_trans(10)) + 
-  labs(color='p threshold', x = 'q threshold') + ylim(0, 1)
+t8 <- summary_tibble_6 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-# S1G
-summary_tibble_4 %>% filter(r1_sim == 0.35, !is.na(p_thresh), !is.na(w_thresh), w_thresh != 0) %>%
-  ggplot(aes(w_thresh, power1, color = as.character(p_thresh))) + geom_line() +
-  geom_errorbar(aes(ymin=power1-se_power1, ymax=power1+se_power1)) +
-  scale_x_continuous(trans=reverselog_trans(10)) + 
-  labs(color='p threshold', x = 'q threshold') + ylim(0, 1)
+t9 <- summary_tibble_6 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-# S1H
-summary_tibble_5 %>% filter(r1_sim == 0.35, !is.na(p_thresh), !is.na(w_thresh), w_thresh != 0) %>%
-  ggplot(aes(w_thresh, power1, color = as.character(p_thresh))) + geom_line() +
-  geom_errorbar(aes(ymin=power1-se_power1, ymax=power1+se_power1)) +
-  scale_x_continuous(trans=reverselog_trans(10)) + 
-  labs(color='p threshold', x = 'q threshold') + ylim(0, 1)
+table1 <- rbind(t1, t2, t3)
+table2 <- rbind(t4, t5, t6, t7, t8, t9)
 
-# S1I
-summary_tibble_6 %>% filter(r1_sim == 0.35, !is.na(p_thresh), !is.na(w_thresh), w_thresh != 0) %>%
-  ggplot(aes(w_thresh, power1, color = as.character(p_thresh))) + geom_line() +
-  geom_errorbar(aes(ymin=power1-se_power1, ymax=power1+se_power1)) +
-  scale_x_continuous(trans=reverselog_trans(10)) + 
-  labs(color='p threshold', x = 'q threshold') + ylim(0, 1)
+kable1 <- kable(table1, "latex", booktabs = T) %>% 
+  kable_styling(position ="center", latex_options = "scale_down") %>%
+  pack_rows("Null: Uncorrelated pleiotropy", 1, 3) %>%
+  pack_rows("Null: Correlated pleiotropy", 4, 6) %>%
+  pack_rows("Null: Correlated pleiotropy, unequal power", 7, 9)
+
+kable2 <- kable(table2, "latex", booktabs = T) %>% 
+  kable_styling(position ="center", latex_options = "scale_down") %>%
+  pack_rows("Alt: Equal sample sizes, R=0.2", 1, 3) %>%
+  pack_rows("Alt: Equal sample sizes, R=0.5", 4, 6) %>%
+  pack_rows("Alt: Larger sample 1, R=0.2", 7, 9) %>%
+  pack_rows("Alt: Larger sample 1, R=0.5", 10, 12) %>%
+  pack_rows("Alt: Larger sample 2, R=0.2", 13, 15) %>%
+  pack_rows("Alt: Larger sample 2, R=0.5", 16, 18)
 ```
 
 
 ```{r}
-plot_tibble <- 
+s1 <- summary_tibble_1 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
+s2 <- summary_tibble_2 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
 
-# Table results
-summary_tibble <- plot_tibble %>% distinct(method, FWER1, se_fwer1, FWER2, se_fwer2, mae1, se_mae1, mae2, se_mae2, obs1, obs2, se_obs1, se_obs2)
-print(summary_tibble)
-# FWER
-# summary_tibble %>% ggplot(aes(x = method, y = FWER1)) +
-#   geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-#   geom_errorbar(aes(ymin=FWER1-se_fwer1, ymax=FWER1+se_fwer1))
-# summary_tibble %>% distinct(method, FWER2, se_fwer2) %>% ggplot(aes(x = method, y = FWER2)) +
-#   geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-#   geom_errorbar(aes(ymin=FWER2-se_fwer2, ymax=FWER2+se_fwer2))
-# # MAE
-# summary_tibble %>% ggplot(aes(x = method, y = mae1)) +
-#   geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-#   geom_errorbar(aes(ymin=mae1-se_mae1, ymax=mae1+se_mae1))
-# summary_tibble %>% ggplot(aes(x = method, y = mae2)) +
-#   geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-#   geom_errorbar(aes(ymin=mae2-se_mae2, ymax=mae2+se_mae2))
-# # plot_tibble %>% ggplot(aes(x = method, y = abs(r1_hat - r1))) + geom_violin() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-# # plot_tibble %>% ggplot(aes(x = method, y = abs(r2_hat - r2))) + geom_violin() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-# # Number of instruments
-# plot_tibble %>% ggplot(aes(x = method, y = n1)) + geom_violin() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-# plot_tibble %>% ggplot(aes(x = method, y = n2)) + geom_violin() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-# # Perc of time giving an answer
-# plot_tibble %>% distinct(method, obs1) %>% ggplot(aes(x = method, y = obs1)) + geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-# plot_tibble %>% distinct(method, obs2) %>% ggplot(aes(x = method, y = obs2)) + geom_col() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+s3 <- summary_tibble_3 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s4 <- summary_tibble_4 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s5 <- summary_tibble_4 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s6 <- summary_tibble_5 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s7 <- summary_tibble_5 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s8 <- summary_tibble_6 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s9 <- summary_tibble_6 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+table_s1 <- rbind(s1, s2, s3)
+table_s2 <- rbind(s4, s5, s6, s7, s8, s9)
+
+kable_s1 <- kable(table_s1, "latex", booktabs = T) %>% 
+  kable_styling(position ="center", latex_options = "scale_down") %>%
+  pack_rows("Null: Uncorrelated pleiotropy", 1, 5) %>%
+  pack_rows("Null: Correlated pleiotropy", 6, 10) %>%
+  pack_rows("Null: Correlated pleiotropy, unequal power", 11, 15)
+
+kable_s2 <- kable(table_s2, "latex", booktabs = T) %>% 
+  kable_styling(position ="center", latex_options = "scale_down") %>%
+  pack_rows("Alt: Equal sample sizes, R=0.2", 1, 5) %>%
+  pack_rows("Alt: Equal sample sizes, R=0.5", 6, 10) %>%
+  pack_rows("Alt: Larger sample 1, R=0.2", 11, 15) %>%
+  pack_rows("Alt: Larger sample 1, R=0.5", 16, 20) %>%
+  pack_rows("Alt: Larger sample 2, R=0.2", 21, 25) %>%
+  pack_rows("Alt: Larger sample 2, R=0.5", 26, 30)
 ```
-
-```{r}
-# plot_tibble <- plot_tibble %>% group_by(method, r1_sim) %>% 
-#   mutate(Power = mean(p1 < 0.05, na.rm=T),
-#          se_power = sqrt(var(p1 < 0.05)/niter),
-#          mae = mean(abs(r1 - r1_hat)),
-#          se_mae = sqrt(var(abs(r1 - r1_hat))/niter)) %>% ungroup()
-# 
-# pd <- position_dodge(0.05)
-# plot_tibble %>% distinct(method, r1_sim, Power, se_power) %>% ggplot(aes(r1_sim, Power, color = method)) + 
-#   geom_line(position = pd) + geom_errorbar(aes(ymin=Power-se_power, ymax=Power+se_power), width=0.01, position=pd)
-# plot_tibble %>% distinct(method, r1_sim, mae, se_mae) %>% ggplot(aes(x = r1_sim, y = mae, color = method)) + geom_line(position=pd) + geom_errorbar(aes(ymin=mae-se_mae, ymax=mae+se_mae), width=0.01, position=pd)
-# plot_tibble %>% ggplot(aes(x = method, y = n1)) + geom_violin() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
-```
-
-# ```{r}
-# ### OLD ###
-# N = 20000
-# N_ind = c(2500, 10000)
-# M = 1000
-# D = 2
-# noise = 0.5
-# sd_net = 0.5
-# sd_beta = 0.4
-# p_net = 0.8
-# p_beta = 0.4
-# niter = 1000
-# M_null = 100000
-# mr_methods = c("raps", "egger")
-# 
-# doMC::registerDoMC(cores = 32)
-# plot_tibble <- foreach(i = 1:niter,
-#                        .combine = bind_rows,
-#                        .inorder = FALSE) %dopar% {
-#   dataset = generate_dataset(
-#     N, M, D, noise = noise, p_net = p_net,
-#     sd_beta = sd_beta, p_beta = p_beta, sd_net = sd_net, pleiotropy = FALSE)
-#   Y_sds <- apply(dataset$Y, 2, sd)
-#   R_obs = get_observed(dataset$R)
-#   R_tce = get_tce(R_obs, normalize=Y_sds)
-#   R_normed <- fit_exact(R_tce)$R_hat
-# 
-#   sample <- sample.int(n = N, size = floor(N/2), replace = FALSE)
-#   X_select = dataset$X[sample, ]
-#   Y_select = dataset$Y[sample, ]
-#   X_fit = dataset$X[-sample, ]
-#   Y_fit = dataset$Y[-sample, ]
-#   sumstats_select = generate_sumstats(
-#     X_select, Y_select, N_ind = N_ind, M_null = M_null)
-#   sumstats_fit = generate_sumstats(X_fit, Y_fit, N_ind = N_ind, M_null = M_null)
-# 
-#   selected <- select_snps_oracle(dataset$beta)
-#   metrics <- instrument_metrics(selected, dataset$beta)
-#   oracle_res <- foreach(mr_method = mr_methods, .combine = bind_rows) %do% {
-#     tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
-#     tibble(iter=i, mr_method = mr_method, p_thresh = 0, w_thresh = 0, 
-#            r1 = R_normed[1,2], r2 = R_normed[2, 1],
-#            r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
-#            n1_inst = sum(selected$P1$P2), n2_inst = sum(selected$P2$P1),
-#            n1_precision = metrics$P1$P2[1], n2_precision = metrics$P2$P1[1],
-#            n1_recall = metrics$P1$P2[2], n2_recall = metrics$P2$P1[2],
-#            n1_reversed = metrics$P1$P2[3], n2_reversed = metrics$P2$P1[3])
-#   }
-# 
-#   select_res <- foreach(p_thresh = 0.5*0.1^seq(1, 7),
-#                         .combine = bind_rows) %do% {
-#     foreach(w_thresh = c(1, 0.5^seq(1, 15))) %do% {
-#       w_thresh_use = w_thresh
-#       if(w_thresh == 1){
-#         w_thresh_use = NULL
-#       }
-#       selected <- select_snps(
-#         sumstats_select, p_thresh = p_thresh, welch_thresh = w_thresh_use)
-#       metrics <- instrument_metrics(selected, dataset$beta)
-#       foreach(mr_method = mr_methods, .combine = bind_rows) %do% {
-#         tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
-#         tibble(iter=i, mr_method = mr_method, p_thresh = p_thresh,
-#                w_thresh = w_thresh, r1 = R_normed[1,2], r2 = R_normed[2, 1],
-#               r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
-#               n1_inst = sum(selected$P1$P2), n2_inst = sum(selected$P2$P1),
-#               n1_precision = metrics$P1$P2[1], n2_precision = metrics$P2$P1[1],
-#               n1_recall = metrics$P1$P2[2], n2_recall = metrics$P2$P1[2],
-#               n1_reversed = metrics$P1$P2[3], n2_reversed = metrics$P2$P1[3])
-#       }
-#     }
-#   }
-#   dplyr::bind_rows(oracle_res, select_res)
-# }
-# ```
-# 
-# ```{r}
-# plot_tibble <- unite(
-#   plot_tibble, "thresh", c("p_thresh", "w_thresh"), sep = "_", remove = FALSE)
-# plot_tibble <- plot_tibble %>%
-#   mutate(thresh = if_else(thresh == "0_0", "oracle", thresh))
-# plot_tibble <- plot_tibble %>% 
-#   mutate(thresh = if_else(
-#     w_thresh == 1, paste0(as.character(p_thresh), "_na"), thresh))
-# plot_tibble <- unite(
-#   plot_tibble, "method", c("mr_method", "thresh"), sep = "_", remove = FALSE)
-# plot_tibble <- plot_tibble %>% 
-#   mutate(obs_both = !is.na(r1_hat) & !is.na(r2_hat))
-# 
-# 
-# plot_tibble <- plot_tibble %>% group_by(method) %>% mutate(
-#   r1_mae=mean(abs(r1_hat - r1), na.rm=T),
-#   r2_mae=mean(abs(r2_hat - r2), na.rm=T),
-#   r1_me=mean(r1_hat - r1, na.rm=T),
-#   r2_me=mean(r2_hat - r2, na.rm=T),
-#   total_mae=mean(abs(r1-r1_hat) + abs(r2-r2_hat), na.rm=T),
-#   r1_95=quantile(abs(r1_hat - r1), probs = 0.95, na.rm=T),
-#   r2_95=quantile(abs(r2_hat - r2), probs = 0.95, na.rm=T),
-#   total_95=quantile(abs(r1_hat - r1) + abs(r2_hat - r2), probs = 0.95, na.rm=T),
-#   r1_obs_perc=sum(!is.na(r1_hat))/niter,
-#   r2_obs_perc=sum(!is.na(r2_hat))/niter,
-#   obs_both_perc=sum(obs_both)/niter,
-#   n1_inst_ave = mean(n1_inst),
-#   n2_inst_ave = mean(n2_inst),
-#   n1_rev_ave = mean(n1_reversed, na.rm=T),
-#   n2_rev_ave = mean(n2_reversed, na.rm=T),
-#   n1_prec_ave = mean(n1_precision, na.rm=T),
-#   n2_prec_ave = mean(n2_precision, na.rm=T),
-#   n1_recall_ave = mean(n1_recall),
-#   n2_recall_ave = mean(n2_recall)) %>% ungroup()
-# 
-# save(plot_tibble, file = "../saved_rdata/threshold_results.Rdata")
-# ```
-# 
-# ```{r}
-# load("../saved_rdata/threshold_results.Rdata")
-# 
-# reverselog_trans <- function(base = exp(1)) {
-#     trans <- function(x) -log(x, base)
-#     inv <- function(x) base^(-x)
-#     scales::trans_new(paste0("reverselog-", format(base)), trans, inv,
-#                       log_breaks(base = base), domain = c(1e-100, Inf))
-# }
-# 
-# for(p_thresh in c(5e-04, 5e-06, 5e-08)){
-#   plot_tibble %>% 
-#     filter(mr_method == "egger", p_thresh == p_thresh, abs(r1) > 0.5) %>%
-#     ggplot(aes(w_thresh, n2_reversed)) + 
-#     geom_jitter(height = 0.01, width = 0.05, alpha = 0.5) + 
-#     scale_x_continuous(trans=reverselog_trans(10))
-#   
-#   plot_tibble %>% 
-#     filter(mr_method == "egger", p_thresh == p_thresh, abs(r1) > 0.5) %>%
-#     ggplot(aes(w_thresh, obs_both_perc)) + 
-#     geom_jitter(height = 0.01, width = 0.05, alpha = 0.5) + 
-#     scale_x_continuous(trans=reverselog_trans(10))
-#   
-#   plot_tibble %>% 
-#     filter(mr_method == "egger", p_thresh == p_thresh, abs(r1) > 0.5) %>%
-#     ggplot(aes(w_thresh, n2_inst)) + 
-#     geom_jitter(height = 0.01, width = 0.05, alpha = 0.5) + 
-#     scale_x_continuous(trans=reverselog_trans(10))
-# }
-# 
-# plot_tibble %>% 
-#   filter(mr_method == "egger", p_thresh == "5e-04",
-#          w_thresh == 1 | w_thresh == 0.125) %>%
-#   mutate(w_thresh = if_else(w_thresh == 1, "None", "0.125")) %>% 
-#   ggplot(aes(abs(r1), abs(r2-r2_hat), color = w_thresh)) + geom_point()
-# 
-# plot_tibble %>% 
-#   filter(mr_method == "raps", p_thresh == "5e-04",
-#          w_thresh == 1 | w_thresh == 0.125) %>%
-#   mutate(w_thresh = if_else(w_thresh == 1, "None", "0.125")) %>% 
-#   ggplot(aes(abs(r1), abs(r2-r2_hat), color = w_thresh)) + geom_point()
-# 
-# plot_tibble %>% 
-#   filter(mr_method == "egger",
-#          p_thresh %in% c("0.05", "5e-04", "5e-06", "5e-08"),
-#          w_thresh %in% c(1, 0.5, 0.125, 3.125000e-02, 7.812500e-03,
-#                          1.953125e-03, 4.8828125e-04)) %>%
-#   distinct(p_thresh, w_thresh, total_mae) %>%
-#   pivot_wider(names_from = p_thresh, values_from = total_mae)
-# 
-# plot_tibble %>% 
-#   filter(mr_method == "raps",
-#          p_thresh %in% c("0.05", "5e-04", "5e-06", "5e-08"),
-#          w_thresh %in% c(1, 0.5, 0.125, 3.125000e-02, 7.812500e-03,
-#                          1.953125e-03, 4.8828125e-04)) %>%
-#   distinct(p_thresh, w_thresh, total_mae) %>%
-#   pivot_wider(names_from = p_thresh, values_from = total_mae)
-# ```
-# 
-# 
-# ```{r}
-# # Plot to show success/failure of raps/egger on completely NULL SNPs. 
-# N1 = 10000
-# N2 = 10000
-# Ninst = 100
-# niter = 100
-# 
-# plot_tibble <- foreach(i = 1:niter, .combine = bind_rows) %do% {
-#   b1 = rnorm(Ninst, 0, 1/sqrt(N1))
-#   b2 = rnorm(Ninst, 0, 1/sqrt(N2))
-#   s1 = rep(1/sqrt(N1), Ninst)
-#   s2 = rep(1/sqrt(N2), Ninst)
-#   input <- MendelianRandomization::mr_input(
-#     bx = b1, bxse = s1, by = b2, byse = s2)
-#   raps_res <- mr.raps::mr.raps(b1, b2, s1, s2, loss.function = "huber")
-#   egger_res <- MendelianRandomization::mr_egger(input)
-#   tibble(method=c("raps", "egger"),
-#          beta=c(raps_res$beta.hat, egger_res$Estimate),
-#          se=c(raps_res$beta.se, egger_res$StdError.Est))
-# }
-# 
-# plot_tibble %>% group_by(method) %>% 
-#   mutate(mean_abs_beta = mean(abs(beta)),
-#          mean_se = mean(se), max_se = max(se)) %>% 
-#   distinct(method, mean_abs_beta, mean_se, max_se)
-# ```
