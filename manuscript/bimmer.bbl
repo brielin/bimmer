@@ -1,0 +1,27 @@
+\begin{thebibliography}{1}
+
+\bibitem{Boyd2010}
+Stephen Boyd, Neal Parikh, Eric Chu, Borja Peleato, and Jonathan Eckstein.
+\newblock {Distributed optimization and statistical learning via the
+  alternating direction method of multipliers}.
+\newblock {\em Foundations and Trends in Machine Learning}, 3(1):1--122, 2010.
+
+\bibitem{Friedman2007}
+Jerome Friedman, Trevor Hastie, and Robert Tibshirani.
+\newblock {Sparse inverse covariance estimation with the graphical lasso}.
+\newblock pages 1--14, 2007.
+
+\bibitem{Liu2010}
+Han Liu, Kathryn Roeder, and Larry Wasserman.
+\newblock {Stability approach to regularization selection (StARS) for high
+  dimensional graphical models}.
+\newblock {\em Advances in Neural Information Processing Systems 23: 24th
+  Annual Conference on Neural Information Processing Systems 2010, NIPS 2010},
+  pages 1--14, 2010.
+
+\bibitem{Pachter}
+Lior~S Pachter.
+\newblock {The network nonsense of Albert-L{\'{a}}szl{\'{o}} Barab{\'{a}}si |
+  Bits of DNA}.
+
+\end{thebibliography}
