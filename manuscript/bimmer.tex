@@ -43,33 +43,28 @@ bidirectional mediated Mendelian randomization}
 \maketitle
 
 \begin{abstract}
-Inference of directed biological networks from large-scale observational
-genomics datasets is a long-standing challenge, with relevance to detecting
-core genes under the omnigenic model of complex traits, and understanding risk
-factors for disease more broadly. A well-known problem with observational data
-is the possibility of unobserved confounding. Recently, Mendelian randomization
-(MR) has received attention as a class of methods for inferring causal effects
-in observational data by using genetic variants (SNPs) from genome-wide
-association studies (GWAS) as instrumental variables. However, the application
-of MR to networks of phenotypes presents several unique challenges. First, MR
-infers the total causal effect (TCE) of an exposure on an outcome, which may be
-mediated by other mechanisms in the dataset. Second, MR is usually applied to
-estimate the effect of a fixed exposure on a fixed outcome, but network
-inference requires we also infer the effect of the outcome on the exposure.
-This is sometimes referred to as bi-directional MR (BDMR). We have recently
-shown that current methods for selecting SNPs as instruments in BDMR result
-in substantial bias when the effects are large and the sample sizes of the
-exposure GWAS and outcome GWAS are very different. Our solution consists of two
-parts. First, we introduce a simple new method for instrument selection which
-relies on the observation that valid MR instruments must explain less variance
-in the outcome than the exposure. Second, we show that inferring the causal
-direct effects from the matrix of TCE can be thought of as a sparse matrix
-inverse problem, analogous to the graphical lasso. We introduce a new method
-for this problem that allows for the inference of directed edges given an
-arbitrary weighting of the input matrix, allowing us to incorporate TCE
-estimates with large standard error or that are missing entirely. We are
-currently working on applying this method to several datasets including the UK
-Biobank and the Accelerating Medicines Partnership - Alzheimer’s Disease eQTL cohort.
+%Inference of directed biological networks from large-scale observational
+%genomics datasets is a long-standing challenge, with relevance to detecting
+%core genes under the omnigenic model of complex traits, and understanding risk
+%factors for disease more broadly. A well-known problem with observational data
+%is the possibility of unobserved confounding. Recently, Mendelian randomization
+%(MR) has received attention as a class of methods for inferring causal effects
+%in observational data by using genetic variants (SNPs) from genome-wide
+%association studies (GWAS) as instrumental variables. However, the application
+%of MR to networks of phenotypes presents several unique challenges. First, MR
+%infers the total causal effect (TCE) of an exposure on an outcome, which may be
+%mediated by other mechanisms in the dataset. Second, MR is usually applied to
+%estimate the effect of a fixed exposure on a fixed outcome, but network
+%inference requires we also infer the effect of the outcome on the exposure.
+%This is sometimes referred to as bi-directional MR (BDMR). Our solution consists of two
+%parts. First, we introduce a simple new method for Egger weighting which
+%relies on the observation that valid MR instruments must explain less variance
+%in the outcome than the exposure. Second, we show that inferring the causal
+%direct effects from the matrix of TCE can be thought of as a sparse matrix
+%inverse problem, analogous to the graphical lasso. We introduce a new method
+%for this problem that allows for the inference of directed edges given an
+%arbitrary weighting of the input matrix, allowing us to incorporate TCE
+%estimates with large standard error or that are missing entirely.
 \end{abstract}
 
 \section{Introduction}
