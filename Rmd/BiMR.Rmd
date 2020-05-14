@@ -337,7 +337,7 @@ f1a <- summary_tibble_1 %>% filter((method == "egger_NA_NA")|(method == "egger_5
   ggplot(aes(Direction, stat, fill = Method)) + 
   geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat, color = Method), position = "dodge2") + 
   geom_col(position = "dodge2") + 
-  labs(x = NULL, y = NULL, title = "A) Null: Uncorrelated pleiotropy") + ylim(0,1) + guides(fill = FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "a) Null: Uncorrelated pleiotropy") + ylim(0,1) + guides(fill = FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
 
 f1b <- summary_tibble_2 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
   mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
@@ -346,7 +346,7 @@ f1b <- summary_tibble_2 %>% filter((method == "egger_NA_NA")|(method == "egger_5
   ggplot(aes(Direction, stat, fill = Method)) + 
   geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat, color = Method), position = "dodge2") + 
   geom_col(position = "dodge2") + 
-  labs(x = NULL, y = NULL, title = "B) Null: Correlated pleiotropy")  + ylim(0,1) + guides(fill=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "b) Null: Correlated pleiotropy")  + ylim(0,1) + guides(fill=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
 
 f1c <- summary_tibble_3 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
   mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
@@ -355,30 +355,31 @@ f1c <- summary_tibble_3 %>% filter((method == "egger_NA_NA")|(method == "egger_5
   ggplot(aes(Direction, stat, fill = Method)) + 
   geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat, color = Method), position = "dodge2") + 
   geom_col(position = "dodge2") + 
-  labs(x = NULL, y = NULL, title = "C) Null: Unequal power" ) + ylim(0,1) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "c) Null: Unequal power" ) + ylim(0,1) + theme(plot.title = element_text(size=10))
 
 f1d <- summary_tibble_4 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
   mutate(Method = rep(c("Oracle", "W-Egger", "Egger"), 6)) %>% 
   pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
   mutate(Direction = if_else(Direction == 1, "P1->P2 (Alt)", "P2->P1 (Null)")) %>%
   ggplot(aes(r1, stat, color = Method, linetype = Direction)) + geom_point() + geom_line() + geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat)) +
-  labs(x = NULL, y = NULL, title = "D) One-way alt: Equal sample size")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "d) One-way alt: Equal sample size")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
 
 f1e <- summary_tibble_5 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
   mutate(Method = rep(c("Oracle", "W-Egger", "Egger"), 6)) %>% 
   pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
   mutate(Direction = if_else(Direction == 1, "P1->P2 (Alt)", "P2->P1 (Null)")) %>%
   ggplot(aes(r1, stat, color = Method, linetype = Direction)) + geom_point() + geom_line() + geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat)) +
-  labs(x = NULL, y = NULL, title = "E) One-way alt: Larger sample 1")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "e) One-way alt: Larger sample 1")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
 
 f1f <- summary_tibble_6 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
   mutate(Method = rep(c("Oracle", "W-Egger", "Egger"), 6)) %>% 
   pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
   mutate(Direction = if_else(Direction == 1, "P1->P2 (Alt)", "P2->P1 (Null)")) %>%
   ggplot(aes(r1, stat, color = Method, linetype = Direction, )) + geom_point() + geom_line() + geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat)) +
-  labs(x = NULL, y = NULL, title = "F) One-way alt: Larger sample 2") + ylim(0, 1) + guides(color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "f) One-way alt: Larger sample 2") + ylim(0, 1) + guides(color = FALSE) + theme(plot.title = element_text(size=10))
 
-ggarrange(f1a, f1b, f1c, f1d, f1e, f1f, ncol = 3, left = "FWER (null) or Power (alt)")
+f1 <- ggarrange(f1a, f1b, f1c, f1d, f1e, f1f, ncol = 3, left = "FWER (null) or Power (alt)")
+ggsave("~/Work/bimmer/manuscript/figures/figure1.pdf", plot = f1, dpi = 300, width = 10)
 ```
 
 
@@ -391,31 +392,179 @@ f2a <- summary_tibble_7 %>% filter(method == paste("egger_w", p, 0, sep = "_") |
   mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
   mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
   ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat1)) + scale_fill_gradient(limits = c(0, 1)) + facet_wrap(~ Method, ncol = 2) +
-  labs(x = NULL, y = NULL, title = "A) Equal sample sizes, P1->P2") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "a) Equal sample sizes, P1->P2") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
 
 f2b <- summary_tibble_7 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
   mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
   mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
   ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat2)) + scale_fill_gradient(limits = c(0, 1), name = "Power") + facet_wrap(~ Method, ncol = 2) +
-  labs(x = NULL, y = NULL, title = "B) Equal sample sizes, P2->P1")  + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "b) Equal sample sizes, P2->P1")  + theme(plot.title = element_text(size=10))
 
 f2c <- summary_tibble_8 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
   mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
   mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
   ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat1)) + scale_fill_gradient(limits = c(0, 1)) + facet_wrap(~ Method, ncol = 2) +
-  labs(x = NULL, y = NULL, title = "C) Larger sample 1, P1->P2") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "c) Larger sample 1, P1->P2") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
 
 f2d <- summary_tibble_8 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
   mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
   mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
   ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat2)) + scale_fill_gradient(limits = c(0, 1)) + facet_wrap(~ Method, ncol = 2) +
-  labs(x = NULL, y = NULL, title = "D) Larger sample 1, P2->P1") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "d) Larger sample 1, P2->P1") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
 
-ggarrange(f2a, f2b, f2c, f2d, ncol = 2, widths = c(1.05, 1))
+f2 <- ggarrange(f2a, f2b, f2c, f2d, ncol = 2, widths = c(1.05, 1))
+ggsave("~/Work/bimmer/manuscript/figures/figure2.pdf", plot = f2, dpi = 300, width = 10)
 ```
 
 
 ```{r}
+t1 <- summary_tibble_1 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+t2 <- summary_tibble_2 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+t3 <- summary_tibble_3 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+t4 <- summary_tibble_4 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+t5 <- summary_tibble_4 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+t6 <- summary_tibble_5 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+t7 <- summary_tibble_5 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+t8 <- summary_tibble_6 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+t9 <- summary_tibble_6 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>% 
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3)) %>%
+  select(Method, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+table1 <- rbind(t1, t2, t3)
+table2 <- rbind(t4, t5, t6, t7, t8, t9)
+
+kable1 <- kable(table1, "latex", booktabs = T) %>% 
+  kable_styling(position ="center", latex_options = "scale_down") %>%
+  pack_rows("Null: Uncorrelated pleiotropy", 1, 3) %>%
+  pack_rows("Null: Correlated pleiotropy", 4, 6) %>%
+  pack_rows("Null: Correlated pleiotropy, unequal power", 7, 9)
+
+kable2 <- kable(table2, "latex", booktabs = T) %>% 
+  kable_styling(position ="center", latex_options = "scale_down") %>%
+  pack_rows("Alt: Equal sample sizes, R=0.2", 1, 3) %>%
+  pack_rows("Alt: Equal sample sizes, R=0.5", 4, 6) %>%
+  pack_rows("Alt: Larger sample 1, R=0.2", 7, 9) %>%
+  pack_rows("Alt: Larger sample 1, R=0.5", 10, 12) %>%
+  pack_rows("Alt: Larger sample 2, R=0.2", 13, 15) %>%
+  pack_rows("Alt: Larger sample 2, R=0.5", 16, 18)
+```
 
 
+```{r}
+s1 <- summary_tibble_1 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s2 <- summary_tibble_2 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s3 <- summary_tibble_3 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s4 <- summary_tibble_4 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s5 <- summary_tibble_4 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s6 <- summary_tibble_5 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s7 <- summary_tibble_5 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s8 <- summary_tibble_6 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.2) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+s9 <- summary_tibble_6 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
+  filter(r1_sim == 0.55) %>%
+  mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
+  mutate(mae1 = round(mae1, 3), se_mae1 = round(se_mae1, 3), mae2 = round(mae2, 3), se_mae2 = round(se_mae2, 3), p_thresh = as.character(p_thresh)) %>%
+  select(p_thresh, stat1, se_stat1, stat2, se_stat2, mae1, se_mae1, mae2, se_mae2)
+
+table_s1 <- rbind(s1, s2, s3)
+table_s2 <- rbind(s4, s5, s6, s7, s8, s9)
+
+kable_s1 <- kable(table_s1, "latex", booktabs = T) %>% 
+  kable_styling(position ="center", latex_options = "scale_down") %>%
+  pack_rows("Null: Uncorrelated pleiotropy", 1, 5) %>%
+  pack_rows("Null: Correlated pleiotropy", 6, 10) %>%
+  pack_rows("Null: Correlated pleiotropy, unequal power", 11, 15)
+
+kable_s2 <- kable(table_s2, "latex", booktabs = T) %>% 
+  kable_styling(position ="center", latex_options = "scale_down") %>%
+  pack_rows("Alt: Equal sample sizes, R=0.2", 1, 5) %>%
+  pack_rows("Alt: Equal sample sizes, R=0.5", 6, 10) %>%
+  pack_rows("Alt: Larger sample 1, R=0.2", 11, 15) %>%
+  pack_rows("Alt: Larger sample 1, R=0.5", 16, 20) %>%
+  pack_rows("Alt: Larger sample 2, R=0.2", 21, 25) %>%
+  pack_rows("Alt: Larger sample 2, R=0.5", 26, 30)
 ```

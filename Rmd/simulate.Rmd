@@ -47,38 +47,38 @@ run_methods <- function(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, 
   max_col_missing <- max(colSums(is.na(tce_res$R_tce)))
   print(c(mae_tce, mean(purrr::map_int(selected_bimmer, function(x){length(x[["names"]])}))))
 
-  methods = c("inspre", "exact", "mvmr")
-  result <- foreach(method = methods, .combine = bind_rows) %do% {
-    D_hat = NULL
-    lambda = NULL
-    if(method == "exact"){
-      R_hat <- fit_exact(tce_res$R_tce)$R_hat
-      R_hat <- array(R_hat, dim = c(D, D, 1))
-    } else if (method == "mvmr") {
-      R_hat <- fit_mvmr(sumstats_fit, selected_standard)$R_hat
-      R_hat <- array(R_hat, dim = c(D, D, 1))
-    } else if (method == "inspre"){
-      weights <- inspre::make_weights(tce_res$SE_tce)
-      cde_res <- fit_inspre(R_tce = tce_res$R_tce, W = weights, cv_folds = 5, verbose = 1, lambda_min_ratio = 0.1, nlambda = 25, warm_start = FALSE)
-      R_hat <- cde_res$R_hat
-      D_hat <- cde_res$D_hat
-      lambda <- cde_res$lambda
-    }
-    metrics <- map_dfr(array_tree(R_hat, 3), function(t){calc_metrics(t, R_cde)})
-    metrics$D_hat <- D_hat
-    metrics$lambda <- lambda
-    metrics$iter <- iter
-    metrics$min_abs_self <- min_abs_self
-    metrics$method <- method
-    metrics$n_tce_nans <- n_tce_nans
-    metrics$mean_missing <- mean_missing
-    metrics$max_row_missing <- max_row_missing
-    metrics$max_col_missing <- max_col_missing
-    metrics$mae_tce <- mae_tce
-    metrics$rmse_tce <- rmse_tce
-    return(metrics)
-  }
-  return(result)
+  # methods = c("inspre", "exact", "mvmr")
+  # result <- foreach(method = methods, .combine = bind_rows) %do% {
+  #   D_hat = NULL
+  #   lambda = NULL
+  #   if(method == "exact"){
+  #     R_hat <- fit_exact(tce_res$R_tce)$R_hat
+  #     R_hat <- array(R_hat, dim = c(D, D, 1))
+  #   } else if (method == "mvmr") {
+  #     R_hat <- fit_mvmr(sumstats_fit, selected_standard)$R_hat
+  #     R_hat <- array(R_hat, dim = c(D, D, 1))
+  #   } else if (method == "inspre"){
+  #     weights <- inspre::make_weights(tce_res$SE_tce)
+  #     cde_res <- fit_inspre(R_tce = tce_res$R_tce, W = weights, cv_folds = 5, verbose = 1, lambda_min_ratio = 0.1, nlambda = 25, warm_start = FALSE)
+  #     R_hat <- cde_res$R_hat
+  #     D_hat <- cde_res$D_hat
+  #     lambda <- cde_res$lambda
+  #   }
+  #   metrics <- map_dfr(array_tree(R_hat, 3), function(t){calc_metrics(t, R_cde)})
+  #   metrics$D_hat <- D_hat
+  #   metrics$lambda <- lambda
+  #   metrics$iter <- iter
+  #   metrics$min_abs_self <- min_abs_self
+  #   metrics$method <- method
+  #   metrics$n_tce_nans <- n_tce_nans
+  #   metrics$mean_missing <- mean_missing
+  #   metrics$max_row_missing <- max_row_missing
+  #   metrics$max_col_missing <- max_col_missing
+  #   metrics$mae_tce <- mae_tce
+  #   metrics$rmse_tce <- rmse_tce
+  #   return(metrics)
+  # }
+  # return(result)
 }
 ```
 
@@ -89,9 +89,8 @@ n_iter = 24
 n_cores = 24
 N = 100000
 M_s = 1000
-M_p = 4000
-prop_shared = NULL
-M_total = 1000000
+M_p = 2000
+M_total = 250000
 D = 100
 graph = "random"
 prob = 0.04
@@ -103,8 +102,10 @@ rho = 0
 noise = 0.8 # 20% heritability
 
 doMC::registerDoMC(cores = n_cores)
-plot_tibble_1 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
-# for(iter in 1:n_iter){
+# plot_tibble_1 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
+for(iter in 1:n_iter){
+  N <- round(runif(D, min = 50000, max = 150000))
+  prop_shared <- runif(D, min = 0.2, max = 0.4)
   run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient)
 }
 save(plot_tibble_1, file = "~/ukbb_network/plot_data/bimmer_sim_1.Rdata")
