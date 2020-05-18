@@ -426,10 +426,10 @@ statistics for $50$ phenotypes with $1000$ shared and $2000$ private
 causal effect SNPs per pair of phenotypes, $125,000$ total SNPs. Each
 phenotype had $20\%$ heritability. The causal
 network underlying the phenotypes came from an Erdos-Reyni random graph with
-randomly oriented edges. We found that while MR-BMA did outperform
-elnet-Egger, they both performed poorly compared to inspre.
-Moreover, MR-BMA took about ?? times longer than inspre to run with
-default parameter settings (Figure ??).
+randomly oriented edges. We found that MR-BMA outperformed comparably to
+elnet-Egger, but that they both performed poorly compared to inspre.
+Moreover, MR-BMA took about $20$ times longer than inspre to run with
+default parameter settings (Figure~\ref{figureS4}).
 
 Next, we performed larger-scale simulations with $100$ phenotypes and
 $250,000$ total SNPs. We again
@@ -652,17 +652,18 @@ solving~\ref{r_cde} as finding a sparse matrix inverse. Let $A$ be an arbitrary 
 matrix. We seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
 
 \begin{equation}
-\frac{1}{2} ||A - U||_F^2 + \lambda \sum_{i\neq j}|V_{ij}|
+\frac{1}{2} ||W \circ A - U||_F^2 + \lambda \sum_{i\neq j}|V_{ij}|
 \end{equation}
 
 We minimize this loss using alternating direction method of multipliers (ADMM)~\cite{Boyd2010}.
-Let $\Theta_k$ be a matrix of Lagrange multipliers. The updates for $U_k$, $V_k$ and $\Theta_k$
+Let $\Theta^k$ be a matrix of Lagrange multipliers. The updates for $U^k$, $V^k$ and $\Theta^k$
 are
 \begin{align}
-V_{k+1} &\leftarrow \arg \min_{V} ||\frac{1}{\sqrt{\rho}}(I-\theta^\top) -
-      \sqrt{\rho} U^\top V||_F^2 + \lambda \sum_{i\neq j}|V_{ij}| \\
-U_{k+1} &\leftarrow (I + \rho V_k^{\top} V_k)^{-1}(A + \rho V_k^\top - V_k^\top \theta_k) \\
-\theta_{k+1} &\leftarrow \theta_{k} + \rho(V_{k+1}U_{k+1}-I)
+V^{k+1} &\leftarrow \arg \min_{V} \left|\left|\frac{1}{\sqrt{\rho}}\left(I-\theta^{k^\top}\right) -
+      \sqrt{\rho} U^{k^\top} V^k\right|\right|_F^2 + \lambda \sum_{i\neq j} \left|V^k_{ij} \right| \\
+U_{:, d}^{k+1} &\leftarrow \left(\rho V^{k+1 ^ \top} V^{k+1} + D[W_{:, d}]\right)^{-1} \left(\rho V^{k+1 ^ \top}_{:, d} -
+  \left(V^{k+1 ^ \top} \theta\right)_{:, d} + (W \circ A)_{:, d}\right) \\
+\theta^{k+1} &\leftarrow \theta_{k} + \rho(V_{k+1}U_{k+1}-I)
 \end{align}
 where $\rho$ is the penalty parameter (CITE admm).
 The first of these can be solved with a straightforward LASSO regression. For the second,
@@ -671,7 +672,7 @@ in the Rlinsolve package to solve the linear system
 rather than explicitly computing the inverse (CITE Rlinsolve).
 We always start from the initial condition $U_0 = V_0 = I$.
  For the derivation of these equations including
-the modification to incorporate weights and the specifics of how we set
+the specifics of how we set
 the penalty parameter see~\ref{note}.
 
 \subsection{Setting the LASSO penalty}
@@ -710,7 +711,11 @@ $\hat{\lambda} = \sup \{ \lambda : \bar{D}_\lambda \leq b \}$.
 
 \beginsupplement
 \section*{Supplemental Note}
-\subsection*{Alternating direction method of multipliers}
+\subsection*{Alternating direction method of multipliers}\label{note}
+First, consider the unweighted optimization problem
+\begin{equation}
+\frac{1}{2} ||A - U||_F^2 + \lambda \sum_{i\neq j}|V_{ij}|
+\end{equation}
 The augmented Lagrangian is,
 \begin{equation*}
 L = \frac{1}{2} ||A - U||_F^2 +
@@ -737,6 +742,28 @@ ADMM gives the update for $\theta$~\cite{Boyd2010},
 \begin{equation}
 \theta \leftarrow \theta + \rho(VU-I)
 \end{equation}
+
+Now we consider the weighted version. Assume that in addition to the matrix $A$, we
+also have a matrix of standard errors of the entries of $A$, $S_A$. Let
+$W = 1/S_A^2$ be a matrix of inverse variance weights. We now
+seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
+
+\begin{equation}\label{opt_weights}
+\frac{1}{2} || W \circ (A - U)||_F^2 + \lambda \sum_{i\neq j}|V_{ij}|
+\end{equation}
+This does not effect the update for $V$, however the gradient of the augmented
+Lagrangian with respect to $U$ is now,
+\begin{equation*}
+\triangledown_U L = - W \circ (A- U) + V^\top \theta + \rho V^\top V U - \rho V^\top
+\end{equation*}
+which separates over columns of $U$, giving the update
+\begin{equation}
+U_{:, d} = (\rho V^\top V + D[W_{:, d}])^{-1}(\rho V^\top_{:, d} -
+  (V^\top \theta)_{:, d} + (W \circ A)_{:, d})
+\end{equation}
+where here the $D$ operator creates a matrix with $W_{:, d}$ on the
+diagonal and 0 elsewhere.
+
 
 ADMM also requires that we set the parameter $\rho$, which controls the
 balance in the objective between the primal and dual constraints~\cite{Boyd2010}. We
@@ -766,32 +793,6 @@ may appear to be a lot of parameters, they effect the convergence of
 the algorithm substantially more than the solution obtained.
 We always use the default values $\rho = 10,\;\mu = 10,\;\tau = 2$.
 
-\subsection*{Incorporating weights}
-It is often the case that entries of the matrix $A$ will be estimated with
-different standard error. In the case of un-directed graphical models, this could
-arise from different patterns of missingness in the feature observations. In the
-case of Mendelian randomization networks, it could arise from using different numbers of
-instruments for each pair of phenotypes. Assume that in addition to the matrix $A$, we
-also have a matrix of standard errors of the entries of $A$, $S_A$. Let
-$W = 1/S_A^2$ be a matrix of inverse variance weights. We now
-seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
-
-\begin{equation}\label{opt_weights}
-\frac{1}{2} || W \circ (A - U)||_F^2 + \lambda \sum_{i\neq j}|V_{ij}|
-\end{equation}
-This does not effect the update for $V$, however the gradient of the augmented
-Lagrangian with respect to $U$ is now,
-\begin{equation*}
-\triangledown_U L = - W \circ (A- U) + V^\top \theta + \rho V^\top V U - \rho V^\top
-\end{equation*}
-which separates over columns of $U$, giving the update
-\begin{equation}
-U_{:, d} = (\rho V^\top V + D(W_{:, d}))^{-1}(\rho V^\top_{:, d} -
-  (V^\top \theta)_{:, d} + (W \circ A)_{:, d})
-\end{equation}
-where here the $D$ operator creates a matrix with $W_{:, d}$ on the
-diagonal and 0 elsewhere.
-
 \newpage
 \begin{figure}[H]\label{figureS1}
 \includegraphics[width=\textwidth]{figures/figure_S1.png}
@@ -803,6 +804,12 @@ diagonal and 0 elsewhere.
 \includegraphics[width=\textwidth]{figures/figure_S2.png}
 \caption{Simulations comparing inspre and glasso for various graph stuctures
 with variable per-phenotype sample size.}
+\end{figure}
+
+\newpage
+\begin{figure}[H]\label{figureS4}
+\includegraphics[width=\textwidth]{figures/figure_S4.png}
+\caption{Simulations.}
 \end{figure}
 
 \newpage
