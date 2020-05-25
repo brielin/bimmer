@@ -16,6 +16,7 @@
 \usepackage{float}
 \usepackage[affil-it]{authblk}
 
+\usepackage[colorinlistoftodos]{todonotes}
 
 \DeclareMathOperator{\Tr}{Tr}
 \DeclareMathOperator{\diag}{diag}
@@ -71,7 +72,7 @@ bidirectional mediated Mendelian randomization}
 Recent developments in the understanding of complex-trait genetics have
 lead to a call for increased study of biological networks (CITE omnigenics 1-2, visscher).
 However, interrogating the structure of networks is notoriously difficult,
-owing to factors such as unmeasured confounding and reverse causation (CITE?).
+owing to factors such as unmeasured confounding and reverse causation (CITE?). % https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1700-9 and references 8-12 therein
 In spite of these challenges, modern population-scale biobanks 
 offer unprecedented opportunity to study biological networks
  because they can contain simultaneous measurements of
@@ -81,21 +82,21 @@ Mendelian randomization (MR) has recently received increased attention as a clas
 that can mitigate issues in causal inference
  by using genetic variants (SNPs) from genome-wide
 association studies (GWAS) as instrumental variables to determine the effect
-of an exposure (A) on an outcome (B). To find causal effects,
+of an exposure (A) on an outcome (B). To estimate causal effects,
 MR methods must make strong assumptions that limit their
-ability to be applied at the phenome-scale. Perhaps the most
+ability to be applied at biobank-scale. Perhaps the most
 controversial assumption is that the SNP only effects B through A
 (\textit{i.e.} there is no horizontal pleiotropy). Recent methods such as Egger
 regression and the mode-based-estimator are able to relax this assumption, instead
 assuming there is no correlated pleiotropy or modal pleiotopy, respectively (CITE egger, mbe).
-Another approach, the latent causal variable (LCV) model, is able to detect genetic causality
+Another approach, the latent causal variable (LCV) model, is able to detect genetic causality \todo{define GC?}
 under arbitrarily-structured pleiotropy (CITE LCV). However, the quantity that LCV
-calculates is not interpretable as the effect size of A on B. Most MR studies
+calculates is not interpretable as the causal effect size of A on B. Most MR studies
 also presuppose the direction of effect, specifying one phenotype as the outcome and
 the other as the exposure. This is sound when the outcome
 is clearly biologically downstream of the exposure, but in many cases it is better
-to learn the direction of the effect from the data. Some researchers have instead
-used bi-directional Mendelian randomization (gwas-pw) (CITE bimr, pickrell).
+to learn the direction of the effect from the data. \todo{"citation required" or back off this claim some}
+Some researchers have instead used bi-directional MR (gwas-pw) (CITE bimr, pickrell).
 However, the utility of this approach for complex traits,
 which might contain non-causal genetic correlation,
 is questionable (CITE LCV).
@@ -104,12 +105,13 @@ In mimicking a randomized controlled trial, MR estimates the
 total causal effect (TCE) of A on B (CITE ??). This effect may be mediated by
 any number of factors. The proliferation of phenome-scale datasets
 allows researchers to simultaneously measure the effects of many possible mediators,
-enabling the conversion of TCE estimates into causal direct effect (CDE)
+in principle enabling the conversion of TCE estimates into causal direct effect (CDE) 
 estimates, which are not mediated by any other measured factor.
-This raises another disadvantage of approaches such as LCV and gwas-pw. Assuming that either
+However, methods to enact this conversion are limited. \todo{maybe cite e.g. the paper Nasa is on + Audrey Fu's paper and say why they're limited?}
+This raises another disadvantage of approaches such as LCV and gwas-pw \todo{did you say what gwas-pw is?}. Assuming that either
 A causes B or B causes A, but not both, is equivalent to assuming
 that the underlying causal network
-lacks cycles, which are thought to be an important part of real biological networks (CITE ??).
+lacks cycles, which are thought to be an important part of real biological networks (CITE ??). \todo{I don't know if you even need a citation here: homeostasis and positive/negative feedback are textbook material. Would be safest to find one or two though}.  
 
 Here, we introduce an approach called
 \emph{bi-directional mediated Mendelian randomization} (bimmer)
@@ -123,13 +125,13 @@ This gives an estimate of the TCE of each phenotype on every other (Figure~\ref{
 Second,
 we perform a causal mediation analysis to convert the matrix
 of total causal effects into a sparse, directed network of causal direct effects.
-We show that this can be modeled as an $L_1$-regularized matrix inverse problem,
+We show that this conversion can be modeled as an $L_1$-regularized matrix inverse problem,
 drawing analogy to the graphical lasso (CITE glasso), and introduce a new
-method for finding a sparse inverse to a partially-observed matrix called
+algorithm for finding a sparse inverse to a partially-observed matrix called
 \emph{inverse sparse regression} (inspre, Figure~\ref{figure0}b-c).
 We show in extensive simulations that our approach is able to learn causal
  network structures even in the presence of non-causal genetic correlation.
-We apply our method to NNN phenotypes from the UK Biobank, finding thousands
+We apply our method to \todo{NNN} phenotypes from the UK Biobank, finding thousands
  of direct and indirect causal effects.
  
  
