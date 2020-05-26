@@ -476,13 +476,59 @@ performs quite poorly compared to bimmer.
 \end{figure}
 
 
-\subsection{Application to NNN traits from the UK Biobank}
+\subsection{Application to 407 traits from the UK Biobank}
+We obtained summary statistics for gender-split UK Biobank phenotypes from
+the Neal lab UK Biobank analysis website (CITE Neal UKBB). For ease of interpretability,
+we transformed all effect sizes to the per-variance scale. As  recommended,
+we used only phenotypes with $Z$-score above $4$ and at least medium confidence
+(CITE ldsc, neal ukbb). Next we removed one phenotype from every pair with genetic
+correlation above $0.9$, leaving us with $425$ phenotypes. We clumped the UKBB
+summary statistics to $p=5e-6$ with $r^2 < 0.05$ and distance $500$ kilobases using
+the UKBB European genotypes as a reference panel. We used our weighted Egger regression
+to calculate the TCE of every phenotype on every other. Finally, we removed
+phenotypes where at least $50\%$ of the standard errors of the TCE were above $0.5$
+as either an exposure or an outcome. This left us with $407$ phenotypes (Table ?).
+From the $165,242$ pairs of traits considered, $8,556 (~5\%)$ had TCEs that
+were significant at FDR $5\%$.
+Next, we used inspre to fit the model~\ref{r_cde_main}. We used inverse-variance weights
+as previously described with one exception - all entries in the TCE matrix with
+an SE below $0.005$ were given the same weights. This is to avoid having a very small
+number of well-estimated points dominate the optimization procedure. Based on our simulations,
+we chose a target stability of $0.025$ which corresponded to regularization 
+parameter $\lambda = 0.052$. This resulted in a graph with $8,362$ non-zeros,
+$2,890$ of which were above $0.01$. We used these $2,890$ non-zeros as the edges
+in our inferred graph.
+
+A few things are immediately apparent when comparing estimates of the
+genetic correlation, weighted Egger estimated TCE, bimmer's
+approximation to the TCE, $U$, and bimmer's estimates of the CDE. After clustering
+phenotypes by genetic correlation, many similar patterns are visible in the
+estimates of the TCE (Figure~\ref{figure5}a-b). However, these patterns are
+noticeably less defined in the TCE matrix. We find that while the TCE estimates
+and genetic correlation estimates are correlated, that correlation is fairly
+weak ($r = 0.238$, $p < 2.2\times 10^{-16}$). A naive analysis
+finds an even lower correlation between $U$ and $R^{TCE}$ ($r = 0.076$, $p < 2.2\times 10^{-16}$).
+This is actually by design; many of our TCE estimates have high standard error and are consequently
+ignored by the optimization procedure. Restricting our analysis to TCE entries with an
+SE below $0.1$, the correlation of the TCE with the genetic correlation is much smaller
+than the correlation of the TCE with $U$ ($r = 0.389 \pm 0.008$ vs $r = 0.719 \pm 0.004$).
+Moreover, our optimization
+procedure tends to produce entries of $U$ that are very close to $0$ when the corresponding
+entry of the TCE has a large standard error ($\bar{|U|} = 0.0001 \pm 0.0015$ for entries of
+the TCE with SE $> 0.1$). We conclude that our optimization procedure produces a conservative
+estimate $U \approx R^{TCE}$ that is close on high confidence entries of $R^{TCE}$ and
+shrunk strongly towards 0 otherwise.
+
+\begin{figure}\label{figure5}
+\includegraphics[width=\textwidth]{figures/figure5.png}
+\caption{TODO}
+\end{figure}
 
 
 
 \section{Discussion}\label{discussion}
 As biobanks continue to grow in size and scope, new methods that are able to
-leverage their power while overcoming common pitfalls will be required.
+leverage their power while overcoming common pitfalls are required.
 These datasets offer unprecedented opportunity to study
 the causal relationship between molecular markers, complex traits and diseases.
 We have introduced bi-directional mediated Mendelian randomization (bimmer),
