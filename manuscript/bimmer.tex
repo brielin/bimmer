@@ -16,6 +16,7 @@
 \usepackage{float}
 \usepackage[affil-it]{authblk}
 
+\usepackage[colorinlistoftodos]{todonotes}
 
 \DeclareMathOperator{\Tr}{Tr}
 \DeclareMathOperator{\diag}{diag}
@@ -71,7 +72,7 @@ bidirectional mediated Mendelian randomization}
 Recent developments in the understanding of complex-trait genetics have
 lead to a call for increased study of biological networks (CITE omnigenics 1-2, visscher).
 However, interrogating the structure of networks is notoriously difficult,
-owing to factors such as unmeasured confounding and reverse causation (CITE?).
+owing to factors such as unmeasured confounding and reverse causation (CITE?). % https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1700-9 and references 8-12 therein
 In spite of these challenges, modern population-scale biobanks 
 offer unprecedented opportunity to study biological networks
  because they can contain simultaneous measurements of
@@ -81,21 +82,21 @@ Mendelian randomization (MR) has recently received increased attention as a clas
 that can mitigate issues in causal inference
  by using genetic variants (SNPs) from genome-wide
 association studies (GWAS) as instrumental variables to determine the effect
-of an exposure (A) on an outcome (B). To find causal effects,
+of an exposure (A) on an outcome (B). To estimate causal effects,
 MR methods must make strong assumptions that limit their
-ability to be applied at the phenome-scale. Perhaps the most
+ability to be applied at biobank-scale. Perhaps the most
 controversial assumption is that the SNP only effects B through A
 (\textit{i.e.} there is no horizontal pleiotropy). Recent methods such as Egger
 regression and the mode-based-estimator are able to relax this assumption, instead
 assuming there is no correlated pleiotropy or modal pleiotopy, respectively (CITE egger, mbe).
-Another approach, the latent causal variable (LCV) model, is able to detect genetic causality
+Another approach, the latent causal variable (LCV) model, is able to detect genetic causality \todo{define GC?}
 under arbitrarily-structured pleiotropy (CITE LCV). However, the quantity that LCV
-calculates is not interpretable as the effect size of A on B. Most MR studies
+calculates is not interpretable as the causal effect size of A on B. Most MR studies
 also presuppose the direction of effect, specifying one phenotype as the outcome and
 the other as the exposure. This is sound when the outcome
 is clearly biologically downstream of the exposure, but in many cases it is better
-to learn the direction of the effect from the data. Some researchers have instead
-used bi-directional Mendelian randomization (gwas-pw) (CITE bimr, pickrell).
+to learn the direction of the effect from the data. \todo{"citation required" or back off this claim some}
+Some researchers have instead used bi-directional MR (gwas-pw) (CITE bimr, pickrell).
 However, the utility of this approach for complex traits,
 which might contain non-causal genetic correlation,
 is questionable (CITE LCV).
@@ -104,12 +105,13 @@ In mimicking a randomized controlled trial, MR estimates the
 total causal effect (TCE) of A on B (CITE ??). This effect may be mediated by
 any number of factors. The proliferation of phenome-scale datasets
 allows researchers to simultaneously measure the effects of many possible mediators,
-enabling the conversion of TCE estimates into causal direct effect (CDE)
+in principle enabling the conversion of TCE estimates into causal direct effect (CDE) 
 estimates, which are not mediated by any other measured factor.
-This raises another disadvantage of approaches such as LCV and gwas-pw. Assuming that either
+However, methods to enact this conversion are limited. \todo{maybe cite e.g. the paper Nasa is on + Audrey Fu's paper and say why they're limited?}
+This raises another disadvantage of approaches such as LCV and gwas-pw \todo{did you say what gwas-pw is?}. Assuming that either
 A causes B or B causes A, but not both, is equivalent to assuming
 that the underlying causal network
-lacks cycles, which are thought to be an important part of real biological networks (CITE ??).
+lacks cycles, which are thought to be an important part of real biological networks (CITE ??). \todo{I don't know if you even need a citation here: homeostasis and positive/negative feedback are textbook material. Would be safest to find one or two though}.  
 
 Here, we introduce an approach called
 \emph{bi-directional mediated Mendelian randomization} (bimmer)
@@ -123,21 +125,20 @@ This gives an estimate of the TCE of each phenotype on every other (Figure~\ref{
 Second,
 we perform a causal mediation analysis to convert the matrix
 of total causal effects into a sparse, directed network of causal direct effects.
-We show that this can be modeled as an $L_1$-regularized matrix inverse problem,
+We show that this conversion can be modeled as an $L_1$-regularized matrix inverse problem,
 drawing analogy to the graphical lasso (CITE glasso), and introduce a new
-method for finding a sparse inverse to a partially-observed matrix called
+algorithm for finding a sparse inverse to a partially-observed matrix called
 \emph{inverse sparse regression} (inspre, Figure~\ref{figure0}b-c).
 We show in extensive simulations that our approach is able to learn causal
  network structures even in the presence of non-causal genetic correlation.
-We apply our method to NNN phenotypes from the UK Biobank, finding thousands
+We apply our method to \todo{NNN} phenotypes from the UK Biobank, finding thousands
  of direct and indirect causal effects.
- 
  
 \begin{figure}\label{figure0}
 \includegraphics[width=\textwidth]{figures/bimmer_figure1.pdf}
-\caption{a) Modern biobanks contains measurements of genetic variants (green squares), molecular markers
+\caption{bimmer overview. a) Modern biobanks contains measurements of genetic variants (green squares), molecular markers
 (orange triangles), complex traits (purple circles) and diseases (pink diamonds). Genetic variants
-effect these phenotypes which in turn effect each other. b) Bi-directional Mendelian randomization
+affect these phenotypes which in turn affect each other. b) Bi-directional Mendelian randomization
 estimates the total causal effect of the phenotypes on each other, which includes both
 direct (solid arrow) and indirect (dashed arrow) effects. c) The direct effects can be
 found by estimating a sparse approximate inverse to the matrix of total effects, a process we
@@ -146,11 +147,14 @@ call inverse sparse regression.}
 
 \section{Results}
 \subsection{Overview of model}
+
+While the data we analyze is not time-series, we initially motivate our model using dynamical systems. 
+The resulting equation can be arrived at via at least two orthogonal derivations. \todo{include these in the supp?}
 We model each phenotype as a function of 1) time-invariant genetic factors, 2)
 time-invariant environmental factors, and 3) other phenotypes at the previous
 time-point.
 Assume we have $N$ individuals, $D$ phenotypes and $M$ SNPs,
-with $Y_t$ be the matrix of phenotypes indexed by time $t$, $X$ the genotype
+with $Y_t$ the matrix of phenotypes indexed by time $t$, $X$ the genotype
 matrix, $\beta$ the SNP effect matix and $\gamma$ a matrix of unknown
 environmental effects. We denote by $R$ the $D \times D$ matrix of
 causal direct effects, with $R_{i, j}$ the CDE of phenotype $i$ on
@@ -178,9 +182,9 @@ represents element-wise division.
 
 In practice, the matrix $R^{TCE}$ need not be well-conditioned or
  even invertible, leading
-to challenges when solving~\ref{r_cde_main}. Instead of calculating an exact
-or psuedo-inverse, we exploit the assumption that the underlying graph of
-CDE is sparse. Specifically, we seek matrices $U$ and $V$ such that $VU=I$, $U \approx R^{TCE}$
+to challenges when calculating $R$ via~\eqref{r_cde_main}. Instead of calculating an exact
+or psuedo-inverse, we exploit the assumption that the underlying
+CDE matrix is sparse. Specifically, we seek matrices $U$ and $V$ such that $VU=I$, $U \approx R^{TCE}$ \todo{would it be better to set this up without $U$ and assume $V^{-1}$, then introduce the relaxation in the methods?}
 and $V$ is sparse. We find them by solving the following constrained optimization problem,
 \begin{equation} \label{opt_main}
 \min_{\{U, V : VU = I\}} \frac{1}{2} ||W \circ (R^{TCE} - U)||_F^2 +
@@ -189,25 +193,22 @@ and $V$ is sparse. We find them by solving the following constrained optimizatio
 where $W = W_{i,j} = 1/S_{i,j}^2$ is a set of per-entry inverse variance weights,
 and $\lambda$ is the LASSO shrinkage parameter (CITE LASSO, glasso). Note that in
 this method, missing entries in $R^{TCE}$ can be accommodated simply
-by setting their weights to 0.
+by setting their weights to 0. \todo{connect eq 2 and 3: how do I get $R$ from $V$?, does 3 give exactly eq2 for $\lambda=0$ and invertible $R^{TCE}$?}
 
-Some intuition for ~\ref{r_cde_main} can be gained by considering the problem
+Some intuition for~\eqref{r_cde_main} can be gained by considering the problem
 of estimating a matrix of partial correlations for a set of observed variables.
 Analogous to the CDE, the partial correlation measures the degree to which two
 variables are correlated while controlling for the effect of all other measured
 variables. Given a matrix of observed (standard) correlations, $\Sigma$, the matrix of
-partial correlations is $P = D[\Sigma^{-1}] \Sigma^{-1} D[\Sigma^{-1}]$. One of
-the most common approaches to calculating $\Sigma^{-1}$, also called
-the precision matrix, is the graphical lasso (glasso). This method works
-by assuming the data come from a multivariate normal distribution with a sparse
-precision matrix, and maximizing the data likelihood with a LASSO penalty.
+partial correlations is $P = D[\Sigma^{-1}] \Sigma^{-1} D[\Sigma^{-1}]$ \todo{where does this come from? $P = -D[\Sigma^{-1}]^{-.5} \Sigma^{-1} D[\Sigma^{-1}]^{-.5}$}. One of
+the most common approaches to obtaining a robust estimate of $\Sigma^{-1}$, also called
+the precision matrix, is the graphical lasso (glasso) \todo{CITE}. The glasso assumes the data come from a multivariate normal distribution with a sparse
+precision matrix, and maximizes the likelihood with a $L_1$ penalty on elements of $\Sigma^{-1}$.
 
  We choose the
-regularization parameter $\lambda$ by randomly setting entries of the weight matrix to 0 and
-evaluating the stability of the resulting graph. This is analogous to the
-stability approach to regularization selection(CITE stars), except we exploit the
-ability of our method to handle missingness in $R^{TCE}$ to induce variance in the graph rather
-than splitting the input matrices, which would require individual-level data.
+regularization parameter $\lambda$ using a novel adaption of Stability Approach to Regularization Selection (StARS) where we exploit the
+ability of our method to handle missingness in $R^{TCE}$ to induce variance in the estimated graph rather
+than splitting the observations, which would require individual-level data.
 In each of $10$ cross-validation iterations, we randomly set $20\%$ of $W$ to $0$
 and then use inspre to infer the matrix $R$ for various values of $\lambda$.
 We use these results to estimate the probability
@@ -215,53 +216,52 @@ that each edge is included in the graph under random masking, and use these prob
 to infer a stability score $\hat{D}$ - roughly corresponding to the fraction of times
 that two graphs with the same $\lambda$ disagree on the inclusion of an edge,
  averaged over all edges.
-We set $lambda$ to the largest value which gives a stability score $\hat{D} < 0.05$.
-For complete details see Section~\ref{methods}.
+We set $\lambda$ to the largest value which gives a stability score $\hat{D} < 0.05$.
+For complete details see Section~\ref{methods}. \todo{too much detail for Results section?}
 
-
-This leaves the problem of producing a good estimate for $R^{TCE}$,
-which can be challenging when there is non-causal genetic correlation or
+This leaves the problem of producing a reliable estimate for $R^{TCE}$,
+which can be particularly challenging when there is non-causal genetic correlation or
 differential power across phenotypes. Most MR studies use the set of
 genome-wide significant (GWS, $p \le 5\times 10^{-8}$) SNPs for a trait as instruments.
 Instead, we exploit the observation that if $A$ causes $B$ and a SNP effects $A$ directly,
 the effect of the SNP on $B$ can be no larger than the effect of the SNP on $A$ times
-the effect of $A$ on $B$. That is, the SNP must have it's per-variance contribution to
+the effect of $A$ on $B$ \todo{assuming no horizontal pleiotropy?}. That is, the SNP must have its per-variance contribution to
 $B$ reduced by the network. We use this intuition to construct a new
 weighting scheme for Egger regression.
-First, we select a $p$-value threshold $p$. For every phenotype $i$, we
+First, we select a $p$-value threshold $p$ \todo{I'd make this $p_t$ or something}. For every phenotype $i$, we
  construct a set of marginally associated SNPs at threshold $p$. Next,
  for every ordered pair of phenotypes $i, j$, we consider only SNPs that reach
  signficance level $p$ in phenotype $i$ but not $j$. For this set of SNPs, we calculate
  a weight based on the Welch test statistic for a two-sample difference in mean
  and the standard inverse-variance weight. If $\hat{\beta}_{k, i}$ is our estimate
- of the effect of SNP $k$ on phenotype $i$ and $\hat{s}_{k, i}$ it's standard error,
+ of the effect of SNP $k$ on phenotype $i$ and $\hat{s}_{k, i}$ its standard error,
  our weight is,
 \begin{equation}
 w^{i,j}_k = \frac{|\hat{\beta}_{k, i}| - |\hat{\beta}_{k, j}|}
   {\sqrt{\hat{s}_{k,j}^2 (\hat{s}^2_{k, i} + \hat{s}^2_{k, j})}}
 \end{equation}
 We use these SNP weights in the Egger regression of $j$ on $i$.
-To avoid bias, this means that we must use two sets of summary
+To avoid bias, we must use two sets of summary
 statistics: one set for SNP selection and weight construction,
  and the second set for $R^{TCE}$ estimation.
 
 
 \subsection{Simulations}
-\subsubsection*{Bi-directional Mendelian randomization}
+\subsubsection*{Weighted Egger regression improves calibration and power in Bi-directional Mendelian randomization}
 Our first goal was to assess whether our weighted Egger regression approach
-had a well-controlled type-I error rate (FPR) under the two-way null. To this
+had a well-controlled type-I error rate (FPR) under the two-way null (no causal effect in either direction). To this
 end we simulated GWAS summary statistics for two phenotypes with $M=1,000,000$
 independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
  the SNP discovery and effect estimation cohorts. In each simulation, there
  were $5,000$ causal
 SNPs per phenotype. In our first simulation, $1,000$ of these SNPs are pleiotropic,
 effecting both phenotypes, but with no correlation of their effects. In our
-second, these $1,000$ SNPs are again shared, but with correlated pleiotropy
+second, these $1,000$ SNPs are again shared, but with correlated pleiotropy \todo{define this. maybe with a fig even?}
 for a total genetic correlation of $\rho_g = 0.2$. In our final simulation under the
-null, we again have $\rho_g = 0.2$, except the studies have very different sample sizes
-($N_1 = 200,000$, $N_2 = 50,000$) and shared effects are twice as large on average
-in the smaller cohort. This makes shared SNPs much more likely to have
-low $p$-values in the second cohort. In each setting, we compared our approach
+null, we again have $\rho_g = 0.2$, except each phenotype has very different sample sizes
+($N_1 = 200,000$, $N_2 = 50,000$ respectively) and shared effects are twice as large on average
+for the phenotype with smaller $N$. This makes shared SNPs much more likely to have
+low (significant) $p$-values in the second cohort. In each setting, we compared our approach
 against the standard approach of Egger regression using all SNPs reaching GWS for
  the exposure as instruments, as well as an oracle with access to the true
 effect sizes that uses only non-pleiotropic SNPs.
@@ -269,7 +269,7 @@ effect sizes that uses only non-pleiotropic SNPs.
 In the first setting, uncorrelated pleiotropy, all methods were able to 
 effectively control the FPR at level $\alpha = 0.05$ in both directions
 (Figure~\ref{figure1}a, Table~\ref{table1}).
-In the second setting, correlated pleiotropy,
+In the second setting (correlated pleiotropy)
 standard Egger regression produced excess false-positives, but our weighting
 scheme is able to reduce the false positive rate substantially
 (Figure~\ref{figure1}b, Table~\ref{table1}).  In the most challenging setting,
@@ -281,7 +281,7 @@ $B\rightarrow A$ direction (Figure~\ref{figure1}c, Table~\ref{table1}).
 
 \begin{figure}\label{figure1}
 \includegraphics[width=\textwidth]{figures/figure1.pdf}
-\caption{We simulated GWAS summary statistics for two phenotypes ($A$, $B$) with $M=1,000,000$
+\caption{Our weighted Egger regression approach reduces false positives and increases power in bi-directional MR. We simulated GWAS summary statistics for two phenotypes ($A$, $B$) with $M=1,000,000$
 independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
  the SNP discovery and effect estimation cohorts. In each simulation, there
  were $5,000$ causal SNPs per phenotype. a) Both the effect of A on B and B on A are null,
@@ -296,18 +296,18 @@ independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
  lower sample size. Our weighting scheme improves power, but not as much as in (d). f) $A$
   effects $B$, but $A$ has a much smaller sample size. Our weighting scheme substantially increases
   power. We conduced $1000$ simulations for each null experiment (a-c) and $250$ simulations
-  per effect size for each alt experiment (d-f). }
+  per effect size for each alternative experiment (d-f). }
 \end{figure}
 
 Next, we wanted to asses the power of our approach under the one-way alternate
-hypothesis for various effect sizes. We again conduct thee simulations,
+hypothesis for various true effect sizes. We again conduct thee simulations,
 calculating the power for effect sizes ranging from $0.05$ to $0.7$.
 In the first, the cohorts had equal sample sizes. In the second, the exposure
 cohort has larger sample size, and in the third the outcome cohort
 has a larger sample size. In all settings, our weighted Egger approach shows
 a substantial gain in power over standard Egger regression. This is especially
 notable for smaller effect sizes, and when the outcome GWAS is larger.
-In this latter setting, the power of standard egger regression is only slightly
+In this latter setting, the power of standard Egger regression is only slightly
 higher than the FPR for the null hypothesis on the reverse direction,
 while our weighted Egger regression has very high power
 (Figure~\ref{figure1}d-f, Table~\ref{table2}). However, both
@@ -315,23 +315,24 @@ methods suffer from an increase in false positives in the reverse direction
 when the effect size in the forward direction is strong. For more on this
 phenomenon, see~\ref{discussion}.
 
-
-Finally, we tested the power of our approach under the two way alternate
+Finally, we tested the power of our approach under the two-way alternate
 hypothesis. We tested pairs of effects ranging from $-0.5$ to $0.5$ in both cohorts.
 Here we conduct two simulations: one with equal sample size of $N=100,000$,
-and one unequal sample sizes $N_1 = 200,000$ and $N_2 = 50,000$.
+and one with unequal sample sizes $N_1 = 200,000$ and $N_2 = 50,000$.
 In all settings, our approach improves power
 substantially over standard Egger regression (Figure~\ref{figure2}a-d). As with
-the one-way alt, this is particularly apparent when the outcome has a larger
+the one-way alternative, this is particularly apparent when the outcome has a larger
 sample size than the exposure (Figure~\ref{figure2}d). We also observed that both
 methods had lower power when $R_{12} \approx -R_{21}$ and vice versa, especially when
-both are large. Indeed, as $R_{12} \rightarrow -R_{21} \rightarrow 1$, the model
+$R_{12}$ has large absolute value. Indeed, as $R_{12} \rightarrow -R_{21} \rightarrow 1$, the model
 becomes unidentifiable. This setting is actually a violation of the \emph{faithfulness}
-assumption commonly employed in causal inference (CITE ??).
+assumption commonly employed in causal inference (CITE ??). \todo{Stephen might know a cite for this?}
+
+\todo{stronger intro sentence for fig caption}
 
 \begin{figure}\label{figure2}
 \includegraphics[width=\textwidth]{figures/figure2.pdf}
-\caption{We simulated GWAS summary statistics for two phenotypes ($A$, $B$) with $M=1,000,000$
+\caption{ We simulated GWAS summary statistics for two phenotypes ($A$, $B$) with $M=1,000,000$
 independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
  the SNP discovery and effect estimation cohorts. In each simulation, there
  were $5,000$ causal SNPs per phenotype of which $1,000$ were shared with uncorrelated
@@ -345,18 +346,18 @@ independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
   Egger regression, which struggles to detect the effect.}
 \end{figure}
 
-In these simulations, we used a $p$-value threshold of $5\times 10^{-6}$
-for all wighted Egger regresssion analyses. We tested $p$-value thresholds
-ranging from $5\times 10^{-4}$ to $5\times 10^{-8}$, and found similar
-results compared to standard Egger for all thresholds. We found that
-$5\times 10^{-6}$ provided a nice balance between increased power under 
-the alt and control of the type-I error rate under the null. However, lower
-cutoffs will provide better control of the type-I error rate in difficult situations
-at the expense of reduced power. Like-wise, higher cut-offs yield higher power
-while reducing control of the type-I error rate
-(Tables~\ref{supptable1} and ~\ref{supptable2}). 
 
-\subsubsection*{Inverse sparse regression}
+
+In these simulations, we used a $p$-value threshold of $5\times 10^{-6}$
+for all weighted Egger regression analyses but the conclusions held across a range from $5\times 10^{-4}$ to $5\times 10^{-8}$. We found that
+$5\times 10^{-6}$ provided a reasonable balance between increased power under 
+the alternative and control of type-I errors. However, lower
+cutoffs will provide better control of the type-I error rate in difficult situations
+at the expense of reduced power. Likewise, higher cut-offs yield higher power
+while reducing control of the type-I error rate
+(Tables~\ref{supptable1} and~\ref{supptable2}). 
+
+\subsubsection*{inspre is competitive with glasso while handling missingness and directed graphs}
 As detailed above, both inspre and glasso can be viewed as methods
 for finding a sparse, approximate inverse to a noisily measured matrix.
 Therefore, we sought to compare these two methods when data are simulated
@@ -366,17 +367,17 @@ for various graph structures, sample sizes, and numbers of features.
 We considered three kinds of graph structures: 1) Erdos-Reyni random graphs,
 where each edge is included with probability $p$, 2) hub graphs, where nodes
 are partitioned into
-disjoint sets and every node in each set is connected to a central "hub" vertex,
+disjoint sets and every node in each set is connected to a central ``hub" vertex,
 3) scale-free networks, where the vertex degree distribution
 follows a power law. Hub and scale-free networks are intended to mimic common
-biological networks (CITE ??). In each setting we calculated the precision,
+biological networks (CITE ??) \todo{something from Barabasi}. In each setting we calculated the precision,
 the number of true edges among all inferred edges, and recall, the proportion
 of true edges detected. We used these to calculate the $F_1$ score, the
-harmonic mean of precision and recall (CITE ??), as a function of the
+harmonic mean of precision and recall (CITE ??) \todo{don't think you need to cite anything for this}, as a function of the
 stability of the inferred graph. For the graphical lasso, we used StARS to
 evaluate graph stability. For inspre, we used random masks in the weight matrix
 as detailed above. As suggested in (CITE stars), we focus on the crucial
-region of stability around $\hat{D} = 0.05$.
+region of stability around $\hat{D} = 0.05$. \todo{maybe don't use D since you already used above}
 
 First, we simulated data with $40$ features and $800$ samples. Our random
 graphs included each edge with probability $p=0.04$, and our hub graphs had
@@ -398,17 +399,18 @@ on only a few. In each simulation, we first chose a maximum missingness
 threshold $m$ uniformly between $50\%$ and $99\%$. Then we simulated data with
 $100$ features and $2000$ samples. For each feature, we uniformly chose
 a random number between $0$ and $m$ and set that proportion of the features
-samples to NA. We then calculated the sample correlation matrix using only
+samples as missing. We then calculated the sample correlation matrix using only
 samples where both features were measured per pair of features.
 In this setting, inspre was able to continue producing accurate
-results even with when the maximum misssingness was high. On the other
-hand, glasso was not able to produce results at all when there was high
-missingness, instead returning a matrix of NA values
+results even with when the maximum missingness was high. On the other
+hand, the glasso was not able to produce results at all when there was high
+missingness, instead returning a matrix of NA values \todo{more formal way to state this would be that 'the glasso algorithm diverged', do people know what that means?}
 (Figure~\ref{figureS2}).
 
 
 
-\subsubsection*{Bi-directional mediated Mendelian randomization}
+\subsubsection*{bimmer robustly recovers causal direct effect networks}
+
 Our final goal was to show that bi-directional Mendelian randomization
 could be combined with inspre to fit networks of simulated phenotypes
 from phenome-scale GWAS summary statistics. At the time of this writing
@@ -418,15 +420,15 @@ Specifically, the CDEs between multiple exposures and a single outcome
 can be calculated from a multiple regression of SNP effects on the outcome
 against SNP effects on the exposures (CITE mvmr). This approach can be used
 to find sparse effects by using a LASSO or elastic net regression (elnet-Egger). A more
-sophisticated approach, such as MR-Beyesian model averaging (MR-BMA), could also be
-applied (CITE MR-bma).
+sophisticated approach, such as MR-Bayesian model averaging (MR-BMA), could also be
+applied (CITE MR-bma). \todo{I would reverse the last two sentences and introduce elnet-Egger as an approximation to MR-BMA}
 
 First, we simulated summary
 statistics for $50$ phenotypes with $1000$ shared and $2000$ private
-causal effect SNPs per pair of phenotypes, $125,000$ total SNPs. Each
+causal effect SNPs per pair of phenotypes, out of $125,000$ total SNPs. Each
 phenotype had $20\%$ heritability. The causal
 network underlying the phenotypes came from an Erdos-Reyni random graph with
-randomly oriented edges. We found that MR-BMA outperformed comparably to
+randomly oriented edges. We found that MR-BMA performed comparably to
 elnet-Egger, but that they both performed poorly compared to inspre.
 Moreover, MR-BMA took about $20$ times longer than inspre to run with
 default parameter settings (Figure~\ref{figureS4}).
@@ -436,7 +438,7 @@ $250,000$ total SNPs. We again
 simulated data from Erdos-Reyni, hub, and scale-free networks. In this setting
 both the graph structure and the orientation of the graphs edges are important
 variables to consider. The edge orientation will not necessarily be random:
-for example, master regulators would have very high out-degree but low in-degree (CITE ??).
+for example, master regulators would have very high out-degree but low in-degree (CITE ??). \todo{omnigenic v2}
 For all graph types, we tested three ways of orienting the edges in the graph:
  1) randomly set the orientation
 of each edge (random), 2) preferentially orient edges towards high-degree nodes (towards),
@@ -448,13 +450,15 @@ MR-BMA from these simulations due to runtime concerns.
 We found that bimmer was able to accurately re-construct all graph types and edge
 orientations considered, while
 elnet-Egger consistently had poor performance (Figure~\ref{figure4}d-i, Figure~\ref{figureS3}).
- For random graphs, we found that edge orientation did not have an effect on the
+ For Erdos-Reyni graphs, we found that edge orientation did not have an effect on the
  performance of bimmer. This is possibly because the node degree distribution
  doesn't have enough variance to have nodes that consistently pull edges towards
  or away from them in the latter scenarios. For scale-free and hub graphs, we
  found that bimmer performed better when high-degree nodes had edges oriented
  away from them (Figure~\ref{figureS3}). This is particularly interesting as
  it corresponds to the most likely real-world scenario (CITE ??).
+
+\todo{stronger intro sentence for fig caption}
 
 \begin{figure}\label{figure4}
 \includegraphics[width=\textwidth]{figures/figure4.png}
@@ -467,7 +471,7 @@ graph with edges preferentially oriented towards high degree nodes. The nodes ar
 three sets and each node in each set is assigned to a central hub vertex. c) A scale-free
 graph with edges preferentially oriented away from high degree nodes. These graphs have
 node degrees that follow a power-law distribution. We show the $F_1$-score of the method
-against the calculated variability score for d) random, e) hub and f) scale-free graphs.
+against the calculated variability score for d) Erdos-Reyni, e) hub and f) scale-free graphs.
 In all cases, we are able to produce accurate results when the variability score is between
 about $0.01$ and $0.05$. We also compared the performance against Egger regression
 with elastic-net shrinkage at a graph variability score of $0.025$. elnet-Egger
@@ -486,7 +490,7 @@ leverage their power while overcoming common pitfalls will be required.
 These datasets offer unprecedented opportunity to study
 the causal relationship between molecular markers, complex traits and diseases.
 We have introduced bi-directional mediated Mendelian randomization (bimmer),
-a novel approach to inferring sparse causal networks from phenome-scale
+a novel approach to inferring sparse networks of causal direct effects from phenome-scale
 GWAS summary statistics. We have shown through extensive simulations that
 bimmer is able to learn causal graph structures even in the presence of non-causal genetic
 correlation and differential power across phenotypes. We applied bimmer to 
@@ -498,7 +502,7 @@ builds on recent MR literature. In particular, multi-variable Mendelian
 randomization methods are able to compute causal direct effects when there
 are multiple potential exposures and a single outcome (CITE mvmr, MR-BMA). While
 these methods work well in that setting, we have shown that they are not well-suited
-to the more general problem that we consider here. Another approach, network
+to the more general network inference problem that we consider here. Another approach, network
 Mendelian randomization, calculates the effect of an exposure on an outcome while
 accounting for the effects of a third variable (CITE netmr). Our method can
 be thought of as a generalization of this approach to an arbitrary number of phenotypes
@@ -515,7 +519,7 @@ when there is non-causal genetic correlation and differential power. Second, lik
 but unlike LCV, our method estimates a quantity that is interpretable as the
 effect of one phenotype on the other. Finally unlike both,
 we are able to estimate both effect directions simultaneously, allowing our
-model to accomodate graphs with cycles.
+model to accommodate graphs with cycles.
 
 However, our approach also has several disadvantages. First, our method
 requires that we split the initial cohort into instrument discovery and
@@ -525,12 +529,12 @@ for sample splitting and might improve power. Second, while there are some
 phenotype pairs where a direct cause makes sense, there are others where causality is 
 almost certainly better modeled as the action of a latent variable. Indeed, it is likely
 that some of the causal effects we infer actually represent shared causal pathways.
-Finally, our method suffers from an increase in false positives in the $B\rightarrow A$
+Finally, our method suffers from a modest increase in false positives in the $B\rightarrow A$
 direction when there is a strong effect from $A\rightarrow B$. When there are many
 causal SNPs and the effect of $A$ on $B$ is strong, some SNPs that directly effect $A$
 can be mistakenly used as instruments for the effect of $B$ on $A$. While our method
 reduces the magnitude of this estimated effect, it can still give some false positives.
-Our approach also still suffers from the small-effect bias, generally underestimating
+Our approach also still suffers from the small-effect bias \todo{=weak instrument?}, generally underestimating
 the causal effect, which reduces power (CITE raps?).
 We view the development of MR methods that utilize the entire spectrum of GWAS results and are
 capable of being used for network inference as an important
@@ -538,12 +542,12 @@ area for future work.
 
 The second step of our method involves finding a sparse inverse to a noisily measured
 matrix, and is therefore closely related to the graphical lasso. Like glasso, our method
-also has a single regularization parameter than can be set in a straightforward manner.
+ has a single regularization parameter that can be set in a straightforward manner.
 However, a key advantage of our approach is that we are able to incorporate
-weights. This is extremely important in our application since the standard errors
+likelihood weights. This is extremely important in our application since the standard errors
 of the TCE matrix can vary dramatically. This also allows us to approximately invert matrices
 with missing data, implicitly performing matrix completion by leveraging assumed
-structure in the inverse of the matrix. Another advantage
+sparsity in the inverse of the matrix. Another advantage
 of this approach is that it allows us to select the lasso parameter $\lambda$ without
 access to the underlying data. A final advantage is that this step in our approach makes no
 assumptions about the data generating process. We found that for many classes of graphs,
@@ -551,7 +555,7 @@ inspre and glasso produced similar results, however there were some settings whe
 clearly performed better. Moreover, our method is substantially slower than glasso, with
 complexity $O(??)$ compared to glassos $O(??)$. In spite of these limitations,
 we believe the advantages of our method for graph inference mean that it will find utility
-well-outside the scope of MR, and we view this as an important avenue for future work.
+outside the scope of MR, and we view this as an important avenue for future work.
 
 Another advantage of our approach is that it only requires GWAS summary statistics.
 While the UK BioBank primary genotypes and phenotypes are readily available, summary
@@ -563,15 +567,15 @@ MR analysis results are already available for every pair of a set of phenotypes,
 the matrix $R^{TCE}$ 
 
 In this work we have begun to elucidate the connection between Mendelian randomization
-and omnigenics. The effects of genetic variants can be used to find and orient edges
+and the omnigenic model\todo{cite}. The effects of genetic variants can be used to find and orient edges
 in the causal graph underlying the phenotypes, and long-range effects can be modeled
 as paths in this sparse graph. Our method can be applied well beyond the scope considered
 here. We are particularly interested in the application to datasets of molecular phenotypes.
 These datasets generally have much smaller sample sizes, but molecular phenotypes also
-tend to be less polygenic with larger SNP effect sizes, which improves the efficiency
+tend to be less polygenic with larger, localized SNP effect sizes, which improves the efficiency
 of MR. Inverse sparse regression could also be applied to datasets from CRISPR-based
 genetic perturbation experiments, where it might improve the accuracy of network estimation.
-We view all of these applications as important avenues for future work.
+We view all of these applications as important avenues for future work. \todo{last sentence is repetitive from previous paragraph(s)}
 
 \section{Methods}\label{methods}
 \subsection{Trait model}
