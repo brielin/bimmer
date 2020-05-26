@@ -345,7 +345,7 @@ save(plot_tibble_9, file = "~/ukbb_network/plot_data/bimmer_sim_9.Rdata")
 load("~/Work/saved_rdata/bimmer_sim_10.Rdata")
 ```
 
-```{r}
+```{r, fig.width=10}
 beta = 0.025
 a <- plot_tibble_10 %>% group_by(iter, method) %>%
   mutate(delta_D = if_else(beta - D_hat > 0, beta - D_hat, Inf)) %>%
@@ -362,8 +362,9 @@ b <- plot_tibble_10 %>% group_by(iter, method) %>%
   group_by(method) %>%  mutate(run_time_mean = mean(run_time/60)) %>%
   distinct(Method, run_time_mean) %>%
   ggplot(aes(Method, run_time_mean)) + geom_col() +
-  labs(x = NULL, y = "Run time (minutes)", title = "b) Run time comparison") + 
+  labs(x = NULL, y = "Runtime (minutes)", title = "b) Runtime comparison") + 
   theme(plot.title = element_text(size=10)) + ylim(0, 600) 
 
 ggarrange(a,b,ncol=2, bottom = "Method")
+
 ```
