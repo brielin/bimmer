@@ -2,9 +2,9 @@
 require(tidyverse)
 require(foreach)
 require(scales)
-require(gridExtra)
 require(devtools)
 require(scales)
+require(egg)
 devtools::load_all()
 ```
 
@@ -331,52 +331,58 @@ summary_tibble_8 <- make_summary_tibble(plot_tibble_8)
 p = 5e-06
 
 f1a <- summary_tibble_1 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
-  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  mutate(Method = factor(c("Oracle", "W-Egger", "Egger"), levels = c("Oracle", "W-Egger", "Egger"), ordered = T)) %>%
   pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
-  mutate(Direction = if_else(Direction == 1, "P1->P2", "P2->P1")) %>%
-  ggplot(aes(Direction, stat, fill = Method)) + 
+  mutate(Direction = if_else(Direction == 1, "A->B", "B->A")) %>%
+  ggplot(aes(Direction, stat, fill = Method)) +
   geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat, color = Method), position = "dodge2") + 
   geom_col(position = "dodge2") + 
-  labs(x = NULL, y = NULL, title = "a) Null: Uncorrelated pleiotropy") + ylim(0,1) + guides(fill = FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "a) Null: Uncorrelated pleiotropy") + ylim(0,1) + guides(fill = FALSE, color = FALSE) + theme(plot.title = element_text(size=10)) +
+  scale_fill_brewer(palette = "Dark2") + scale_color_brewer(palette = "Dark2")
 
 f1b <- summary_tibble_2 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
-  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  mutate(Method = factor(c("Oracle", "W-Egger", "Egger"), levels = c("Oracle", "W-Egger", "Egger"), ordered = T)) %>%
   pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
-  mutate(Direction = if_else(Direction == 1, "P1->P2", "P2->P1")) %>%
+  mutate(Direction = if_else(Direction == 1, "A->B", "B->A")) %>%
   ggplot(aes(Direction, stat, fill = Method)) + 
   geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat, color = Method), position = "dodge2") + 
   geom_col(position = "dodge2") + 
-  labs(x = NULL, y = NULL, title = "b) Null: Correlated pleiotropy")  + ylim(0,1) + guides(fill=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "b) Null: Correlated pleiotropy")  + ylim(0,1) + guides(fill=FALSE, color = FALSE) + theme(plot.title = element_text(size=10)) +
+  scale_fill_brewer(palette = "Dark2") + scale_color_brewer(palette = "Dark2")
 
 f1c <- summary_tibble_3 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
-  mutate(Method = c("Oracle", "W-Egger", "Egger")) %>%
+  mutate(Method = factor(c("Oracle", "W-Egger", "Egger"), levels = c("Oracle", "W-Egger", "Egger"), ordered = T)) %>%
   pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
-  mutate(Direction = if_else(Direction == 1, "P1->P2", "P2->P1")) %>%
+  mutate(Direction = if_else(Direction == 1, "A->B", "B->A")) %>%
   ggplot(aes(Direction, stat, fill = Method)) + 
   geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat, color = Method), position = "dodge2") + 
   geom_col(position = "dodge2") + 
-  labs(x = NULL, y = NULL, title = "c) Null: Unequal power" ) + ylim(0,1) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "c) Null: Unequal power" ) + ylim(0,1) + theme(plot.title = element_text(size=10)) +
+  scale_fill_brewer(palette = "Dark2") + scale_color_brewer(palette = "Dark2")
 
 f1d <- summary_tibble_4 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
-  mutate(Method = rep(c("Oracle", "W-Egger", "Egger"), 6)) %>% 
+  mutate(Method = factor(rep(c("Oracle", "W-Egger", "Egger"), 6), levels = c("Oracle", "W-Egger", "Egger"), ordered = T)) %>%
   pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
-  mutate(Direction = if_else(Direction == 1, "P1->P2 (Alt)", "P2->P1 (Null)")) %>%
+  mutate(Direction = if_else(Direction == 1, "A->B (Alt)", "B->A (Null)")) %>%
   ggplot(aes(r1, stat, color = Method, linetype = Direction)) + geom_point() + geom_line() + geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat)) +
-  labs(x = NULL, y = NULL, title = "d) One-way alt: Equal sample size")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "d) One-way alt: Equal sample size")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10)) +
+  scale_fill_brewer(palette = "Dark2") + scale_color_brewer(palette = "Dark2")
 
 f1e <- summary_tibble_5 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
-  mutate(Method = rep(c("Oracle", "W-Egger", "Egger"), 6)) %>% 
+  mutate(Method = factor(rep(c("Oracle", "W-Egger", "Egger"), 6), levels = c("Oracle", "W-Egger", "Egger"), ordered = T)) %>%
   pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
-  mutate(Direction = if_else(Direction == 1, "P1->P2 (Alt)", "P2->P1 (Null)")) %>%
+  mutate(Direction = if_else(Direction == 1, "A->B (Alt)", "B->A (Null)")) %>%
   ggplot(aes(r1, stat, color = Method, linetype = Direction)) + geom_point() + geom_line() + geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat)) +
-  labs(x = NULL, y = NULL, title = "e) One-way alt: Larger sample 1")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "e) One-way alt: Larger sample 1")  + ylim(0, 1) + guides(linetype=FALSE, color = FALSE) + theme(plot.title = element_text(size=10)) +
+  scale_fill_brewer(palette = "Dark2") + scale_color_brewer(palette = "Dark2")
 
 f1f <- summary_tibble_6 %>% filter((method == "egger_NA_NA")|(method == "egger_5e-08_NA")|(method == paste("egger_w", p, 0, sep = "_"))) %>%
-  mutate(Method = rep(c("Oracle", "W-Egger", "Egger"), 6)) %>% 
+  mutate(Method = factor(rep(c("Oracle", "W-Egger", "Egger"), 6), levels = c("Oracle", "W-Egger", "Egger"), ordered = T)) %>%
   pivot_longer(c(stat1, stat2, se_stat1, se_stat2), names_to = c(".value", "Direction"), names_pattern = "(.*)([1,2])") %>%
-  mutate(Direction = if_else(Direction == 1, "P1->P2 (Alt)", "P2->P1 (Null)")) %>%
+  mutate(Direction = if_else(Direction == 1, "A->B (Alt)", "B->A (Null)")) %>%
   ggplot(aes(r1, stat, color = Method, linetype = Direction, )) + geom_point() + geom_line() + geom_errorbar(aes(ymin=stat-se_stat, ymax=stat+se_stat)) +
-  labs(x = NULL, y = NULL, title = "f) One-way alt: Larger sample 2") + ylim(0, 1) + guides(color = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "f) One-way alt: Larger sample 2") + ylim(0, 1) + guides(color = FALSE) + theme(plot.title = element_text(size=10)) +
+  scale_fill_brewer(palette = "Dark2") + scale_color_brewer(palette = "Dark2")
 
 f1 <- ggarrange(f1a, f1b, f1c, f1d, f1e, f1f, ncol = 3, left = "FWER (null) or Power (alt)")
 ggsave("~/Work/bimmer/manuscript/figures/figure1.pdf", plot = f1, dpi = 300, width = 10)
@@ -392,25 +398,25 @@ f2a <- summary_tibble_7 %>% filter(method == paste("egger_w", p, 0, sep = "_") |
   mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
   mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
   ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat1)) + scale_fill_gradient(limits = c(0, 1)) + facet_wrap(~ Method, ncol = 2) +
-  labs(x = NULL, y = NULL, title = "a) Equal sample sizes, P1->P2") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "a) Equal sample sizes, A->B") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
 
 f2b <- summary_tibble_7 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
   mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
   mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
   ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat2)) + scale_fill_gradient(limits = c(0, 1), name = "Power") + facet_wrap(~ Method, ncol = 2) +
-  labs(x = NULL, y = NULL, title = "b) Equal sample sizes, P2->P1")  + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "b) Equal sample sizes, B->A")  + theme(plot.title = element_text(size=10))
 
 f2c <- summary_tibble_8 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
   mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
   mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
   ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat1)) + scale_fill_gradient(limits = c(0, 1)) + facet_wrap(~ Method, ncol = 2) +
-  labs(x = NULL, y = NULL, title = "c) Larger sample 1, P1->P2") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "c) Larger sample 1, A->B") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
 
 f2d <- summary_tibble_8 %>% filter(method == paste("egger_w", p, 0, sep = "_") | method == "egger_5e-08_NA") %>%
   mutate(r1_val = fct_reorder(as.character(r1_val), r1_val), r2_val = fct_reorder(as.character(r2_val), r2_val)) %>%
   mutate(Method = rep(c("W-Egger", "Egger"), 36)) %>%
   ggplot(aes(r1_val, r2_val)) + geom_tile(aes(fill = stat2)) + scale_fill_gradient(limits = c(0, 1)) + facet_wrap(~ Method, ncol = 2) +
-  labs(x = NULL, y = NULL, title = "d) Larger sample 1, P2->P1") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
+  labs(x = NULL, y = NULL, title = "d) Larger sample 1, B->A") + guides(fill = FALSE) + theme(plot.title = element_text(size=10))
 
 f2 <- ggarrange(f2a, f2b, f2c, f2d, ncol = 2, widths = c(1.05, 1))
 ggsave("~/Work/bimmer/manuscript/figures/figure2.pdf", plot = f2, dpi = 300, width = 10)
