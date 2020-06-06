@@ -37,8 +37,8 @@
 \title{Phenome-scale causal discovery with
 bidirectional mediated Mendelian randomization}
 
-\author[1, 2]{Brielin C. Brown \thanks{bb2991@columbia.edu}}
-\author[2, 3, 4]{David A. Knowles \thanks{dak2173@columbia.edu}}
+\author[1, 2]{Brielin C. Brown\thanks{bb2991@columbia.edu}}
+\author[2, 3, 4]{David A. Knowles\thanks{dak2173@columbia.edu}}
 
 \affil[1]{Data Science Institute, Columbia University, New York, NY}
 \affil[2]{New York Genome Center, New York, NY}
@@ -520,32 +520,28 @@ performs quite poorly compared to bimmer.}
 
 
 \subsection*{Application to 405 traits from the UK Biobank}
-\subsubsection*{bimmer identifies thousands of causal effects in complex pathways}
+\subsubsection*{bimmer identifies thousands of causal direct effects in complex pathways}
 We obtained summary statistics for gender-split UK Biobank phenotypes from
-the Neale lab UK Biobank analysis website~\cite{NealeUKBB}. For ease of interpretability,
-we transformed all effect sizes to the per-variance scale. As  recommended,
-we used only phenotypes with $Z$-score above $4$ and at least medium confidence
-~\cite{BulikSullivan2015,NealeUKBB}. Next we removed one phenotype from every pair with genetic
-correlation above $0.9$, leaving us with $423$ phenotypes. We clumped the UKBB
+the Neale lab~\cite{NealeUKBB}. For ease of interpretation,
+we transformed all effect sizes to the per-variance scale. As previously suggested~\cite{BulikSullivan2015,NealeUKBB},
+we used only phenotypes with $Z$-score above $4$ and at least medium confidence. We removed one phenotype from every pair with genetic
+correlation above $0.9$, leaving $423$ phenotypes. We clumped the UKBB
 summary statistics to $p=5 \times 10^{-6}$ with $r^2 < 0.05$ and distance $500$ kilobases using
 the UKBB European genotypes as a reference panel. We use male summary statistics for SNP selection
 and weight estimation, and female summary statistics for TCE estimation. Finally, we removed
 phenotypes where at least $50\%$ of the standard errors of the TCE were above $0.5$
-as either an exposure or an outcome. This left us with $405$ phenotypes (Table S?).
+as either an exposure or an outcome, resulting in $405$ phenotypes (Table S?).
 \todo{Table should exist and have degree columns, etc}
-From the $163,620$ pairs of traits considered, $8,268~(\sim 5\%)$ had TCEs that
-were significant at FDR $5\%$.
-Next, we used inspre to fit the model~\ref{r_cde_main}. We used inverse-variance weights
-as previously described with one exception - all entries in the TCE matrix with
-an SE below $0.005$ were given the same weights. This is to avoid having a very small
-number of well-estimated points dominate the optimization procedure. Based on our simulations,
-we chose a target stability of $0.025$ which resulted in regularization 
-parameter $\lambda = 0.055$. This gave a graph with $7,949$ non-zeros,
-$2,826$ of which were above $0.01$. We used these $2,826$ non-zeros as the edges
-in our inferred graph.
+$8,268~(\sim 5\%)$ of the $163,620$ pairs of traits considered had TCEs significant at FDR $5\%$.
 
-A few things are immediately apparent when comparing estimates of the
-genetic correlation, weighted Egger estimated TCE, bimmer's
+We applied inspre~\eqref{opt_main} to the resulting TCE matrix to infer the DCE network, using inverse-variance weights
+as previously described with one slight modification. To avoid having a very small
+number of pairs with very small SE dominate the likelihood, all entries in the TCE matrix with
+an SE \todo{is SE defined somewhere?} below $0.005$ were given the same weight.  We chose a target stability of $0.025$ which gave reliable results across our various simulations \todo{reference appropriate section}. This resulted in a regularization 
+parameter $\lambda = 0.055$ \todo{is there any point putting this here? it's not interpretable}. The resulting DCE graph had $7,949$ edges, which we pruned to $2,826$ edges by removing DCEs with absolute value less than $0.1$. 
+
+We were curious to compare estimated
+genetic correlation, weighted Egger estimated TCE ($R^{TCE}$), bimmer's
 shrunk TCE ($U$) and bimmer's inferred CDE. First, we clustered phenotypes by genetic correlation
 to determine if the patterns observed are shared in the TCE estimates.
 While there are some similar patterns across the two matrices, the structure in the TCE estimates
@@ -553,62 +549,51 @@ is not as well-defined (Figure~S5a-b).
 Indeed, we find that while the TCE estimates
 and genetic correlation estimates are correlated, that correlation is fairly
 weak ($r = 0.270\pm 0.005$). We actually find a slightly lower correlation between
- $U$ and $R^{TCE}$ ($r = 0.238 \pm 0.005$), however, this is by design.
-Many of our TCE estimates have high standard error and are consequently
-ignored by the optimization procedure. Restricting our analysis to TCE entries with an
-SE below $0.05$, for example, the correlation of the TCE with the genetic correlation is smaller
-than the correlation of the TCE with $U$ ($r = 0.666 \pm 0.005$ vs $r = 0.949 \pm 0.004$, respectively).
-Moreover, our optimization
-procedure tends to produce entries of $U$ that are very close to $0$ when the corresponding
-entry of the TCE has a large standard error ($\bar{|U|} = 0.0003 \pm 0.0003$ for entries of
-the TCE with SE $> 0.05$). We conclude that our optimization procedure produces a conservative
-estimate $U \approx R^{TCE}$ that is close on high confidence entries of $R^{TCE}$ and
-shrunk strongly towards 0 otherwise.
-
+ $U$ and $R^{TCE}$ ($r = 0.238 \pm 0.005$), but this is driven by TCE entries with high standard error that are consequently
+(and appropriately) ignored by inspre. Restricting our analysis to TCE entries with an
+SE below $0.05$ the correlation of the TCE with the genetic correlation is smaller
+than the correlation of the TCE with $U$ ($r = 0.666 \pm 0.005$ vs $r = 0.949 \pm 0.004$, respectively \todo{cool!}).
+Moreover, entries in $U$ tend to be close to $0$ when the corresponding
+entry in the TCE has a large standard error (mean ${|U|} = 0.0003 \pm 0.0003$ for entries of
+the TCE with SE $> 0.05$). We conclude that bimmer produces a conservative
+estimate $U \approx R^{TCE}$ that accurately captures high confidence entries of $R^{TCE}$ but performs aggressive shrinkage on edges with weak statistical support. 
 
 Most ($303/405$, $\sim 75\%$) phenotypes have out-degree $0$ in our network, that is they have no
-downstream causal effects. However, there is a path from every node with non-zero
-out-degree to every other node in the network. The vast majority of these connections
+downstream causal effects on the traits we consider. However, there is a path from every node with non-zero
+out-degree to every other node in the network. The vast majority \todo{what proportion?} of these connections
 are indirect and result in small effect sizes that do not reach
-statistical significance as TCEs. Connections in the network with FDR-corrected TCE p-value above
-$0.05$ have an average absolute shrunk TCE of $0.0036$ and path length of $2.8$ nodes, while
-FDR significant connections have an average shrunk TCE of $0.029$ and path length of $1.98$ nodes
-(Figure~\ref{figure6}a-b). Even still, we find that the majority of significant TCEs are from indirect
-connections ($3,831$ connections, $63.7\%$).
-We also found that the effect explained by the shortest path between two nodes was often only a small
-fraction of the total effect. That is, there are often multiple paths between two nodes that add together
-to form the TCE (Figure~\ref{figure6}c-d). As expected, this is especially pronounced 
-when looking at all connections (Figure~\ref{figure6}c) rather than FDR $5\%$-significant connections
-(Figure~\ref{figure6}d), however this conclusion holds in both settings.
-Among all connections the median percentage of the effect explained
-by the shortest path is $0.35\%$, vs $0.52\%$ for FDR-significant connections. It is also important
-to point out that this number is not always less than 1. That is, it is sometimes the case that the
-effect of the shortest path is greater than the total effect, indicating that other paths between
-the nodes act to cancel out the effect of the shortest path and reduce the total effect.
+statistical significance as TCEs. Non-significant (at $5\%$ FDR) TCE entries have an average absolute shrunk TCE of $0.0036$ and a path length (in the CDE network) of $2.8$ \todo{would median path length make more sense?}, while
+significant entries have an average shrunk TCE of $0.029$ and CDE path length of $1.98$
+(Figure~\ref{figure6}a-b). Despite this, the majority ($3,831$ connections, $63.7\%$) of significant TCEs result from indirect paths in the CDE network.
+The effect explained by the shortest path between two nodes is often only a small
+fraction of the total effect: there are often \todo{typically?} multiple paths between two nodes contribute to the TCE (Figure~\ref{figure6}c-d). As expected \todo{why is this expected?}, this finding is especially pronounced 
+when looking at all connections (median percentage of TCE explained
+by shortest path $0.35\%$, Figure~\ref{figure6}c) rather than FDR $5\%$-significant connections
+(median percentage of TCE explained
+by shortest path $0.52\%$, Figure~\ref{figure6}d), but holds in both settings.
+Interestingly the percentage TCE explained
+by shortest path is sometimes greater than 1, i.e. the
+effect of the shortest path is greater than the total effect. This occurs when other causal paths act to cancel out the effect of the shortest path and reduce the total effect.
 
-We found that many indirect effects act through central hub vertices with high degree. For example,
-body mass index (BMI, in-degree 29, out-degree 215), leukocyte count (in-degree 16, out-degree 224), and
+Many indirect effects in the CDE network act through central hub vertices with high degree. Examples include body mass index (BMI, in-degree 29, out-degree 215), leukocyte count (in-degree 16, out-degree 224), and
 haemoglobin concentration (in-degree 7, out-degree 122), which we discuss in detail in the next
-section. We also found that learning the network structure, rather than simply calculating TCEs
-for every pair of phenotypes, allows us to both understand potentially surprising effects, and
-also identify seemingly significant effects that lack network support.
-For example, we observed a strong effect of ``age first had sexual intercourse'' (AFSI) on a number
+section. Access to the CDE network, rather than just the TCEs, allows us to both understand potentially surprising effects and identify likely false-positive TCEs that lack network support.
+For example, we observed a strong TCE of ``age first had sexual intercourse'' (AFSI) on a number
 of surprising outcomes including knee pain ($U = -0.064$, $p < 3 \times 10^{-7}$),
 wheezing in the chest ($U = -0.067$, $p < 1 \times 10^{-16}$) and
-lower overall health rating ($U = -0.058$, $p < 4 \times 10^{-9}$). A closer look reveals
-that all of these effects are mediated by an effect of AFSI on BMI, which does not survive
+lower overall health rating ($U = -0.058$, $p < 4 \times 10^{-9}$). Closer investigation reveals
+that these effects are mediated by an effect \todo{DCE?} of AFSI on BMI, which does not survive
 correction for multiple testing ($R^{TCE} = -0.20 \pm 0.07$, $U = -0.37$, $p < 0.07$),
 but is required by the network to explain observed effects of AFSI on the aforementioned phenotypes.
 This may lend additional evidence to recent work showing that BMI-associated loci are involved
 in brain pathways linked to reward~\cite{Ndiaye2020}.
-On the other hand, we find effects with low TCE $p$-values that are not reflected in
+In contrast, there are highly significant TCEs that are not reflected in
 the network structure. For example, we observe a strong TCE of cheese intake on time spent watching television
 ($R^{TCE} = -0.49 \pm 0.07$, $p <  \times 10^{-9}$).
 There is indeed a path between these nodes (again mediated by BMI), but the shrunk TCE corresponding
 to this path in the network is only $-0.006$. Similarly, we observe a strong TCE of 
 past tobacco smoking on ``ever taken cannabis'' ($R^{TCE} = -0.88 \pm 0.13$, $p < 3 \times 10^{-9}$).
-Here the path between these nodes flows through BMI, followed by leukocyte count, for a shrunk TCE of
-only $-0.0002$.
+Here the path between these nodes flows through BMI, followed by leukocyte count, resulting in a shrunk TCE of only $-0.0002$.
  
 
 \begin{figure}\label{figure6}
@@ -627,100 +612,94 @@ act to cancel out the effects of the direct path. }
 
 
 \subsubsection*{bimmer identifies concentrated sub-networks with correlated downstream effects}
-Our final goal was to identify concentrated sub-networks with correlated downstream effects.
-To this end, we clustered phenotypes using their shrunk TCE estimates ($U_{i, :}$) as features.
-This results in groups of phenotypes with similar downstream effects being clustered together.
-We focused on the $102$ phenotypes with non-zero out-degree.
+Our final goal was to identify densely-connected sub-networks with correlated downstream effects.
+To this end, we clustered the $102$ phenotypes with non-zero out-degree using their \todo{outgoing?} shrunk TCE estimates ($U_{i, :}$) as features.
+This results in clustering of phenotypes with similar downstream effects.
 In Figure~\ref{figure5}, we show the genetic correlation (a), weighted-Egger TCE (b), shrunk TCE (c) and
-inferred CDE (d) for these $102$ phenotypes as exposures and all $405$ phenotypes as outcomes. This allows
-us to identify several interesting sub-networks with numerous downstream effects. We chose four sub-networks
-for futher analysis: a sub-network of morphology-related traits (Figure~\ref{figure5}e),
-one of blood-biomarker related traits (Figure~\ref{figure5}f), one of red-blood cell (erythrocyte)
-related traits (Figure~\ref{figure5}g), and one of heart-disease related traits (Figure~\ref{figure5}h).
+inferred CDE (d) for these $102$ phenotypes as exposures and all $405$ phenotypes as outcomes. We identified several interesting sub-networks with numerous downstream effects. We selected four for further analysis, corresponding to traits associated with 1) morphology (Figure~\ref{figure5}e),
+2) blood-biomarkers (Figure~\ref{figure5}f), 3) red-blood cells (erythrocyte) (Figure~\ref{figure5}g), and 4)  heart-disease (Figure~\ref{figure5}h).
 In all cases, every node within the sub-network is reachable from every other node. 
 These sub-networks also tend to include traits that are related by definition. In many of these cases,
 bimmer puts a bi-directed edge between the two nodes, for example between BMI and weight or
 between mean sphered cell volume and mean reticulyte volume. While this does not happen universally,
 bimmer generally succeeds at identifying groups of traits which could be analyzed jointly. 
 
-Leukocyte count, part of the heart-disease network, had the highest out-degree with $244$ CDEs
-and $177$ FDR $5\%$ significant TCEs. This network includes several well-studied phenomena
-including the causal effect of hypertension on heart disease ($p < 3 \times 10^{-5}$~\cite{MacMahon1990}),
-and high cholesterol on heart disease ($p < 1 \times 10^{-16}$~\cite{Castelli1992}). We also find
-evidence for both a direct causal effect of leukocyte count on heart disease
+In the the heart-disease network, leukocyte count had the highest out-degree with $244$ CDEs
+and $177$ FDR $5\%$ significant TCEs. This network \todo{i.e. the heart disease network?} includes several well-studied phenomena
+including the causal effects of hypertension~\cite{MacMahon1990} and high cholesterol~\cite{Castelli1992} on heart disease ($p < 3 \times 10^{-5}$ and $p < 1 \times 10^{-16}$ respectively). There is 
+evidence for both a DCE of leukocyte count on heart disease
 ($p < 2 \times 10^{-3}$~\cite{Lee2001})
-and an indirect effects via high cholesterol ($p < 4 \times 10^{-7}$) and diastolic blood pressure
+and indirect effects via high cholesterol ($p < 4 \times 10^{-7}$) and diastolic blood pressure
 ($p < 7 \times 10^{-4}$), both of which are previously studied pathways~\cite{Facchini1992}.
-It is also interesting to note that the network places edges between
+Interestingly, the network has an edge between \todo{from?}
 leukocyte count and both systolic blood pressure and hypertension, but these do not survive correction
-for multuple testing as TCEs ($p < 0.055$ and $p < 0.063$, respectively). We consider this evidence of
+for multiple testing as TCEs ($p < 0.055$ and $p < 0.063$, respectively \todo{using $<$ is a bit odd here}). We consider this evidence of
 a complex mechanism by which white blood cell traits effect heart disease risk via multiple causal pathways,
-warranting further study. One interesting downstream effect of this sub-network is related
-to choice of pain medication. We detect a positive causal effect of high cholesterol on aspirin use
+warranting further study. One interesting downstream effect of this \todo{i.e. the heart disease network?} sub-network is related
+to choice of pain medication. We detect a positive causal effect \todo{TCE or DCE?} of high cholesterol on aspirin use
 ($R = 0.065$, $p < 3 \times 10^{-6}$) and a negative effect on ibuprofen use ($R = -0.025$, $p < 0.001$).
 This could reflect common medical advice for patients at risk of heart disease to choose aspirin,
 which has long been thought to reduce risk~\cite{Sanmuganathan2001}, and avoid ibuprofen, which
-is thought to reduce it's effectiveness~\cite{MacDonald2006}. Another interesting set of traits
+is thought to reduce effectiveness~\cite{MacDonald2006}. Another interesting set of traits
 downstream of this sub-network are related to personality. We find evidence for a causal effect of
 leukocyte count on ``suffer from nerves'' ($p < 1 \times 10^{-10}$), ``worrier / anxious feelings'' 
 ($p < 2 \times 10^{-10}$), neuroticism score ($p < 1 \times 10^{-7}$) and ``tense / highly strung''
 ($p < 5 \times 10^{-10}$). This adds to a growing body of literature on a relationship between
 inflammatory biomarkers and personality~\cite{Allen2017,Sutin2012}.
 
-The blood biomarker network was particularly dense,
+The blood biomarker sub-network is particularly dense,
 consisting of $255$ direct connections, $236$ of which represent
 significant TCEs at FDR $5\%$.
-We find that higher testosterone levels have numerous health consequences, many of
+The network implies that higher testosterone levels have numerous health consequences, many of
 which are related to lung function. For example, higher testosterone protects against
 shortness of breath ($R = -0.028$, $p < 4\times 10^{-3}$) and asthma ($R = -0.008$, $p < 0.05$)
-while increasing risk of lung cancer ($R = 0.013$, $p < 0.02$). This lends causal support to
+while increasing risk of lung cancer ($R = 0.013$, $p < 0.02$) \todo{is smoking considered? might except that to mediate this}. This lends causal support to
 recent observational studies linking increased testosterone to lung cancer risk~\cite{Hyde2012}
-and mouse models linking decreased testosterone to asthma risk~\cite{Cephus2017}.
+and mouse studies linking decreased testosterone to asthma risk~\cite{Cephus2017}.
 Our results also support the possibility of a causal effect of sex-hormone
 levels on personality~\cite{Colangelo2012,Asselmann2019,Ekholm2014,Aluja2014}.
 For example, we observe an effect of testosterone on loud
 music exposure frequency ($R = 0.018$, $p < 0.001$), and
 an effect of sex-hormone binding globulin on
 ``been in a confiding relationship as an adult'' ($p < 3 \times 10^{-10}$),
- anxious feelings ($p<4\times 10^{-9}$), neuroticism score ($p<6\times 10^{9}$), and ``suffer from nerves``
-($p < 3\times 10^{-7}$). However it is important to point out that these results have been debated. For
-example, the findings in~\cite{Asselmann2019} do not survive correction for multiple testing and
+ anxious feelings ($p<4\times 10^{-9}$), neuroticism score ($p<6\times 10^{9}$), and ``suffer from nerves''
+($p < 3\times 10^{-7}$). Some of these results have been debated: the findings in~\cite{Asselmann2019} do not survive correction for multiple testing and
 in~\cite{Aluja2014} the relationship between sex hormones and personality decreases after controlling
-for age. Indeed we generally find that while these effects have very low TCE p-values, they 
-are also quite small (bimmer shrunk TCE from $-0.007$ to $0.002$.
+for age. Indeed we generally find that while these effects have very low TCE $p$-values, they 
+are also quite small (bimmer shrunk TCE from $-0.007$ to $0.002$).
 
 BMI has the second-highest out-degree of any phenotype considered with
 $215$ direct effects, and $175$ FDR $5\%$ significant TCEs.
-Many of the top downstream effects of BMI are dietary
+Many of the strongest downstream effects of BMI are dietary
 in nature, including vegetable intake ($R = 0.09$, $p < 1\times 10^{-16}$),
 milk-type ($R = 0.15$, $p < 1\times 10^{-16}$), and dietary variation ($R = 0.115$, $p < 1\times 10^{-16}$).
-This lends additional support to the recent literature on BMI the cause of (and not effect of)
-traits thought to lead to higher BMI (ie exercise~\cite{Richmond2014}) and the observation that
+Our findings therefore lend additional support to the recent literature on BMI the cause of (and not effect of)
+traits thought to lead to higher BMI (e.g. exercise~\cite{Richmond2014}) and the observation that
 BMI-increasing genetic variants tend to be linked to genes with a role in brain
 function~\cite{Locke2015,Zhu2016,Ndiaye2020}. Morphology-related traits are also linked
 to numerous diseases, perhaps best exemplified by the strong causal effect of BMI on lower overall
-health rating ($R = 0.1$, $p < 1 \times 10^{-16}$). It is also interesting to note that the
+health rating ($R = 0.1$, $p < 1 \times 10^{-16}$). The
 morphology network includes predicted forced expiratory volume in
 one second (FEV-1), a simple function of height, age and ethnicity,
 while the erythrocyte network includes measured FEV-1, which is closely related to
-erythrocyte function. In the latter network, erythrocyte count and haemoglobin concentration (HC)
+erythrocyte function \todo{I don't understand the point of this sentence}. In the latter network, erythrocyte count and haemoglobin concentration (HC)
 both have high out-degree, with $117$ and $132$ direct effects, respectively.
 Erythrocyte count has numerous health consequences,
 for example a direct effect on lower overall health rating ($R = 0.03$, $p < 3 \times 10^{-10}$).
 Many of the top direct effects of HC involve platelet structure,
-for example plateletcrit ($R = -0.13$, $p < 3 \times 10^{-11}$) and platelet count
+for example plateletcrit \todo{what is this?} ($R = -0.13$, $p < 3 \times 10^{-11}$) and platelet count
 ($R = -0.15$, $p < 2 \times 10^{-10}$). Interestingly, our model predicts a direct effect of
 HC on bleeding gums ($R = 0.036$, $p < 2 \times 10^{-9}$); that is, one
 that is not mediated by the aforementioned effects on platelets. This may reflect a lack of power to detect
-the direct effect of platelets on bleeding gums, or indicate that this acts via an alternative pathway.
-Finally, we noticed our model predicts a direct effect of HC on cardiac arrythmia, lending causal
+the direct effect of platelets on bleeding gums, or there being an alternative pathway.
+Finally, we detect a DCE of HC on cardiac arrythmia, lending causal
 support to a recent population-based study linking HC and atrial fibrillation~\cite{Lim2020}.
 
 
 \begin{figure}\label{figure5}
 \includegraphics[width=\textwidth]{figures/figure5.png}
-\caption{bimmer identifies concentrated sub-networks with correlated downstream effects.
-Here we plot (a) the genetic correlation, (b) the weighted Egger TCE, (c) the bimmer shrunk
+\caption{bimmer identifies densely-connected sub-networks with correlated downstream effects.
+We show (a) the genetic correlation, (b) the weighted Egger TCE, (c) the bimmer shrunk
 TCE and (d) the bimmer inferred CDE for the 102 phenotypes with non-zero out-degree (y-axis)
 against all 405 phenotypes (x-axis), clustered by shrunk TCE. To emphasize the smaller effects
 in the latter plots, we use an alternate scale which emphasizes weak positive and negative effects
@@ -729,6 +708,8 @@ in the latter plots, we use an alternate scale which emphasizes weak positive an
 several concentrated sub-networks, including a morphology network (e), blood biomarker
 network (f), red blood cell network (g) and heart disease network (f).}
 \end{figure}
+
+\todo{can you put x-ticks at all the integers for a and b. I wonder if a histogram might be better for c and especially d so you can put a bin break at 1?}
 
 \section{Discussion}\label{discussion}
 As biobanks continue to grow in size and scope, new methods that are able to
