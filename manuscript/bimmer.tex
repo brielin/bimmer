@@ -716,7 +716,7 @@ As biobanks continue to grow in size and scope, new methods that are able to
 leverage their power while overcoming common pitfalls are required.
 These datasets offer unprecedented opportunity to study
 the causal relationship between molecular markers, complex traits and diseases.
-Generally speaking, causal claims should be backed by thorough analysis resulting from
+Generally speaking \todo{I agree with discussing this but I don't think you should lead with it}, causal claims should be backed by thorough analysis resulting from
 multiple studies with differing assumptions. This raises the question
 of whether phenome-scale causal inference, where the number of pairs of to be tested
 renders this unrealistic, is even possible. Instead, in this setting researchers should focus on
@@ -730,10 +730,10 @@ of non-causal genetic correlation and differential power across phenotypes.
 We have demonstrated that our method enables researchers to conduct 
 analyses that would otherwise be extremely difficult. For example, 
 we are able to interrogate the complexity of the network by analyzing the path length
-distribution and proportion of effect explained by the shortest path. We also able to 
+distribution and proportion of effect explained by the shortest path. We are also able to 
 interpret surprising TCEs in the context of the network structure, find seemingly
-significant TCEs that are not able to be supported by the graph  structure, and
-identify concentrated sub-networks that can be analyzed jointly. By applying our
+significant TCEs that are not able to be supported by the graph structure, and
+identify densely connected sub-networks that can be analyzed jointly. By applying our
 method to the UK Biobank, we lend causal support to several recent observational studies.
 
 While we are not aware of other methods for this problem, our approach
@@ -783,25 +783,23 @@ The second step of our method involves finding a sparse inverse to a noisily mea
 matrix, and is therefore closely related to the graphical lasso. Like glasso, our method
  has a single regularization parameter that can be set in a straightforward manner.
 However, a key advantage of our approach is that we are able to incorporate
-weights. This is extremely important in our application since the standard errors
+observation weights. This is extremely important in our application since the standard errors
 of the TCE matrix can vary dramatically. This also allows us to approximately invert matrices
 with missing data, implicitly performing matrix completion by leveraging assumed
-sparsity in the inverse of the matrix. Another advantage
-of this approach is that it allows us to select the lasso parameter $\lambda$ without
-access to the underlying data by using random masks.
+sparsity in the inverse. This enables stability-based selection of lasso parameter $\lambda$ without access to the underlying data by using random masks.
 A final advantage is that this step in our approach makes no
 assumptions about the data generating process, unlike glasso which assumes the data are
-multivariate normal. We found that for many classes of graphs,
+multivariate normal \todo{I don't really agree with this, it's just a different distributional assumption}. We found that for many classes of graphs,
 inspre and glasso produced similar results, however there were some settings where glasso
 clearly performed better and vice versa.
 Moreover, our method is substantially slower than glasso, with
-complexity $O(??)$ compared to glassos $O(??)$. In spite of these limitations,
-we believe the advantages of our method for graph inference mean that it will find utility
+complexity $O(??)$ compared to glassos \todo{$O(??)$}. In spite of these limitations,
+the novel capabilities of inspre suggest it may find utility
 outside the scope of MR.
 
-Another advantage of our approach is that it only requires GWAS summary statistics.
-While the UK BioBank primary genotypes and phenotypes are readily available, summary
-statistics are much easier to share and faster to work with when the primary
+Importantly, bimmer only requires GWAS summary statistics.
+While the UK BioBank primary genotypes and phenotypes are readily available, this is not the case for many cohorts. Summary
+statistics are much easier \todo{legally or practically or both?} to share and faster to work with when the primary
 data is large~\cite{Pasaniuc2017}. They also enable researchers to work with data from a
 standardized analysis pipeline~\cite{NealeUKBB}.
 Strictly speaking, our method does not even require summary statistics. If
@@ -811,38 +809,36 @@ bimmer. In this setting, it is of paramount importance that the researcher verif
 the underlying studies were conducted in a way to minimize the effect of
 horizontal pleiotropy.
 
-
 In this work we have begun to elucidate the connection between Mendelian randomization
 and the omnigenic model~\cite{Boyle2017}. The effects of genetic variants
 can be used to find and orient edges
-in the causal graph underlying the phenotypes, and long-range effects can be modeled
+in the DCE graph underlying trait variation, and long-range effects can be modeled
 as paths in this sparse graph resulting in ubiquitous but small effects.
  Our method can be applied well beyond the scope considered
 here. We are particularly interested in the application to datasets of molecular phenotypes.
 These datasets generally have much smaller sample sizes, but molecular phenotypes also
-tend to be less polygenic with larger, localized SNP effect sizes, which improves the efficiency
-of MR. Inverse sparse regression could also be applied to datasets from CRISPR-based
-genetic perturbation experiments, where it could improve the accuracy of network estimation.
-We view all of these applications as important avenues for future work.
+tend to be less polygenic with larger \todo{is this true? might depend on definition of polygenicity}, localized SNP effect sizes, which improves the efficiency
+of MR. Inverse sparse regression could also be applied to datasets from high-throughput CRISPR-based
+genetic perturbation experiments to separate out direct effects from mediated regulatory relationships. 
 
 \section{Methods}\label{methods}
 \subsection{Trait model}
-As detailed above, our goal is to estimate a sparse causal graph, $R$, from
+Our goal is to estimate a sparse graph of direct causal effects (DCE), $R$, from
 summary association statistics between genotypes $X$ and phenotypes $Y$. We model
-the SNP effects $\beta$ and the causal graph as fixed, and assume that the genotypes
-$X$ are sampled uniformly from a population. For convenience, we assume that SNPs
+the SNP effects $\beta$ and the causal graph as fixed \todo{fixed as in fixed effects?}, and assume that the genotypes
+$X$ are sampled uniformly \todo{do you mean iid?} from a population. For convenience, we assume that SNPs
  and phenotypes have been normalized
- to have mean $0$ and variance $1$. We also assume that SNPs are uncorrelated (no LD)
+ to have mean $0$ and variance $1$. We also assume that SNPs are uncorrelated (no linkage disequilibrium, LD)
 and use LD-pruned variants in all analyses of real data.
-Consider fitting the above model $Y = (X\beta + \gamma)(I-R)^{-1} + \epsilon$
-using two-stage least-squares with $X$ as instruments. For now,
+Consider fitting the above model \todo{ref the equation} $Y = (X\beta + \gamma)(I-R)^{-1} + \epsilon$
+using two-stage least-squares with $X$ as instruments\todo{remind us what gamma and epsilon are}. \todo{I would put this into first person or passive voice rather than the imperative}For now,
  assume each SNP acts only on one phenotype
 (there is no pleiotropy) and that we know which phenotype it is.
-First regress each instrument on it's phenotype and use these effect
+First regress each instrument on its phenotype and use these effect
  estimates to calculate a set of phenotype scores for each individual.
 Next, regress each phenotype score on the observed values of the other phenotypes,
  creating a matrix containing estimates of the total causal effect (TCE) of
- each phenotype on every other. This gives observed effect matrix $\hat{\beta}$,
+ each phenotype on every other. This gives the estimated effect matrix $\hat{\beta}$,
 \begin{align*}
 \hat{\beta}_{ij} &= \left\{
  \begin{array}{ll}
@@ -852,13 +848,15 @@ Next, regress each phenotype score on the observed values of the other phenotype
  \mathbb{E}[\hat{\beta} ] &= \beta (I-R)^{-1} \circ \mathds{1}[|\beta| > 0]
 \end{align*}
 where $\mathds{1}$ is an indicator function and $\circ$ is the Hadamard matrix
-product. The TCE matrix is then given by
-
+product. The TCE matrix is then\todo{give the Y= expression or at least ref eq 1 to show where this is coming from}
 \begin{align*}
 \hat{R}^{TCE} &= \frac{1}{N} (X\hat{\beta})^{\top} Y \\
   &= \frac{1}{N} (X\hat{\beta})^{\top} Y R + \frac{1}{N}(X\hat{\beta})^{\top} X \beta +
-     \frac{1}{N}(X\hat{\beta})^{\top} \gamma + \frac{1}{N}(X\hat{\beta})^{\top} \epsilon \\
-\mathbb{E}[\hat{R}^{TCE}]  &= \mathbb{E}[\hat{R}^{TCE}] R + D[\beta (I-R)^{-1}]
+     \frac{1}{N}(X\hat{\beta})^{\top} \gamma + \frac{1}{N}(X\hat{\beta})^{\top} \epsilon 
+  \end{align*}
+Taking expectations and using that the environment random effect $\gamma$ and measurement noise $\epsilon$ have 0 mean we obtain,
+\begin{align*}
+\mathbb{E}[\hat{R}^{TCE}]  &= \mathbb{E}[\hat{R}^{TCE}] R + D[\beta (I-R)^{-1}],
 \end{align*}
 where the diagonal operator $D[X]_{i,j} = \left\{ \begin{array}{ll}
   X_{i,j} & i=j \\ 0 & i \neq j \end{array} \right.$ sets off-diagonal elements
@@ -874,7 +872,7 @@ where $/$ indicates elementwise division.
 
 In practice we don't know which SNP effects which phenotype,
 and there can be correlated pleiotropic effects.
-Intuitively, non-pleitropic SNPs will obey the relationship
+Intuitively\todo{explain this or maybe better still use a figure}, non-pleitropic SNPs will obey the relationship
 \begin{equation}\label{MR}
 \beta_{k,j} \approx \beta_{k,i} R_{i,j}
 \end{equation}
@@ -887,56 +885,53 @@ cohort are more likely to satisfy~\eqref{MR}.
  First, we split the samples
  into discovery and estimation sets, generating
 two sets of summary statistics $\hat{\beta}_{dis}, \hat{s}_{dis}$ and
-$\hat{\beta}_{est}, \hat{s}_{est}$. Next, for each
+$\hat{\beta}_{est}, \hat{s}_{est}$\todo{don't introduce these if you're not going to use them}. Next, for each
 phenotype $i$ we identify the set of SNPs marginally associated at p-value threshold $p$.
-Call this set $I_i = \{k: \hat{p}_{k, i} < p\}$. For every SNP $k \in I_i$ and
+Call this set $I_i = \{k: \hat{p}_{k, i} < p\}$\todo{this is on the discovery set?}. For every SNP $k \in I_i$ and
 every phenotype $j$, we calculate the  weight for SNP $k$ in the regression of $j$ on $i$ as
 $w^{i,j}_k = \frac{|\hat{\beta}_{k, i}| - |\hat{\beta}_{k, j}|}
-  {\sqrt{\hat{s}_{k,j}^2 (\hat{s}^2_{k, i} + \hat{s}^2_{k, j})}}$. This
-  is based on the Welch test for a two-sample difference in mean~\cite{Welch1947}.
+  {\sqrt{\hat{s}_{k,j}^2 (\hat{s}^2_{k, i} + \hat{s}^2_{k, j})}}$\todo{this is on the estimation set?}. This corresponds to the Welch test statistic for the means of two samples (with unequal variances) being different~\cite{Welch1947}.
   
 \subsection{Inverse sparse regression}
 If we knew $R^{TCE}$ exactly, we could simply invert it and plug the inverse
-into~\eqref{r_cde}. However, our estimate $\hat{R}^{TCE}$ is not necessarily
-well-conditioned or even invertable. Instead observe that in ~\eqref{r_cde}, $R$ is
+into~\eqref{r_cde}. However, we only have access to the noisy estimate $\hat{R}^{TCE}$, which is not necessarily
+well-conditioned or even invertible. Instead observe that in ~\eqref{r_cde}, $R$ is
 sparse if and only if $\hat{R}^{TCE^{-1}}$ is sparse, and so we can think of
-solving~\eqref{r_cde} as finding a sparse matrix inverse. Let $A$ be an arbitrary $D\times D$
-matrix. We seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
-
+solving~\eqref{r_cde} as finding a sparse matrix inverse \todo{only if the underlying R is actually sparse - I think you need to say that's a (very reasonably) assumption we're making}. Let $A$ be an arbitrary $D\times D$
+matrix ($\hat{R}^{TCE}$ in bimmer). We seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
 \begin{equation}
 \frac{1}{2} ||W \circ (A - U)||_F^2 + \lambda \sum_{i\neq j}|V_{ij}|
 \end{equation}
-
 We minimize this loss using alternating direction method of multipliers (ADMM)~\cite{Boyd2010}.
 Let $\Theta^k$ be a matrix of Lagrange multipliers. The updates for $U^k$, $V^k$ and $\Theta^k$
 are
 \begin{align}
 V^{k+1} &\leftarrow \arg \min_{V} \left|\left|\frac{1}{\sqrt{\rho}}\left(I-\theta^{k^\top}\right) -
-      \sqrt{\rho} U^{k^\top} V^k\right|\right|_F^2 + \lambda \sum_{i\neq j} \left|V^k_{ij} \right| \\
+      \sqrt{\rho} U^{k^\top} V\right|\right|_F^2 + \lambda \sum_{i\neq j} \left|V_{ij} \right| \\
 U_{:, d}^{k+1} &\leftarrow \left(\rho V^{k+1 ^ \top} V^{k+1} + D[W_{:, d}]\right)^{-1} \left(\rho V^{k+1 ^ \top}_{:, d} -
   \left(V^{k+1 ^ \top} \theta\right)_{:, d} + (W \circ A)_{:, d}\right) \\
 \theta^{k+1} &\leftarrow \theta_{k} + \rho(V_{k+1}U_{k+1}-I)
 \end{align}
 where $\rho$ is the penalty parameter~\cite{Boyd2010}.
-The first of these can be solved with a straightforward LASSO regression. For the second,
-we use the bigconjugate gradient stabilized method implemented
+The update for $V^{k+1}$ is a straightforward LASSO regression. For the update for $U$ 
+we use the bigconjugate \todo{big not bi?} gradient stabilized method implemented
 in the Rlinsolve package to solve the linear system
 rather than explicitly computing the inverse~\cite{You2018}.
 We always start from the initial condition $U_0 = V_0 = I$.
  For the derivation of these equations including
-the specifics of how we set
+the specifics of how we tune
 the penalty parameter see the Supplemental note.
 
-\subsection{Setting the LASSO penalty}
-Let $\phi_{\lambda}$ be a $D\times D$ matrix where entry $i, j$ is the probability that each edge
-$i,j$ is included in the graph for regularization setting $\lambda$. Our goal is to
+\subsection{Setting the LASSO penalty using stability selection}
+\todo{add an introductory sentence saying we use an adaptive of stability selection} Let $\phi_{\lambda}$ be a $D\times D$ matrix where entry $i, j$ is the probability that each edge
+$i,j$ is included in the graph for regularization parameter $\lambda$ \todo{remind use which equation lambda is being used in}. Our goal is to
 estimate $\phi_{\lambda}$ for many choices of $\lambda$ and
 turn this into a graph instability measure $D_\lambda$.
 Let $W^k_{i,j} = W_{i,j}$ with probability $p$ and $W^k_{i,j} = 0$ with
-probability $1-p$. Let $V_{\lambda}^k = f(A, W^k, \lambda)$ be
+probability $1-p$. Let $V_{\lambda}^k = f(A, W^k, \lambda)$ \todo{what is the point of introducing f? you don't use it anyway} be
  the function approximating the inverse of
 $A$ for regularization setting
-$\lambda$ and weight set $W^k$. Let $\psi^k_{\lambda} = \mathds{1}[V^k_{\lambda} > 0]$.
+$\lambda$ and weight set $W^k$. Let $\psi^k_{\lambda} = \mathds{1}[|V^k_{\lambda}| > 0]$.
 Then  $\phi_{\lambda}$ can be estimated as
 \begin{equation}
 \hat{\phi}_{\lambda} = \frac{1}{K} \sum_{k=1}^K \psi^{k}_{\lambda}
@@ -948,11 +943,11 @@ The instability measure $D_\lambda$ is estimated as~\cite{Liu2010}
 \end{equation}
 
 Clearly, $D = 0$ for very large values of $\lambda$, where $V^k_\lambda = I$
-for every mask $k$. As $\lambda$ becomes smaller, $D$ rises, but as lambda approaches $0$,
+for every mask $k$. As $\lambda$ becomes smaller, $D$ rises, but as $\lambda$ approaches $0$,
 $D\rightarrow 0$ as $V^k_\lambda \rightarrow A^+$. Following~\cite{Liu2010},
 we first normalize $\hat{D}_\lambda$ by setting it to
 $\bar{D}_\lambda = \sup_{l \leq \lambda} \hat{D}_l$ and then choose the smallest
-value of lambda with stability below a cut point $b$,
+value of $\lambda$ with stability below a cut point $b$,
 $\hat{\lambda} = \sup \{ \lambda : \bar{D}_\lambda \leq b \}$.
 
 
@@ -996,7 +991,6 @@ Now we consider the weighted version. Assume that in addition to the matrix $A$,
 also have a matrix of standard errors of the entries of $A$, $S_A$. Let
 $W = 1/S_A^2$ be a matrix of inverse variance weights. We now
 seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
-
 \begin{equation}\label{opt_weights}
 \frac{1}{2} || W \circ (A - U)||_F^2 + \lambda \sum_{i\neq j}|V_{ij}|
 \end{equation}
