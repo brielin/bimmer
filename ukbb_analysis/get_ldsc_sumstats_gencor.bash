@@ -10,6 +10,7 @@
 #   $2: LDSC results location.
 #   $3: Desired download directory.
 #   $4: Maximum number of files to download.
+#   $5: File prefix to write male/female file lists to.
 
 
 MANIFEST=$1
@@ -22,18 +23,12 @@ awk -F"\t" -vmax_dls="${MAX_DOWNLOADS}" -vdl_dir="${DOWNLOAD_DIR}" -vflist="$5" 
   FNR==NR {
     if(($9 == "z4" || $9 == "z7") && ($10 == "medium" || $10 == "high")){
       phenotypes[$1] = $1
+      print $1
     }
     next
   }
-  ($5 == "variants.tsv.bgz") {
-    split($6, arr, " ")
-    if(system("[ ! -s " dl_dir "/../" arr[4] " ]") == 0)
-      system(arr[1] " " arr[2] " " arr[3] " " dl_dir "/../" arr[4])
-    else
-      print dl_dir "/../" arr[4] " exists!"
-  }
-  ($1 in phenotypes) && ($5 ~ /male\.tsv\.bgz$/)  {
-    split($6, arr, " ")
+  ($1 in phenotypes) && ($4 == "both_sexes")  {
+    split($7, arr, " ")
     print "Processing " dl_dir "/" arr[4]
     if(system("[ ! -s " dl_dir "/" arr[4] " ]") == 0)
       system(arr[1] " " arr[2] " " arr[3] " " dl_dir "/" arr[4])
