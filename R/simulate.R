@@ -17,6 +17,47 @@ fit_exact <- function(R_tce) {
 #'
 #' @param sumstats_fit List with elements beta_hat and se_hat.
 #' @param snps_to_use List of per-phenotype pair SNP to use.
+fit_mrbma <- function(sumstats_fit, snps_to_use, max_iter = 1000, verbose = FALSE){
+  snps_to_use <- purrr::transpose(snps_to_use)
+  snp_names <- snps_to_use$names
+  snps_to_use$names <- NULL
+  pheno_names <- names(snps_to_use)
+
+  out = NULL
+  R_hat <- as.matrix(foreach::foreach(out = pheno_names, .combine = dplyr::bind_rows) %do% {
+    if(verbose){
+      print(out)
+    }
+    exp_snps <- dplyr::setdiff(unique(unlist(snp_names[names(snp_names) != out])),  snp_names[[out]])
+    exp_phenos <- pheno_names[pheno_names != out]
+    betaX <- as.matrix(sumstats_fit$beta_hat[exp_snps, exp_phenos])
+    betaXse <- as.matrix(sumstats_fit$se_hat[exp_snps, exp_phenos])
+    betaY <- sumstats_fit$beta_hat[exp_snps, out]
+    names(betaY) <- rownames(betaX)
+    betaYse <- sumstats_fit$se_hat[exp_snps, out]
+    names(betaY) <- rownames(betaXse)
+
+
+    # mrinput <- MendelianRandomization::mr_mvinput(bx = betaX, bxse = betaXse, by = betaY, byse = betaYse)
+    mrinput <- new("mvMRInput", betaX = betaX, betaY = as.matrix(betaY), betaXse = betaXse, betaYse = as.matrix(betaYse))
+    mr_res <- summarymvMR_SSS(mrinput, kmin = 1, kmax = length(pheno_names) - 1, max_iter = max_iter, print = verbose)@BestModel_Estimate
+    names(mr_res) <- exp_phenos
+    self <- c(0.0)
+    names(self) = out
+    return(c(self, mr_res))
+  })
+
+  rownames(R_hat) <- colnames(R_hat)
+  return(list("R_hat" = R_hat))
+}
+
+
+#' Fit's MVMR model to data.
+#'
+#' @importFrom foreach %do%
+#'
+#' @param sumstats_fit List with elements beta_hat and se_hat.
+#' @param snps_to_use List of per-phenotype pair SNP to use.
 fit_mvmr <- function(sumstats_fit, snps_to_use){
   snps_to_use <- purrr::transpose(snps_to_use)
   snp_names <- snps_to_use$names
@@ -41,6 +82,43 @@ fit_mvmr <- function(sumstats_fit, snps_to_use){
     self <- c(0.0)
     names(self) = out
     return(c(self, mr_res))
+  })
+
+  rownames(R_hat) <- colnames(R_hat)
+  return(list("R_hat" = R_hat))
+}
+
+
+#' Fit's MVMR model to data.
+#'
+#' @importFrom foreach %do%
+#'
+#' @param sumstats_fit List with elements beta_hat and se_hat.
+#' @param snps_to_use List of per-phenotype pair SNP to use.
+fit_glmnet <- function(sumstats_fit, snps_to_use){
+  snps_to_use <- purrr::transpose(snps_to_use)
+  snp_names <- snps_to_use$names
+  snps_to_use$names <- NULL
+  pheno_names <- names(snps_to_use)
+
+  out = NULL
+  R_hat <- as.matrix(foreach::foreach(out = pheno_names, .combine = dplyr::bind_rows) %do% {
+    exp_snps <- dplyr::setdiff(unique(unlist(snp_names[names(snp_names) != out])),  snp_names[[out]])
+    exp_phenos <- pheno_names[pheno_names != out]
+    betaX <- as.matrix(sumstats_fit$beta_hat[exp_snps, exp_phenos])
+    betaXse <- as.matrix(sumstats_fit$se_hat[exp_snps, exp_phenos])
+    betaY <- sumstats_fit$beta_hat[exp_snps, out]
+    names(betaY) <- rownames(betaX)
+    betaYse <- sumstats_fit$se_hat[exp_snps, out]
+    names(betaY) <- rownames(betaXse)
+
+    glm_coef <- coef(cv.glmnet(betaX, betaY, alpha = 0.5), s = "lambda.1se")
+    glm_coef <- as.vector(glm_coef[2:length(glm_coef)])
+
+    names(glm_coef) <- exp_phenos
+    self <- c(0.0)
+    names(self) = out
+    return(c(self, glm_coef))
   })
 
   rownames(R_hat) <- colnames(R_hat)
@@ -147,24 +225,31 @@ generate_network <- function(D, graph, prob, g, v, orient = "random"){
   node_degree <- rowSums(adj)
   for( i in 1:(D-1) ){
     for(j in (i+1):D){
-      if(R[i, j] > 0){
+      if(R[i, j] > 1e-10){
+        R_ij <- if_else(runif(1) > 0.5, R[i, j], -R[i, j])
         if(orient == "random"){
           if(runif(1) > 0.5){
             R[i, j] = 0
+            R[j, i] = R_ij
           } else{
             R[j, i] = 0
+            R[i, j] = R_ij
           }
         } else if(orient == "away"){
           if(runif(1) > node_degree[i]/(node_degree[i] + node_degree[j])){
             R[i, j] = 0
+            R[j, i] = R_ij
           } else{
             R[j, i] = 0
+            R[i, j] = R_ij
           }
         } else if(orient == "towards"){
           if(runif(1) > node_degree[j]/(node_degree[i] + node_degree[j])){
             R[i, j] = 0
+            R[j, i] = R_ij
           } else{
             R[j, i] = 0
+            R[i, j] = R_ij
           }
         }
       }
@@ -313,7 +398,7 @@ select_snps_oracle <- function(beta) {
 #' @param selected A list of lists, output of `select_snps`.
 count_instruments <- function(selected) {
   return(do.call(cbind, purrr::map(selected, function(pheno) {
-    return(purrr::map(pheno[-1], function(x){sum(x>0)}))
+    return(purrr::map(pheno[-1], function(x){sum(x>0, na.rm=T)}))
   })))
 }
 

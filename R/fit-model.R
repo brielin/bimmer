@@ -84,7 +84,7 @@ welch_test <- function(beta1, se1, beta2, se2, welch_thresh = 0.05) {
 
 
 egger_w <- function(b_exp, b_out, se_exp, se_out, weights){
-  lm_res <- summary(lm(sign(b_exp)*b_out ~ abs(b_exp), weights = weights/(mean(weights)*se_out)))
+  lm_res <- summary(lm(sign(b_exp)*b_out ~ abs(b_exp), weights = weights/(mean(weights)*(se_out**2))))
   beta_hat <- lm_res$coefficients[2, 1]
   beta_se <- lm_res$coefficients[2, 2]/min(lm_res$sigma, 1)
   beta_p <- 2*(1-pnorm(abs(beta_hat/beta_se)))
@@ -247,7 +247,7 @@ fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", 
     se_exp <- se_sub[, exp]
     run_tce_entry <- function(beta_out, se_out, out){
       mask_or_weight = get(out, snps_to_use)
-      snp_mask <- (mask_or_weight > 0) & !is.na(beta_out) & !is.na(beta_exp)
+      snp_mask <- (mask_or_weight > 0) & !is.na(mask_or_weight) & !is.na(beta_out) & !is.na(beta_exp)
       n_instruments <- sum(snp_mask)
       if ((n_instruments < min_instruments) | (exp == out)){
         list("R" = NA, "SE" = NA, "N" = n_instruments, "p" = NA)
@@ -332,7 +332,7 @@ delta_cde <- function(R_tce_inv, SE_tce, na.rm = FALSE) {
 #' @param max_nan_perc Float. Remove columns and rows that are more than
 #'   `max_nan_perc` NAs.
 #' @export
-filter_tce <- function(R_tce, SE_tce, max_R = 1.25, max_nan_perc = 0.75) {
+filter_tce <- function(R_tce, SE_tce, max_R = 1, max_SE = 0.5, max_nan_perc = 0.5) {
   R_tce[is.nan(SE_tce)] <- NA
   SE_tce[is.nan(SE_tce)] <- NA
 
@@ -341,6 +341,9 @@ filter_tce <- function(R_tce, SE_tce, max_R = 1.25, max_nan_perc = 0.75) {
   R_too_large <- abs(R_tce) > max_R
   R_tce[R_too_large] <- NA
   SE_tce[R_too_large] <- NA
+  SE_too_large <- SE_tce > max_SE
+  R_tce[SE_too_large] <- NA
+  SE_tce[SE_too_large] <- NA
 
   row_nan_perc <- rowMeans(is.na(R_tce))
   col_nan_perc <- colMeans(is.na(R_tce))
@@ -365,7 +368,7 @@ filter_tce <- function(R_tce, SE_tce, max_R = 1.25, max_nan_perc = 0.75) {
 }
 
 #' Creates an igraph from CDE matrix.
-make_igraph <- function(R_cde, min_edge_value = 0.001, max_edge_value = 0.999){
+make_igraph <- function(R_cde, min_edge_value = 0.01, max_edge_value = 0.999){
   adj_matrix <- R_cde
   adj_matrix[abs(adj_matrix) < min_edge_value] = 0
   adj_matrix[abs(adj_matrix) > max_edge_value] = 0.999

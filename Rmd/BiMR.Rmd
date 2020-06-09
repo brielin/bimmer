@@ -503,7 +503,6 @@ kable2 <- kable(table2, "latex", booktabs = T) %>%
   pack_rows("Alt: Larger sample 2, R=0.5", 16, 18)
 ```
 
-
 ```{r}
 s1 <- summary_tibble_1 %>% filter(mr_method == "egger_w") %>% mutate(Method = "W-Egger") %>%
   mutate(stat1 = round(stat1, 3), se_stat1 = round(se_stat1, 3), stat2 = round(stat2, 3), se_stat2 = round(se_stat2, 3)) %>%
