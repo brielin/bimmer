@@ -51,7 +51,7 @@ run_methods <- function(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, 
   max_row_missing <- max(rowSums(is.na(tce_res$R_tce)))
   max_col_missing <- max(colSums(is.na(tce_res$R_tce)))
   print(c(mae_tce, mean(purrr::map_int(selected_bimmer, function(x){length(x[["names"]])}))))
-  
+
   result <- foreach(method = methods, .combine = bind_rows) %do% {
     D_hat = NULL
     lambda = NULL
@@ -119,6 +119,7 @@ doMC::registerDoMC(cores = n_cores)
 plot_tibble_1 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE) %dopar% {
 # for(iter in 1:n_iter){
   run_methods(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient, methods)
+
 }
 save(plot_tibble_1, file = "~/ukbb_network/plot_data/bimmer_sim_1.Rdata")
 ```
@@ -348,6 +349,9 @@ plot_tibble_9 <- foreach(iter = 1:n_iter, .combine = bind_rows, .inorder = FALSE
 save(plot_tibble_9, file = "~/ukbb_network/plot_data/bimmer_sim_9.Rdata")
 ```
 
+```{r}
+load("~/Work/saved_rdata/bimmer_sim_10.Rdata")
+```
 
 ```{r}
 # Tenth simulation: include MR-BMA.
@@ -388,7 +392,6 @@ load("~/ukbb_network/plot_data/bimmer_sim_8.Rdata")
 load("~/ukbb_network/plot_data/bimmer_sim_9.Rdata")
 load("~/ukbb_network/plot_data/bimmer_sim_10.Rdata")
 ```
-
 
 ```{r}
 arrow_size = 4
@@ -507,4 +510,3 @@ i <- plot_tibble_9 %>%
 
 ggarrange(a, b, c, d, e, f, g, h, i, ncol = 3)
 ```
-
