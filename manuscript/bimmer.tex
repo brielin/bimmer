@@ -13,6 +13,7 @@
 \usepackage{dsfont}
 \usepackage[backend=biber, bibencoding=utf8, sorting=none]{biblatex}
 \usepackage{inputenc}
+\usepackage{hyperref}
 
 \usepackage{fullpage}
 \usepackage{float}
@@ -50,44 +51,39 @@ bidirectional mediated Mendelian randomization}
 \maketitle
 
 \begin{abstract}
-Inference of directed biological networks from observational genomics datasets is a
-notoriously difficult challenge, but is crucial for detecting core genes in the omnigenic
-model of complex traits, understanding risk factors for disease and finding pathways that
-can be targeted for treatment. Modern population-scale biobanks, containing simultaneous
-measurements of traits, molecular markers and genetic variation, offer an unprecedented
-opportunity to study biological networks. Mendelian randomization (MR) has received attention
-as a class of methods for inferring causal effects in observational data that uses genetic variants
-(SNPs) from genome-wide association studies as instrumental variables. MR methods rely on assumptions
-that limit their application to complex traits at the biobank-scale. Moreover, MR estimates
-the total causal effect (TCE) of one trait on another, which may be mediated by other factors.
-Biobanks allow researchers to simultaneously measure the effects of possible mediators, in
-principle enabling the conversion of TCE estimates into causal direct effect (CDE) estimates.
-Here, we introduce a new method, bi-directional mediated Mendelian randomization (bimmer),
-for inferring sparse networks of CDEs from biobank summary statistics. We perform bi-directional
-Mendelian randomization between every pair of phenotypes using Egger regression with a modified
-weighting scheme that reduces the influence of pleiotropic SNPs, and then convert the resulting
-matrix of TCEs into a directed network of CDEs via novel algorithm for finding a sparse matrix inverse.
-Extensive simulations demonstrate our approach is able to learn causal network structures even in
-the presence of non-causal genetic correlation. We apply bimmer to 405 phenotypes from the UK Biobank,
-inferring a CDE network with 2,826 edges that often results in several paths between nodes adding
-together to form the TCE. The CDE network allows us to both understand initially surprising effects
-and also identify likely false-positives that lack network support. We use bimmer to identify densely
-connected sub-networks with correlated downstream effects related to morphology, heart disease,
-and blood biomarkers. These sub-networks lend causal support to recent work elucidating the effect of
-testosterone on lung function, sex-hormone binding globulin on personality and BMI on nutrition among
-others. We conclude that bimmer is a powerful tool for interrogating complex trait networks.
+Inference of directed biological networks from observational genomics datasets is a crucial
+but notoriously difficult challenge. Modern population-scale biobanks, containing simultaneous
+measurements of traits, molecular markers and genetic variation, offer unprecedented opportunity
+to study biological networks. Mendelian randomization (MR) has received attention as a class
+of methods for inferring causal effects in observational data that uses genetic variants (SNPs)
+as instrumental variables, but MR methods rely on assumptions that limit their application
+to complex traits at the biobank-scale. Moreover, MR estimates the total effect of one trait 
+on another, which may be mediated by other factors. Biobanks allow simultaneous measurement 
+of possible mediators, in principle enabling the conversion of MR estimates into direct effects 
+representing a causal network. Here, we introduce a new method, bi-directional mediated Mendelian 
+randomization (bimmer), for inferring sparse causal networks from biobank summary statistics. 
+bimmer leverages a new Egger regression weighting coupled to a novel algorithm for finding a sparse
+approximate matrix inverse to learn causal network structures even in the presence of non-causal 
+genetic correlation, which we validate through extensive simulations. We apply bimmer to 405 
+phenotypes from the UK biobank and demonstrate that learning the network structure is invaluable 
+for interpreting the results of phenome-wide MR, while lending causal support to several
+recent observational studies.
 \end{abstract}
 
-\newpage
 \section{Introduction}
 Recent developments in the understanding of complex-trait genetics have
-lead to a call for increased study of biological networks~\cite{Boyle2017,Liu2019,Wray2018}.
+lead to a call for increased study of directed biological networks, because they are
+crucial for detecting core genes in the omnigenic model of complex traits,
+understanding risk factors for disease and finding pathways that can be targeted
+for treatment~\cite{Boyle2017,Liu2019,Wray2018}.
 However, interrogating the structure of networks is notoriously difficult,
 owing to factors such as unmeasured confounding and reverse causation~\cite{Parsana2019}.
 In spite of these challenges, modern population-scale biobanks 
 offer unprecedented opportunity to study biological networks
  because they can contain simultaneous measurements of
-traits, molecular markers and genetic variation~\cite{Sudlow2015,Nagai2017}.
+traits, molecular markers and genetic variation~\cite{Sudlow2015,Nagai2017}. To date,
+we are not aware of any methods that are able to infer directed biological networks
+in the presence of unmeasured confounding at the biobank-scale.
 
 Mendelian randomization (MR) has recently received increased attention as a class of methods
 that can mitigate issues in causal inference
@@ -118,8 +114,7 @@ In mimicking a randomized controlled trial, MR estimates the
 total causal effect (TCE) of A on B~\cite{Burgess2015}. This effect may be mediated by
 any number of factors. The proliferation of phenome-scale datasets
 allows researchers to simultaneously measure the effects of many possible mediators,
-in principle enabling the conversion of TCE estimates into causal direct effect (CDE)
-\todo{CDE or DCE?}
+in principle enabling the conversion of TCE estimates into direct causal effect (DCE)
 estimates, which are not mediated by any other measured factor.
 However, methods to enact this conversion are limited, either because they require complex
 processing pipelines that limit their scope~\cite{Amar2019} or because they are
@@ -152,17 +147,19 @@ We apply our method to $405$ phenotypes from the UK Biobank, finding thousands
  with correlated downstream effects.
  
 \begin{figure}\label{figure0}
-\includegraphics[width=\textwidth]{figures/bimmer_figure1.pdf}
-\caption{Overview of the bimmer model. a) Modern biobanks contains measurements of genetic variants (green squares), molecular markers
+\includegraphics[width=\textwidth]{figures/bimmer_fig1.pdf}
+\caption{Overview of the bimmer model. a) Modern biobanks contains measurements
+of genetic variants (green squares), molecular markers
 (orange triangles), complex traits (purple circles) and diseases (pink diamonds). Genetic variants
-affect these phenotypes which in turn affect each other. b) Bi-directional Mendelian randomization
-estimates the total causal effect of the phenotypes on each other, which includes both
-direct (solid arrow) and indirect (dashed arrow) effects. c) The direct effects can be
+affect these phenotypes which in turn affect each other. The presence of unmeasured latent factors
+can induce correlated pleiotropy (maroon arrows), but this effect can be reduced by down-weighting
+SNPs that seem to have an overly-strong effect on both phenotypes. b) Bi-directional Mendelian randomization
+estimates the total causal effect of the phenotypes on each other (dashed bi-directed arrows),
+which includes both direct and indirect effects. c) The direct effects can be
 found by estimating a sparse approximate inverse to the matrix of total effects, a process we
-call inverse sparse regression.}
+call inverse sparse regression. This gives an estimate of the causal network (gray arrows), which
+can be imperfect.}
 \end{figure}
-\todo{Replace with prettier picture highlighting possible pleiotropy, difference between true and 
-estimated effects.}
 
 \section{Results}
 \subsection*{Overview of model}
@@ -175,7 +172,7 @@ Assume we have $N$ individuals, $D$ phenotypes and $M$ SNPs,
 with $Y_t$ the matrix of phenotypes indexed by time $t$, $X$ the genotype
 matrix, $\beta$ the SNP effect matix and $\gamma$ a matrix of unknown
 environmental effects. Let $R$ be the $D \times D$ matrix of
-causal direct effects, with $R_{i, j}$ the CDE of phenotype $i$ on
+causal direct effects, with $R_{i, j}$ the DCE of phenotype $i$ on
 phenotype $j$. We assume that phenotypes do not effect themselves ($R_{i,i} = 0$),
 and that the network is sparse ($R$ has many entries that are $0$).
 Our goal is to estimate $R$ given summary statistics
@@ -200,7 +197,7 @@ In practice, the matrix $R^{TCE}$ need not be well-conditioned or
  even invertible, leading
 to challenges when calculating $R$ via~\eqref{r_cde_main}. Instead of calculating an exact
 or psuedo-inverse, we exploit the assumption that the underlying
-CDE matrix is sparse. Specifically, we seek matrices $U$ and $V$ such that $VU=I$, $U \approx R^{TCE}$
+DCE matrix is sparse. Specifically, we seek matrices $U$ and $V$ such that $VU=I$, $U \approx R^{TCE}$
 and $V$ is sparse. We find them by solving the following constrained optimization problem,
 \begin{equation} \label{opt_main}
 \min_{\{U, V : VU = I\}} \frac{1}{2} ||W \circ (R^{TCE} - U)||_F^2 +
@@ -219,7 +216,7 @@ For complete details, see~\ref{methods}.
 
 Some intuition for~\eqref{r_cde_main} can be gained by considering the problem
 of estimating a matrix of partial correlations for a set of observed variables.
-Analogous to the CDE, the partial correlation measures the degree to which two
+Analogous to the DCE, the partial correlation measures the degree to which two
 variables are correlated while controlling for the effect of all other measured
 variables. Given a matrix of observed (standard) correlations, $\Sigma$, the matrix of
 partial correlations is $P = -D[\Sigma^{-1}]^{-1/2} \Sigma^{-1} D[\Sigma^{-1}]^{-1/2}$. One of
@@ -429,7 +426,7 @@ could be combined with inspre to fit networks of simulated phenotypes
 from phenome-scale GWAS summary statistics. At the time of this writing
 we are not aware of any other methods for this specific problem. However,
 there are a few approaches to related problems that could be applied.
-Specifically, the CDEs between multiple exposures and a single outcome
+Specifically, the DCEs between multiple exposures and a single outcome
 can be calculated from a multiple regression of SNP effects on the outcome
 against SNP effects on the exposures~\cite{Burgess2015a}. This approach can be used
 to find sparse effects by using a LASSO or elastic net regression (elnet-Egger). A more
@@ -505,8 +502,7 @@ summary statistics to $p=5 \times 10^{-6}$ with $r^2 < 0.05$ and distance $500$ 
 the UKBB European genotypes as a reference panel. We use male summary statistics for SNP selection
 and weight estimation, and female summary statistics for TCE estimation. Finally, we removed
 phenotypes where at least $50\%$ of the standard errors of the TCE were above $0.5$
-as either an exposure or an outcome, resulting in $405$ phenotypes (Table S?).
-\todo{Table should exist and have degree columns, etc}
+as either an exposure or an outcome, resulting in $405$ phenotypes (Table S5).
 $8,268~(\sim 5\%)$ of the $163,620$ pairs of traits considered had TCEs significant at FDR $5\%$.
 
 We applied inspre~\eqref{opt_main} to the resulting TCE matrix to infer the DCE network,
@@ -520,17 +516,18 @@ which we pruned to $2,826$ edges by removing DCEs with absolute value less than 
 
 We were curious to compare estimated
 genetic correlation, weighted Egger estimated TCE ($R^{TCE}$), bimmer's
-shrunk TCE ($U$) and bimmer's inferred CDE. First, we clustered phenotypes by genetic correlation
+shrunk TCE ($U$) and bimmer's inferred DCE. First, we clustered phenotypes by genetic correlation
 to determine if the patterns observed are shared in the TCE estimates.
 While there are some similar patterns across the two matrices, the structure in the TCE estimates
 is not as well-defined (Figure~S5a-b).
 Indeed, we find that while the TCE estimates
 and genetic correlation estimates are correlated, that correlation is fairly
 weak ($r = 0.270\pm 0.005$). We actually find a slightly lower correlation between
- $U$ and $R^{TCE}$ ($r = 0.238 \pm 0.005$), but this is driven by TCE entries with high standard error that are consequently
+ $U$ and $R^{TCE}$ ($r = 0.238 \pm 0.005$), but this is driven by TCE entries with high 
+standard error that are consequently
 (and appropriately) ignored by inspre. Restricting our analysis to TCE entries with an
 SE below $0.05$ the correlation of the TCE with the genetic correlation is smaller
-than the correlation of the TCE with $U$ ($r = 0.666 \pm 0.005$ vs $r = 0.949 \pm 0.004$, respectively \todo{cool!}).
+than the correlation of the TCE with $U$ ($r = 0.666 \pm 0.005$ vs $r = 0.949 \pm 0.004$, respectively).
 Moreover, entries in $U$ tend to be close to $0$ when the corresponding
 entry in the TCE has a large standard error (mean ${|U|} = 0.0003 \pm 0.0003$ for entries of
 the TCE with SE $> 0.05$). We conclude that bimmer produces a conservative
@@ -544,10 +541,10 @@ are indirect and result in small effect sizes that do not reach
 statistical significance as TCEs
 ($6,007$ of $39,200$ connected nodes have FDR-corrected TCE $p$-value below 0.05).
 Non-significant TCE entries have an average absolute shrunk TCE of $0.0036$
-and a median CDE network path length of $3$ nodes, while
-significant entries have an average shrunk TCE of $0.029$ and CDE network path length of $2$ nodes
+and a median DCE network path length of $3$ nodes, while
+significant entries have an average shrunk TCE of $0.029$ and DCE network path length of $2$ nodes
 (Figure~\ref{figure6}a-b). Despite this, the majority
- ($3,831$ connections, $63.7\%$) of significant TCEs result from indirect paths in the CDE network.
+ ($3,831$ connections, $63.7\%$) of significant TCEs result from indirect paths in the DCE network.
 The effect explained by the shortest path between two nodes is often only a small
 fraction of the total effect: there are typically multiple paths
 between two nodes contribute to the TCE (Figure~\ref{figure6}c-d). This finding is especially pronounced 
@@ -560,21 +557,23 @@ by shortest path is sometimes greater than 1, i.e. the
 effect of the shortest path is greater than the total effect. This occurs
 when other causal paths act to cancel out the effect of the shortest path and reduce the total effect.
 
-Many indirect effects in the CDE network act through central hub vertices
+Many indirect effects in the DCE network act through central hub vertices
 with high degree. Examples include body mass index (BMI, in-degree 29, out-degree 215),
 leukocyte count (in-degree 16, out-degree 224), and
 haemoglobin concentration (in-degree 7, out-degree 122), which we discuss in detail in the next
-section. Access to the CDE network, rather than just the TCEs, allows us to both understand potentially
+section. Access to the DCE network, rather than just the TCEs, allows us to both understand potentially
 surprising effects and identify likely false-positive TCEs that lack network support.
 For example, we observed a strong TCE of ``age first had sexual intercourse'' (AFSI) on a number
 of surprising outcomes including knee pain ($U = -0.064$, $p < 3 \times 10^{-7}$),
 wheezing in the chest ($U = -0.067$, $p < 1 \times 10^{-16}$) and
 lower overall health rating ($U = -0.058$, $p < 4 \times 10^{-9}$). Closer investigation reveals
-that these effects are mediated by a CDE of AFSI on BMI, which does not survive
+that these effects are mediated by a DCE of AFSI on BMI, which does not survive
 correction for multiple testing ($R^{TCE} = -0.20 \pm 0.07$, $U = -0.37$, $p < 0.07$),
 but is required by the network to explain observed effects of AFSI on the aforementioned phenotypes.
-This may lend additional evidence to recent work showing that BMI-associated loci are involved
-in brain pathways linked to reward~\cite{Ndiaye2020}.
+While this almost certainly does not represent a literal causal effect, the network structure lends
+insight into the results and may lend additional evidence to recent work
+showing that BMI-associated loci are involved
+in neuronal pathways linked to reward~\cite{Ndiaye2020}.
 In contrast, there are highly significant TCEs that are not reflected in
 the network structure. There is no path between the nodes in $2,261$ significant TCEs.
 Compared to connected nodes with significant TCES, unconnected nodes tended to have fewer instruments
@@ -612,7 +611,7 @@ To this end, we clustered the $102$ phenotypes with non-zero out-degree using th
 outgoing shrunk TCE estimates ($U_{i, :}$) as features.
 This results in clustering of phenotypes with similar downstream effects.
 In Figure~\ref{figure5}, we show the genetic correlation (a), weighted-Egger TCE (b), shrunk TCE (c) and
-inferred CDE (d) for these $102$ phenotypes as exposures and all $405$ phenotypes as outcomes.
+inferred DCE (d) for these $102$ phenotypes as exposures and all $405$ phenotypes as outcomes.
 We identified several interesting sub-networks with numerous downstream effects. We selected four
 for further analysis, corresponding to traits associated with 1) morphology (Figure~\ref{figure5}e),
 2) blood-biomarkers (Figure~\ref{figure5}f), 3) red-blood cells (erythrocyte) (Figure~\ref{figure5}g),
@@ -623,7 +622,7 @@ bimmer puts a bi-directed edge between the two nodes, for example between BMI an
 between mean sphered cell volume and mean reticulyte volume. While this does not happen universally,
 bimmer generally succeeds at identifying groups of traits which could be analyzed jointly. 
 
-In the the heart-disease network, leukocyte count had the highest out-degree with $244$ CDEs
+In the the heart-disease network, leukocyte count had the highest out-degree with $244$ DCEs
 and $177$ FDR $5\%$ significant TCEs. The heart disease network includes several well-studied phenomena
 including the causal effects of hypertension~\cite{MacMahon1990} and high cholesterol~\cite{Castelli1992}
 on heart disease ($p < 3 \times 10^{-5}$ and $p < 1 \times 10^{-16}$ respectively). There is 
@@ -636,7 +635,7 @@ leukocyte count to both systolic blood pressure and hypertension, but these do n
 for multiple testing as TCEs ($p = 0.055$ and $p = 0.063$, respectively). We consider this evidence of
 a complex mechanism by which white blood cell traits effect heart disease risk via multiple causal pathways,
 warranting further study. One interesting downstream effect of the heart-disease sub-network is related
-to choice of pain medication. We detect a positive CDE of high cholesterol on aspirin use
+to choice of pain medication. We detect a positive DCE of high cholesterol on aspirin use
 ($R = 0.065$, $p < 3 \times 10^{-6}$) and a negative effect on ibuprofen use ($R = -0.025$, $p < 0.001$).
 This could reflect common medical advice for patients at risk of heart disease to choose aspirin,
 which has long been thought to reduce risk~\cite{Sanmuganathan2001}, and avoid ibuprofen, which
@@ -703,7 +702,7 @@ support to a recent population-based study linking HC and atrial fibrillation~\c
 \includegraphics[width=\textwidth]{figures/figure5.png}
 \caption{bimmer identifies densely-connected sub-networks with correlated downstream effects.
 We show (a) the genetic correlation, (b) the weighted Egger TCE, (c) the bimmer shrunk
-TCE and (d) the bimmer inferred CDE for the 102 phenotypes with non-zero out-degree (y-axis)
+TCE and (d) the bimmer inferred DCE for the 102 phenotypes with non-zero out-degree (y-axis)
 against all 405 phenotypes (x-axis), clustered by shrunk TCE. To emphasize the smaller effects
 in the latter plots, we use an alternate scale which emphasizes weak positive and negative effects
 (0.01 to 0.1, light blue and red, respectively) and strong positive and negative effects
@@ -719,12 +718,6 @@ As biobanks continue to grow in size and scope, new methods that are able to
 leverage their power while overcoming common pitfalls are required.
 These datasets offer unprecedented opportunity to study
 the causal relationship between molecular markers, complex traits and diseases.
-Generally speaking \todo{I agree with discussing this but I don't think you should lead with it}, causal claims should be backed by thorough analysis resulting from
-multiple studies with differing assumptions. This raises the question
-of whether phenome-scale causal inference, where the number of pairs of to be tested
-renders this unrealistic, is even possible. Instead, in this setting researchers should focus on
-causal discovery, learning putatively causal structures that can suggest avenues for further
-work.
 Here, we have introduced bi-directional mediated Mendelian randomization (bimmer),
 a novel approach to inferring sparse networks of causal direct effects from phenome-scale
 GWAS summary statistics. We have shown through extensive simulations that
@@ -734,10 +727,19 @@ We have demonstrated that our method enables researchers to conduct
 analyses that would otherwise be extremely difficult. For example, 
 we are able to interrogate the complexity of the network by analyzing the path length
 distribution and proportion of effect explained by the shortest path. We are also able to 
-interpret surprising TCEs in the context of the network structure, find seemingly
-significant TCEs that are not able to be supported by the graph structure, and
 identify densely connected sub-networks that can be analyzed jointly. By applying our
 method to the UK Biobank, we lend causal support to several recent observational studies.
+
+Generally speaking, causal claims should be backed by thorough analysis resulting from
+multiple studies with differing assumptions. This raises the question
+of whether phenome-scale causal inference, where the number of pairs of to be tested
+renders this unrealistic, is even possible. Instead, in this setting researchers should focus on
+causal network discovery, learning putatively causal structures that can suggest avenues for further
+work. We have demonstrated that causal discovery is invaluable for understanding
+the results of phenome-wide Mendelian randomization. Simultaneous inference of edges in
+the causal graph can remove false-positives with significant TCE $p$-values that
+cannot be incorporated into the network, and allows researchers to 
+interpret surprising TCEs in the context of the network structure.
 
 While we are not aware of other methods for this problem, our approach
 builds on recent MR literature. In particular, multi-variable Mendelian
@@ -789,14 +791,17 @@ However, a key advantage of our approach is that we are able to incorporate
 observation weights. This is extremely important in our application since the standard errors
 of the TCE matrix can vary dramatically. This also allows us to approximately invert matrices
 with missing data, implicitly performing matrix completion by leveraging assumed
-sparsity in the inverse. This enables stability-based selection of lasso parameter $\lambda$ without access to the underlying data by using random masks.
+sparsity in the inverse. This enables stability-based selection of lasso parameter
+ $\lambda$ without access to the underlying data by using random masks.
 A final advantage is that this step in our approach makes no
 assumptions about the data generating process, unlike glasso which assumes the data are
 multivariate normal \todo{I don't really agree with this, it's just a different distributional assumption}. We found that for many classes of graphs,
 inspre and glasso produced similar results, however there were some settings where glasso
 clearly performed better and vice versa.
-Moreover, our method is substantially slower than glasso, with
-complexity $O(??)$ compared to glassos \todo{$O(??)$}. In spite of these limitations,
+Moreover, our method is substantially slower than glasso. If $\kappa$ is the number
+of iterations required to reach convergence, glasso very roughly requires time
+$O(\kappa D^3)$, whereas inspre requires time roughly $O(\kappa D^4)$ for $D$ phenotypes. We suspect that
+there may be ways of improving the speed of our approach, and in spite of these limitations,
 the novel capabilities of inspre suggest it may find utility
 outside the scope of MR.
 
@@ -821,7 +826,7 @@ as paths in this sparse graph resulting in ubiquitous but small effects.
  Our method can be applied well beyond the scope considered
 here. We are particularly interested in the application to datasets of molecular phenotypes.
 These datasets generally have much smaller sample sizes, but molecular phenotypes also
-tend to be less polygenic with larger \todo{is this true? might depend on definition of polygenicity}, localized SNP effect sizes, which improves the efficiency
+tend to have larger, localized SNP effect sizes~\cite{gtex2017}, which improves the efficiency
 of MR. Inverse sparse regression could also be applied to datasets from high-throughput CRISPR-based
 genetic perturbation experiments to separate out direct effects from mediated regulatory relationships. 
 
@@ -906,7 +911,7 @@ unequal variances~\cite{Welch1947}.
 If we knew $R^{TCE}$ exactly, we could simply invert it and plug the inverse
 into~\eqref{r_cde}. However, we only have access to the noisy estimate $\hat{R}^{TCE}$,
 which is not necessarily well-conditioned or even invertible. Instead, we assume that
-the underlying directed graph of CDE is sparse. We observe that in ~\eqref{r_cde}, $R$ is
+the underlying directed graph of DCE is sparse. We observe that in ~\eqref{r_cde}, $R$ is
 sparse if and only if $\hat{R}^{TCE^{-1}}$ is sparse, and so we can think of
 solving~\eqref{r_cde} as finding a sparse matrix inverse. Let $A$ be an arbitrary $D\times D$
 matrix ($\hat{R}^{TCE}$ in bimmer). We seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
@@ -964,6 +969,21 @@ $\bar{D}_\lambda = \sup_{l \leq \lambda} \hat{D}_l$ and then choose the smallest
 value of $\lambda$ with stability below a cut point $b$,
 $\hat{\lambda} = \sup \{ \lambda : \bar{D}_\lambda \leq b \}$.
 
+\section{Code Availability}
+All code used in the production of this manuscript is available at \url{https://github.com/brielin/bimmer}
+and \url{https://github.com/brielin/inspre}. The full data analysis results are available
+at \url{https://www.dropbox.com/s/lgf54tmoqu4u8d5/all_data.csv?dl=0}.
+
+\section{Acknowledgments}
+BCB would like to thank Lior Pachter and Nicolas Bray for insightful discussion of the
+proposed method. DAK would like to thank Jonathan Pritchard for useful feedback on the
+initial concept. BCB is funded by post-doctoral fellowship from the Data Science Institute at
+Columbia University.
+
+\section{Author Contributions}
+BCB and DAK jointly formulated the model and estimation procedure.
+BCB wrote the code, conduced analyses, and drafted the manuscript.
+DAK supervised and assisted with editing the manuscript.
 
 \printbibliography
 
