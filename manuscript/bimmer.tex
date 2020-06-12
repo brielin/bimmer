@@ -126,7 +126,7 @@ lacks cycles, which are thought to be an important part of real biological netwo
 
 Here, we introduce an approach called
 \emph{bi-directional mediated Mendelian randomization} (bimmer)
-for inferring sparse networks of causal direct effects from phenome-scale
+for inferring sparse networks of direct causal effects from phenome-scale
 GWAS summary statistics.
 Our approach has two parts. First, we perform bi-directional Mendelian randomization
 between every pair of phenotypes using Egger regression with a
@@ -135,7 +135,7 @@ influence of pleiotropic SNPs.
 This gives an estimate of the TCE of each phenotype on every other (Figure~\ref{figure0}a-b).
 Second,
 we perform a causal mediation analysis to convert the matrix
-of total causal effects into a sparse, directed network of causal direct effects.
+of total causal effects into a sparse, directed network of direct causal effects.
 We show that this conversion can be modeled as an $L_1$-regularized matrix inverse problem,
 drawing analogy to the graphical lasso~\cite{Friedman2007}, and introduce a new
 algorithm for finding a sparse inverse to a partially-observed matrix called
@@ -172,7 +172,7 @@ Assume we have $N$ individuals, $D$ phenotypes and $M$ SNPs,
 with $Y_t$ the matrix of phenotypes indexed by time $t$, $X$ the genotype
 matrix, $\beta$ the SNP effect matix and $\gamma$ a matrix of unknown
 environmental effects. Let $R$ be the $D \times D$ matrix of
-causal direct effects, with $R_{i, j}$ the DCE of phenotype $i$ on
+direct causal effects, with $R_{i, j}$ the DCE of phenotype $i$ on
 phenotype $j$. We assume that phenotypes do not effect themselves ($R_{i,i} = 0$),
 and that the network is sparse ($R$ has many entries that are $0$).
 Our goal is to estimate $R$ given summary statistics
@@ -187,7 +187,7 @@ if the largest eigenvalue of $R$ has magnitude below 1.
 Let $R^{TCE}$ be the matrix of TCE estimates from MR, with $R^{TCE}_{i,j}$ the total
 causal effect of phenotype $i$ on phenotype $j$ and $S_{i,j}$ it's standard error.
 We show in section~\ref{methods} that under this model,
-\begin{equation}\label{r_cde_main}
+\begin{equation}\label{r_dce_main}
 R = I - R^{TCE^{-1}} D[1 / R^{TCE^{-1}}]
 \end{equation}
 where $D$ is an operator that sets all off-diagonal elements to 0, and $/$
@@ -195,7 +195,7 @@ represents element-wise division.
 
 In practice, the matrix $R^{TCE}$ need not be well-conditioned or
  even invertible, leading
-to challenges when calculating $R$ via~\eqref{r_cde_main}. Instead of calculating an exact
+to challenges when calculating $R$ via~\eqref{r_dce_main}. Instead of calculating an exact
 or psuedo-inverse, we exploit the assumption that the underlying
 DCE matrix is sparse. Specifically, we seek matrices $U$ and $V$ such that $VU=I$, $U \approx R^{TCE}$
 and $V$ is sparse. We find them by solving the following constrained optimization problem,
@@ -206,7 +206,7 @@ and $V$ is sparse. We find them by solving the following constrained optimizatio
 where $W = W_{i,j} = 1/S_{i,j}^2$ is a set of per-entry inverse variance weights,
 and $\lambda$ is the $L_1$ shrinkage parameter~\cite{Friedman2007,Tishbirani1996}.
 We refer to $U$ as bimmer shrunk estimates of the TCE, and
-use $V \approx R^{TCE^{-1}}$ to solve~\eqref{r_cde_main}.
+use $V \approx R^{TCE^{-1}}$ to solve~\eqref{r_dce_main}.
  Note that in this method, missing entries in $R^{TCE}$ can be accommodated simply
 by setting their weights to 0. We use this property to our advantage in choosing the
 regularization parameter. Specifically, we use a novel adaptation of Stability Approach
@@ -214,7 +214,7 @@ to Regularization Selection (StARS)~\cite{Liu2010} where we mask entries of the 
 in order to induce variance in the estimated graph during cross-validation.
 For complete details, see~\ref{methods}.
 
-Some intuition for~\eqref{r_cde_main} can be gained by considering the problem
+Some intuition for~\eqref{r_dce_main} can be gained by considering the problem
 of estimating a matrix of partial correlations for a set of observed variables.
 Analogous to the DCE, the partial correlation measures the degree to which two
 variables are correlated while controlling for the effect of all other measured
@@ -419,7 +419,7 @@ missingness. Instead, the glasso algorithm diverged and the program returned
 a matrix of NA values (Figure~S2).
 
 
-\subsubsection*{bimmer robustly recovers causal direct effect networks}
+\subsubsection*{bimmer robustly recovers direct causal effect networks}
 
 Our final goal was to show that bi-directional Mendelian randomization
 could be combined with inspre to fit networks of simulated phenotypes
@@ -492,7 +492,7 @@ performs quite poorly compared to bimmer.}
 
 
 \subsection*{Application to 405 traits from the UK Biobank}
-\subsubsection*{bimmer identifies thousands of causal direct effects in complex pathways}
+\subsubsection*{bimmer identifies thousands of direct causal effects in complex pathways}
 We obtained summary statistics for gender-split UK Biobank phenotypes from
 the Neale lab~\cite{NealeUKBB}. For ease of interpretation,
 we transformed all effect sizes to the per-variance scale. As previously suggested~\cite{BulikSullivan2015,NealeUKBB},
@@ -539,7 +539,7 @@ downstream causal effects on the traits we consider. However, there is a path fr
 out-degree to every other node in the network. The majority of these connections
 are indirect and result in small effect sizes that do not reach
 statistical significance as TCEs
-($6,007$ of $39,200$ connected nodes have FDR-corrected TCE $p$-value below 0.05).
+($6,007$ of $39,200$ connected nodes have FDR-corrected TCE $p$-value above 0.05).
 Non-significant TCE entries have an average absolute shrunk TCE of $0.0036$
 and a median DCE network path length of $3$ nodes, while
 significant entries have an average shrunk TCE of $0.029$ and DCE network path length of $2$ nodes
@@ -719,7 +719,7 @@ leverage their power while overcoming common pitfalls are required.
 These datasets offer unprecedented opportunity to study
 the causal relationship between molecular markers, complex traits and diseases.
 Here, we have introduced bi-directional mediated Mendelian randomization (bimmer),
-a novel approach to inferring sparse networks of causal direct effects from phenome-scale
+a novel approach to inferring sparse networks of direct causal effects from phenome-scale
 GWAS summary statistics. We have shown through extensive simulations that
 bimmer is able to learn many kinds of causal graph structures even in the presence
 of non-causal genetic correlation and differential power across phenotypes.
@@ -743,7 +743,7 @@ interpret surprising TCEs in the context of the network structure.
 
 While we are not aware of other methods for this problem, our approach
 builds on recent MR literature. In particular, multi-variable Mendelian
-randomization methods are able to compute causal direct effects when there
+randomization methods are able to compute direct causal effects when there
 are multiple potential exposures and a single outcome~\cite{Zuber2020,Burgess2015a}. While
 these methods work well in that setting, we have shown that they are not well-suited
 to the more general network inference problem that we consider here. Another approach, network
@@ -876,7 +876,7 @@ where the diagonal operator $D[X]_{i,j} = \left\{ \begin{array}{ll}
 this tells us that $R^{TCE}$ satisfies the recurrence
   $R^{TCE}$ = $R^{TCE} R$ off the diagonal, from
   which it follows that~\cite{Pachter},
-\begin{equation}\label{r_cde}
+\begin{equation}\label{r_dce}
 R = I - R^{TCE^{-1}} D[1 / R^{TCE^{-1}}]
 \end{equation}
 where $/$ indicates elementwise division.
@@ -909,11 +909,11 @@ unequal variances~\cite{Welch1947}.
   
 \subsection{Inverse sparse regression}
 If we knew $R^{TCE}$ exactly, we could simply invert it and plug the inverse
-into~\eqref{r_cde}. However, we only have access to the noisy estimate $\hat{R}^{TCE}$,
+into~\eqref{r_dce}. However, we only have access to the noisy estimate $\hat{R}^{TCE}$,
 which is not necessarily well-conditioned or even invertible. Instead, we assume that
-the underlying directed graph of DCE is sparse. We observe that in ~\eqref{r_cde}, $R$ is
+the underlying directed graph of DCE is sparse. We observe that in ~\eqref{r_dce}, $R$ is
 sparse if and only if $\hat{R}^{TCE^{-1}}$ is sparse, and so we can think of
-solving~\eqref{r_cde} as finding a sparse matrix inverse. Let $A$ be an arbitrary $D\times D$
+solving~\eqref{r_dce} as finding a sparse matrix inverse. Let $A$ be an arbitrary $D\times D$
 matrix ($\hat{R}^{TCE}$ in bimmer). We seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
 \begin{equation}\label{opt_methods}
 \frac{1}{2} ||W \circ (A - U)||_F^2 + \lambda \sum_{i\neq j}|V_{ij}|
