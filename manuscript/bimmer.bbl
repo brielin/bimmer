@@ -831,6 +831,87 @@
       \endverb
       \keyw{BMI,CRP,FTO,Mendelian randomization,hsCRP}
     \endentry
+    \entry{Richmond2014}{article}{}
+      \name{author}{6}{}{%
+        {{hash=8c608fa1cb9871eccb6a4ea5d346ba65}{%
+           family={Richmond},
+           familyi={R\bibinitperiod},
+           given={Rebecca\bibnamedelima C.},
+           giveni={R\bibinitperiod\bibinitdelim C\bibinitperiod}}}%
+        {{hash=f365425221d3fb3467784fb7f9e04337}{%
+           family={{Davey Smith}},
+           familyi={D\bibinitperiod},
+           given={George},
+           giveni={G\bibinitperiod}}}%
+        {{hash=14755fd0ac31ed826504741389c06cbe}{%
+           family={Ness},
+           familyi={N\bibinitperiod},
+           given={Andy\bibnamedelima R.},
+           giveni={A\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
+        {{hash=d7d125c64e58ad693dd5c1212b4a66b5}{%
+           family={Hoed},
+           familyi={H\bibinitperiod},
+           given={Marcel},
+           giveni={M\bibinitperiod},
+           prefix={den},
+           prefixi={d\bibinitperiod}}}%
+        {{hash=fa546ab700970576f1a3360ad740129f}{%
+           family={McMahon},
+           familyi={M\bibinitperiod},
+           given={George},
+           giveni={G\bibinitperiod}}}%
+        {{hash=c99ae2407f914600407c78e0dd5e7ca7}{%
+           family={Timpson},
+           familyi={T\bibinitperiod},
+           given={Nicholas\bibnamedelima J.},
+           giveni={N\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+      }
+      \name{editor}{1}{}{%
+        {{hash=96a917df4f692b59e3d0aec82288db7c}{%
+           family={Ludwig},
+           familyi={L\bibinitperiod},
+           given={David\bibnamedelima S.},
+           giveni={D\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Public Library of Science}%
+      }
+      \strng{namehash}{84af47d71969f31065b71757b57ac196}
+      \strng{fullhash}{d040a514e1928bc463a293b1b743c8f4}
+      \strng{bibnamehash}{84af47d71969f31065b71757b57ac196}
+      \strng{authorbibnamehash}{84af47d71969f31065b71757b57ac196}
+      \strng{authornamehash}{84af47d71969f31065b71757b57ac196}
+      \strng{authorfullhash}{d040a514e1928bc463a293b1b743c8f4}
+      \strng{editorbibnamehash}{96a917df4f692b59e3d0aec82288db7c}
+      \strng{editornamehash}{96a917df4f692b59e3d0aec82288db7c}
+      \strng{editorfullhash}{96a917df4f692b59e3d0aec82288db7c}
+      \field{sortinit}{6}
+      \field{sortinithash}{57e57fb8451e7fcfa45d1e069f6d3136}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Background:Cross-sectional studies have shown that objectively measured physical activity is associated with childhood adiposity, and a strong inverse dose-response association with body mass index (BMI) has been found. However, few studies have explored the extent to which this association reflects reverse causation. We aimed to determine whether childhood adiposity causally influences levels of physical activity using genetic variants reliably associated with adiposity to estimate causal effects.Methods and Findings:The Avon Longitudinal Study of Parents and Children collected data on objectively assessed activity levels of 4,296 children at age 11 y with recorded BMI and genotypic data. We used 32 established genetic correlates of BMI combined in a weighted allelic score as an instrumental variable for adiposity to estimate the causal effect of adiposity on activity.In observational analysis, a 3.3 kg/m2 (one standard deviation) higher BMI was associated with 22.3 (95{\%} CI, 17.0, 27.6) movement counts/min less total physical activity (p = 1.6\x{00d7}10-16), 2.6 (2.1, 3.1) min/d less moderate-to-vigorous-intensity activity (p = 3.7\x{00d7}10-29), and 3.5 (1.5, 5.5) min/d more sedentary time (p = 5.0\x{00d7}10-4). In Mendelian randomization analyses, the same difference in BMI was associated with 32.4 (0.9, 63.9) movement counts/min less total physical activity (p = 0.04) ({\~{}}5.3{\%} of the mean counts/minute), 2.8 (0.1, 5.5) min/d less moderate-to-vigorous-intensity activity (p = 0.04), and 13.2 (1.3, 25.2) min/d more sedentary time (p = 0.03). There was no strong evidence for a difference between variable estimates from observational estimates. Similar results were obtained using fat mass index. Low power and poor instrumentation of activity limited causal analysis of the influence of physical activity on BMI.Conclusions:Our results suggest that increased adiposity causes a reduction in physical activity in children and support research into the targeting of BMI in efforts to increase childhood activity levels. Importantly, this does not exclude lower physical activity also leading to increased adiposity, i.e., bidirectional causation.Please see later in the article for the Editors' Summary. {{$\copyright$}} 2014 Richmond et al.}
+      \field{issn}{1549-1676}
+      \field{journaltitle}{PLoS Medicine}
+      \field{month}{3}
+      \field{number}{3}
+      \field{title}{{Assessing Causality in the Association between Child Adiposity and Physical Activity Levels: A Mendelian Randomization Analysis}}
+      \field{volume}{11}
+      \field{year}{2014}
+      \field{pages}{e1001618}
+      \range{pages}{-1}
+      \verb{doi}
+      \verb 10.1371/journal.pmed.1001618
+      \endverb
+      \verb{file}
+      \verb ::
+      \endverb
+      \verb{urlraw}
+      \verb https://dx.plos.org/10.1371/journal.pmed.1001618
+      \endverb
+      \verb{url}
+      \verb https://dx.plos.org/10.1371/journal.pmed.1001618
+      \endverb
+    \endentry
     \entry{Pickrell2016}{article}{}
       \name{author}{6}{}{%
         {{hash=87919ca7a0f109d5d6e0bde5640f7575}{%
@@ -3365,8 +3446,8 @@
       \strng{authorbibnamehash}{c8eb2040fc096fe46b725df485d3f82c}
       \strng{authornamehash}{c8eb2040fc096fe46b725df485d3f82c}
       \strng{authorfullhash}{e49b9c97d102d5fed1f3c0fbb407ceef}
-      \field{sortinit}{2}
-      \field{sortinithash}{cbff857e587bcb4635511624d773949e}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{The authors examined the association between white blood cell (WBC) count and incidence of coronary heart disease and ischemic stroke and mortality from cardiovascular disease in 13,555 African-American and White men and women from the Atherosclerosis Risk in Communities (ARIC) Study. Blood was drawn at the ARIC baseline examination, beginning in 1987-1989. During an average of 8 years of follow-up (through December 1996), there were 488 incident coronary heart disease events, 220 incident strokes, and 258 deaths from cardiovascular disease. After adjustment for age, sex, ARIC field center, and multiple risk factors, there was a direct association between WBC count and incidence of coronary heart disease (p {<} 0.001 for trend) and stroke (p for trend {<} 0.001) and mortality from cardiovascular disease (p for trend {<} 0.001) in African Americans. The African Americans in the highest quartile of WBC count (\x{2265}7,000 cells/mm 3) had 1.9 times the risk of incident coronary heart disease (95{\%} confidence interval (CI): 1.19, 3.09), 1.9 times the risk of incident ischemic stroke (95{\%} CI: 1.03, 3.34), and 2.3 times the risk of cardiovascular disease mortality (95{\%} CI: 1.38, 3.72) as their counterparts in the lowest quartile of WBC count ({<}4,800 cells/mm 3). These associations were similar in Whites and in never smokers. An elevated WBC count is directly associated with increased incidence of coronary heart disease and ischemic stroke and mortality from cardiovascular disease in African-American and White men and women. Am J Epidemiol 2001;154:758-64.}
@@ -4080,87 +4161,6 @@
       \range{pages}{-1}
       \verb{doi}
       \verb 10.1016/j.paid.2013.07.226
-      \endverb
-    \endentry
-    \entry{Richmond2014}{article}{}
-      \name{author}{6}{}{%
-        {{hash=8c608fa1cb9871eccb6a4ea5d346ba65}{%
-           family={Richmond},
-           familyi={R\bibinitperiod},
-           given={Rebecca\bibnamedelima C.},
-           giveni={R\bibinitperiod\bibinitdelim C\bibinitperiod}}}%
-        {{hash=f365425221d3fb3467784fb7f9e04337}{%
-           family={{Davey Smith}},
-           familyi={D\bibinitperiod},
-           given={George},
-           giveni={G\bibinitperiod}}}%
-        {{hash=14755fd0ac31ed826504741389c06cbe}{%
-           family={Ness},
-           familyi={N\bibinitperiod},
-           given={Andy\bibnamedelima R.},
-           giveni={A\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
-        {{hash=d7d125c64e58ad693dd5c1212b4a66b5}{%
-           family={Hoed},
-           familyi={H\bibinitperiod},
-           given={Marcel},
-           giveni={M\bibinitperiod},
-           prefix={den},
-           prefixi={d\bibinitperiod}}}%
-        {{hash=fa546ab700970576f1a3360ad740129f}{%
-           family={McMahon},
-           familyi={M\bibinitperiod},
-           given={George},
-           giveni={G\bibinitperiod}}}%
-        {{hash=c99ae2407f914600407c78e0dd5e7ca7}{%
-           family={Timpson},
-           familyi={T\bibinitperiod},
-           given={Nicholas\bibnamedelima J.},
-           giveni={N\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
-      }
-      \name{editor}{1}{}{%
-        {{hash=96a917df4f692b59e3d0aec82288db7c}{%
-           family={Ludwig},
-           familyi={L\bibinitperiod},
-           given={David\bibnamedelima S.},
-           giveni={D\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {Public Library of Science}%
-      }
-      \strng{namehash}{84af47d71969f31065b71757b57ac196}
-      \strng{fullhash}{d040a514e1928bc463a293b1b743c8f4}
-      \strng{bibnamehash}{84af47d71969f31065b71757b57ac196}
-      \strng{authorbibnamehash}{84af47d71969f31065b71757b57ac196}
-      \strng{authornamehash}{84af47d71969f31065b71757b57ac196}
-      \strng{authorfullhash}{d040a514e1928bc463a293b1b743c8f4}
-      \strng{editorbibnamehash}{96a917df4f692b59e3d0aec82288db7c}
-      \strng{editornamehash}{96a917df4f692b59e3d0aec82288db7c}
-      \strng{editorfullhash}{96a917df4f692b59e3d0aec82288db7c}
-      \field{sortinit}{3}
-      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{abstract}{Background:Cross-sectional studies have shown that objectively measured physical activity is associated with childhood adiposity, and a strong inverse dose-response association with body mass index (BMI) has been found. However, few studies have explored the extent to which this association reflects reverse causation. We aimed to determine whether childhood adiposity causally influences levels of physical activity using genetic variants reliably associated with adiposity to estimate causal effects.Methods and Findings:The Avon Longitudinal Study of Parents and Children collected data on objectively assessed activity levels of 4,296 children at age 11 y with recorded BMI and genotypic data. We used 32 established genetic correlates of BMI combined in a weighted allelic score as an instrumental variable for adiposity to estimate the causal effect of adiposity on activity.In observational analysis, a 3.3 kg/m2 (one standard deviation) higher BMI was associated with 22.3 (95{\%} CI, 17.0, 27.6) movement counts/min less total physical activity (p = 1.6\x{00d7}10-16), 2.6 (2.1, 3.1) min/d less moderate-to-vigorous-intensity activity (p = 3.7\x{00d7}10-29), and 3.5 (1.5, 5.5) min/d more sedentary time (p = 5.0\x{00d7}10-4). In Mendelian randomization analyses, the same difference in BMI was associated with 32.4 (0.9, 63.9) movement counts/min less total physical activity (p = 0.04) ({\~{}}5.3{\%} of the mean counts/minute), 2.8 (0.1, 5.5) min/d less moderate-to-vigorous-intensity activity (p = 0.04), and 13.2 (1.3, 25.2) min/d more sedentary time (p = 0.03). There was no strong evidence for a difference between variable estimates from observational estimates. Similar results were obtained using fat mass index. Low power and poor instrumentation of activity limited causal analysis of the influence of physical activity on BMI.Conclusions:Our results suggest that increased adiposity causes a reduction in physical activity in children and support research into the targeting of BMI in efforts to increase childhood activity levels. Importantly, this does not exclude lower physical activity also leading to increased adiposity, i.e., bidirectional causation.Please see later in the article for the Editors' Summary. {{$\copyright$}} 2014 Richmond et al.}
-      \field{issn}{1549-1676}
-      \field{journaltitle}{PLoS Medicine}
-      \field{month}{3}
-      \field{number}{3}
-      \field{title}{{Assessing Causality in the Association between Child Adiposity and Physical Activity Levels: A Mendelian Randomization Analysis}}
-      \field{volume}{11}
-      \field{year}{2014}
-      \field{pages}{e1001618}
-      \range{pages}{-1}
-      \verb{doi}
-      \verb 10.1371/journal.pmed.1001618
-      \endverb
-      \verb{file}
-      \verb ::
-      \endverb
-      \verb{urlraw}
-      \verb https://dx.plos.org/10.1371/journal.pmed.1001618
-      \endverb
-      \verb{url}
-      \verb https://dx.plos.org/10.1371/journal.pmed.1001618
       \endverb
     \endentry
     \entry{Locke2015}{article}{}
@@ -12824,8 +12824,8 @@
       \strng{authorbibnamehash}{059c1a4d3f73f79262e66893b9121aad}
       \strng{authornamehash}{059c1a4d3f73f79262e66893b9121aad}
       \strng{authorfullhash}{059c1a4d3f73f79262e66893b9121aad}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{sortinit}{5}
+      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{title}{{The network nonsense of Albert-L{\'{a}}szl{\'{o}} Barab{\'{a}}si | Bits of DNA}}
