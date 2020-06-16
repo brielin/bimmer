@@ -80,8 +80,8 @@ However, interrogating the causal structure of networks is notoriously difficult
 owing to factors such as unmeasured confounding and reverse causation~\cite{Parsana2019}.
 In spite of these challenges, modern population-scale biobanks 
 offer unprecedented opportunity to study biological networks
- because they contain simultaneous measurements of
-traits, molecular markers and genetic variation~\cite{Sudlow2015,Nagai2017}. To date,
+ because they contain measurements of
+traits, molecular markers and genetic variation in the same individuals~\cite{Sudlow2015,Nagai2017}. To date,
 there are no methods that are able to infer directed biological networks
 in the presence of unmeasured confounding at the biobank-scale.
 
@@ -113,7 +113,7 @@ is questionable~\cite{OConnor2018}.
 In mimicking a randomized controlled trial, MR estimates the
 total causal effect (TCE) of A on B~\cite{Burgess2015}. This effect may be mediated by
 any number of factors. The proliferation of phenome-scale datasets
-allows researchers to simultaneously measure the effects of many possible mediators,
+allows researchers to measure the effects of many possible mediators,
 in principle enabling the conversion of TCE estimates into direct causal effect (DCE)
 estimates, which are not mediated by any other measured factor.
 However, methods to enact this conversion are limited, either because they require complex
@@ -146,7 +146,7 @@ We apply our method to $405$ phenotypes from the UK Biobank, finding thousands
  of direct causal effects, complex causal pathways, and densely-connected sub-networks
  with correlated downstream effects. 
  
-\begin{figure}\label{figure0}
+\begin{figure}
 \includegraphics[width=\textwidth]{figures/bimmer_fig1.pdf}
 \caption{Overview of the bimmer model. a) Modern biobanks contains measurements
 of genetic variants (green squares), molecular markers
@@ -160,7 +160,9 @@ which includes both direct and indirect effects. c) The direct effects can be
 found by estimating a sparse approximate inverse to the matrix of total effects, a process we
 call inverse sparse regression. This gives an estimate of the causal network (gray arrows), which
 can be imperfect.}
+\label{figure0}
 \end{figure}
+
 
 \section{Results}
 \subsection*{Overview of model}
@@ -289,7 +291,7 @@ again substantially reduces the error rate, from $0.284$ to $0.087$ in
 the $A\rightarrow B$ direction and from $0.492$ to $0.029$ in the 
 $B\rightarrow A$ direction (Figure~\ref{figure1}c, Table~S1).
 
-\begin{figure}\label{figure1}
+\begin{figure}
 \includegraphics[width=\textwidth]{figures/figure1.pdf}
 \caption{Weighted Egger regression reduces false positives and increases power
  in bi-directional MR. We simulated GWAS summary statistics for two phenotypes
@@ -308,7 +310,8 @@ independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
  lower sample size. Our weighting scheme improves power, but not as much as in (d). f) $A$
   effects $B$, but $A$ has a much smaller sample size. Our weighting scheme substantially increases
   power. We conduced $1000$ simulations for each null experiment (a-c) and $250$ simulations
-  per effect size for each alternative experiment (d-f). }
+  per effect size for each alternative experiment (d-f).}
+  \label{figure1}
 \end{figure}
 
 Next, we wanted to asses the power of our approach under the one-way alternate
@@ -333,31 +336,14 @@ hypothesis. We tested pairs of effects ranging from $-0.5$ to $0.5$ in both coho
 Here we conduct two simulations: one with equal sample size of $N=100,000$,
 and one with unequal sample sizes $N_1 = 200,000$ and $N_2 = 50,000$.
 In all settings, our approach improves power
-substantially over standard Egger regression (Figure~\ref{figure2}a-d). As with
+substantially over standard Egger regression (Figure~S1a-d). As with
 the one-way alternative, this is particularly apparent when the outcome has a larger
-sample size than the exposure (Figure~\ref{figure2}d). We also observed that both
+sample size than the exposure (Figure~S1d). We also observed that both
 methods had lower power when $R_{12} \approx -R_{21}$ and vice versa, especially when
 $R_{12}$ has large absolute value. Indeed, as $R_{12} \rightarrow -R_{21} \rightarrow 1$, the model
 becomes unidentifiable. This setting is actually a violation of the \emph{faithfulness}
 assumption commonly employed in causal inference~\cite{Pearl2000}.
 
-\begin{figure}\label{figure2}
-\includegraphics[width=\textwidth]{figures/figure2.pdf}
-\caption{Weighted Egger regression improves power under the two-way alt.
- We simulated GWAS summary statistics for two phenotypes ($A$, $B$) with $M=1,000,000$
-independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
- the SNP discovery and effect estimation cohorts. In each simulation, there
- were $5,000$ causal SNPs per phenotype of which $1,000$ were shared with uncorrelated
- effect sizes. a) Power to detect the effect of $A$ on $B$ when the studies have equal
- sample sizes. Our weighting scheme increases power of standard Egger regression, but both
- methods struggle to detect when the traits cancel each other out. b) Power to detect the
- effect of $B$ on $A$. Our approach improves power and the cancellation pattern is transposed.
- c) Power to detect the effect of $A$ on $B$ when $A$ has a larger sample size. Our approach
- improves power, though both do well. d) Power to detect the effect of $B$ on $A$ when
-  $A$ has a larger sample size. Our approach improves power substantially over standard
-  Egger regression, which struggles to detect the effect. Results are the average of 250
-  simulations per pair of effects.}
-\end{figure}
 
 In these simulations, we used a $p$-value threshold of $5\times 10^{-6}$
 for all weighted Egger regression analyses, but the conclusions held across a range
@@ -396,12 +382,12 @@ two hubs of $20$ features each. In this setting inspre and glasso performed
 similarly for all graph types, with glasso performing slightly better on
 random graphs, inspre performing slightly better on hub graphs, and 
 both methods having very similar performance for scale-free graphs
-(Figure~S1a-c). Next, we simulated  data with $100$
+(Figure~S2a-c). Next, we simulated  data with $100$
 features and $500$ samples. Here our random graphs included each edge with
 probability $p=0.02$ and our hub graphs had $5$ hubs. In this setting, glasso outperformed inspre on
 random graphs, inspre outperformed glasso on hub graphs, and both methods again
 had similar performance on scale-free graphs, with a slight edge towards
-glasso (Figure~S1d-f).
+glasso (Figure~S2d-f).
 
 We hypothesized that if the entries in the correlation matrix had variable
 sample sizes, the ability of inspre to incorporate weights would improve
@@ -417,7 +403,7 @@ In this setting, inspre was able to continue producing accurate
 results even with when the maximum missingness was high. On the other
 hand, glasso was not able to produce results at all when there was high
 missingness. Instead, the glasso algorithm diverged and the program returned
-a matrix of NA values (Figure~S2).
+a matrix of NA values (Figure~S3).
 
 
 \subsubsection*{bimmer robustly recovers direct causal effect networks}
@@ -442,7 +428,7 @@ network underlying the phenotypes came from an Erd\"os-R\'eyni random graph with
 randomly oriented edges. We found that MR-BMA performed comparably to
 elnet-Egger, but that they both performed poorly compared to bimmer.
 Moreover, MR-BMA took about $20$ times longer than bimmer to run with
-default parameter settings (Figure~S3).
+default parameter settings (Figure~S4).
 
 Next, we performed larger-scale simulations with $100$ phenotypes and
 $250,000$ total SNPs. We again
@@ -460,7 +446,7 @@ MR-BMA from these simulations due to runtime concerns.
 
 We found that bimmer was able to accurately re-construct all graph types and edge
 orientations considered, while
-elnet-Egger consistently had poor performance (Figure~\ref{figure4}d-i, Figure~S4).
+elnet-Egger consistently had poor performance (Figure~\ref{figure4}d-i, Figure~S5).
  For Erdos-Reyni graphs, we found that edge orientation did not have an effect on the
  performance of bimmer. This is possibly because the node degree distribution
  doesn't have enough variance to have nodes that consistently pull edges towards
@@ -472,7 +458,7 @@ elnet-Egger consistently had poor performance (Figure~\ref{figure4}d-i, Figure~S
  towards the hubs (Figure~\ref{figure4}e). However even in this challenging setting, bimmer
  is able to accurately infer the causal graph.
 
-\begin{figure}\label{figure4}
+\begin{figure}
 \includegraphics[width=\textwidth]{figures/figure4.png}
 \caption{bimmer accurately infers the causal graph for many graph structures and node
 orientations. We simulated summary statistics for $100$ phenotypes with $3000$ causal
@@ -489,12 +475,13 @@ In all cases, we are able to produce accurate results when the variability score
 about $0.01$ and $0.05$. We also compared the performance against Egger regression
 with elastic-net shrinkage at a graph variability score of $0.025$. elnet-Egger
 performs quite poorly compared to bimmer.}
+\label{figure4}
 \end{figure}
 
 
 \subsection*{Application to 405 traits from the UK Biobank}
 \subsubsection*{bimmer identifies thousands of direct causal effects in complex pathways}
-We obtained summary statistics for gender-split UK Biobank phenotypes from
+We obtained summary statistics for sex-split UK Biobank phenotypes from
 the Neale lab~\cite{NealeUKBB}. For ease of interpretation,
 we transformed all effect sizes to the per-variance scale. As previously suggested~\cite{BulikSullivan2015,NealeUKBB},
 we used only phenotypes with $Z$-score above $4$ and at least ``medium'' confidence. We removed one phenotype from every pair with genetic
@@ -512,7 +499,7 @@ as previously described with one slight modification. To avoid having a very sma
 number of pairs with very small SE dominate the loss, all entries in the TCE matrix with
 a standard error below $0.005$ were given the same weight.
 We chose a target stability of $0.025$ which gave reliable results across our various simulations
-(Figure~\ref{figure4}, Figure~S1, Figure~S4). The resulting DCE graph had $7,949$ edges,
+(Figure~\ref{figure4}, Figure~S2, Figure~S5). The resulting DCE graph had $7,949$ edges,
 which we pruned to $2,826$ edges by removing DCEs with absolute value less than $0.01$. 
 
 We were curious to compare estimated
@@ -520,7 +507,7 @@ genetic correlation, weighted Egger estimated TCE ($R^{TCE}$), bimmer's
 shrunk TCE ($U$) and bimmer's inferred DCE (R). First, we clustered phenotypes by genetic correlation
 to determine if the patterns observed are shared in the TCE estimates.
 While there are some similar patterns across the two matrices, the structure in the TCE estimates
-is not as well-defined (Figure~S5a-b).
+is not as well-defined (Figure~S6a-b).
 Indeed, we find that while the TCE estimates
 and genetic correlation estimates are correlated, that correlation is fairly
 weak ($r = 0.270\pm 0.005$). We actually find a slightly lower correlation between
@@ -598,7 +585,7 @@ Here the path between these nodes flows through BMI, followed by leukocyte count
 resulting in a shrunk TCE of only $-0.0002$.
  
 
-\begin{figure}\label{figure6}
+\begin{figure}
 \includegraphics[width=\textwidth]{figures/figure6.png}
 \caption{bimmer identifies indirect effects and paths explaining a small proportion of the total effect.
 The distribution of path lengths between connected nodes for (a) all connected nodes and (b) connected
@@ -610,6 +597,7 @@ nodes with an FDR $5\%$ significant TCE, indicating that there are often numerou
 getting from one node to another that add together to form the TCE. We also observe that the shortest
 path sometimes explains more than the total effect, indicating that other paths between the nodes
 act to cancel out the effects of the direct path. }
+\label{figure6}
 \end{figure}
 
 
@@ -620,16 +608,30 @@ outgoing shrunk TCE estimates ($U_{i, :}$) as features.
 This results in clustering of phenotypes with similar downstream effects.
 In Figure~\ref{figure5}, we show the genetic correlation (a), weighted-Egger TCE (b), shrunk TCE (c) and
 inferred DCE (d) for these $102$ phenotypes as exposures and all $405$ phenotypes as outcomes.
-We identified several interesting sub-networks with numerous downstream effects. We selected four
-for further analysis, corresponding to traits associated with 1) morphology (Figure~\ref{figure5}e),
-2) blood-biomarkers (Figure~\ref{figure5}f), 3) red blood cells (erythrocyte) (Figure~\ref{figure5}g),
-and 4)  heart-disease (Figure~\ref{figure5}h).
+This provides another view into the patterns of sharing across these matrices.
+This also allows us to identify several interesting sub-networks
+with numerous downstream effects. We selected four
+for further analysis, corresponding to traits associated with 1) morphology (Figure~\ref{figure5b}a),
+2) blood-biomarkers (Figure~\ref{figure5b}b), 3) red blood cells (erythrocyte) (Figure~\ref{figure5b}c),
+and 4)  heart-disease (Figure~\ref{figure5b}d).
 In all cases, every node within the sub-network is reachable from every other node. 
 These sub-networks also tend to include traits that are related by definition. In many of these cases,
 bimmer puts a bi-directed edge between the two nodes, for example between BMI and weight,
 between mean sphered cell volume and mean reticulyte volume, and between
 sitting height and predicted forced expiratory volume in one second. While this does not happen universally,
 bimmer generally succeeds at identifying groups of traits which could be analyzed jointly. 
+
+\begin{figure}
+\includegraphics[width=0.99\textwidth]{figures/figure5.png}
+\caption{Clustering by bimmer shrunk TCE reveals groups of nodes with correlated downstream effects.
+We show (a) the genetic correlation, (b) the weighted Egger TCE, (c) the bimmer shrunk
+TCE and (d) the bimmer inferred DCE for the 102 phenotypes with non-zero out-degree (y-axis)
+against all 405 phenotypes (x-axis), clustered by shrunk TCE. To emphasize the smaller effects
+in the latter plots, we use an alternate scale which emphasizes weak positive and negative effects
+(0.01 to 0.1, light blue and red, respectively) and strong positive and negative effects
+(0.1 to 1, dark blue and red, respectively).}
+\label{figure5}
+\end{figure}
 
 Part of the heart-disease network, leukocyte count had the highest overall out-degree with $244$ DCEs
 and $177$ FDR $5\%$ significant TCEs. The heart disease network includes several well-studied phenomena
@@ -710,17 +712,13 @@ Finally, we detect a DCE of HC on cardiac arrythmia, lending causal
 support to a recent population-based study linking HC and atrial fibrillation~\cite{Lim2020}.
 
 
-\begin{figure}\label{figure5}
-\includegraphics[width=\textwidth]{figures/figure5.png}
-\caption{bimmer identifies densely-connected sub-networks with correlated downstream effects.
-We show (a) the genetic correlation, (b) the weighted Egger TCE, (c) the bimmer shrunk
-TCE and (d) the bimmer inferred DCE for the 102 phenotypes with non-zero out-degree (y-axis)
-against all 405 phenotypes (x-axis), clustered by shrunk TCE. To emphasize the smaller effects
-in the latter plots, we use an alternate scale which emphasizes weak positive and negative effects
-(0.01 to 0.1, light blue and red, respectively) and strong positive and negative effects
-(0.1 to 1, dark blue and red, respectively). Clustering by shrunk downstream effects reveals
-several concentrated sub-networks, including a morphology network (e), blood biomarker
-network (f), red blood cell network (g) and heart disease network (f).}
+\begin{figure}
+\includegraphics[width=\textwidth]{figures/figure5b.png}
+\caption{bimmer identifies densely-connected sub-networks.
+Clustering by bimmer shrunk TCE reveals
+several concentrated sub-networks, including a morphology network (a), blood biomarker
+network (b), red blood cell network (c) and heart disease network (d).}
+\label{figure5b}
 \end{figure}
 
 \section{Discussion}\label{discussion}
@@ -751,8 +749,28 @@ remove false-positives with significant TCE $p$-values that
 cannot be coherently incorporated into the network, and enables interpretation of
  surprising TCEs in the context of the network structure.
 
-While we are not aware of other methods for this problem, our approach
-builds on recent MR literature. In particular, multi-variable Mendelian
+Our approach is conceptually simple and can be viewed both as a method and a framework.
+First, we calculate a TCE matrix.
+This is analogous to a correlation matrix, except that it is not symmetric and it's entries
+represent causal effects rather than correlations. Then, we find a sparse approximate inverse
+to this matrix, which represents a causal graph.
+This is analogous to glasso, except that we produce a directed graph instead
+of an undirected one. This means that bimmer can use any MR method
+that is able to produce bi-drected effect estimates,
+allowing researchers to choose the method that best accommodates the assumptions of
+the setting they work in. It also allows bimmer to naturally accommodate other potential
+approaches to convert this matrix into a causal network.
+While we are not aware of other methods for this specific problem, our method contributes to the
+extensive fields of biological and causal network discovery.
+For example, \cite{Frot2019a} combines a low-rank plus sparse decomposition
+of the covariance matrix~\cite{Frot2019b,Chandrasekaran2012,Stegle2011} with intervention calculus when the
+DAG is absent~\cite{Maathuis2009} to learn directed causal graphs. There, the low-rank
+component is interpreted as a latent variable capturing unobserved confounding, whereas
+our method instead uses Mendelian randomization. The integration of genetic data with low-rank
+plus sparse methods to learn causal graphs that potentially contain cycles is another
+potential avenue to approach the problem we consider.
+
+Our approach also builds on recent MR literature. In particular, multi-variable Mendelian
 randomization methods are able to compute direct causal effects when there
 are multiple potential exposures and a single outcome~\cite{Zuber2020,Burgess2015a}. While
 these methods work well in that setting, we have shown that they are not well-suited
@@ -773,10 +791,7 @@ when there is non-causal genetic correlation and differential power. Second, lik
 but unlike LCV, our method estimates a quantity that is interpretable as the
 effect of one phenotype on the other. Finally unlike both,
 we are able to estimate both effect directions simultaneously, allowing our
-model to accommodate graphs with cycles. In principle, bimmer can use any MR method
-that is able to produce bi-drected effect estimates in-place of weighted Egger
-regression, allowing researchers to choose the method that best accommodates the assumptions of
-the setting they work in.
+model to accommodate graphs with cycles.
 
 However, our approach does have some weaknesses. First, our method
 requires that we split the initial cohort into instrument discovery and
@@ -803,6 +818,8 @@ of the TCE matrix can vary dramatically. This also allows us to approximately in
 with missing data, implicitly performing matrix completion by leveraging assumed
 sparsity in the inverse. This enables stability-based selection of lasso parameter
  $\lambda$ without access to the underlying data by using random masks.
+There are other approaches to weighted graphical lasso~\cite{Li2015,Zuo2017}, however 
+these weights represent prior knowledge and not statistical uncertainty.
 We found that for many classes of graphs,
 inspre and glasso produced similar results, however there were some settings where glasso
 clearly performed better and vice versa.
@@ -986,7 +1003,7 @@ and \url{https://github.com/brielin/inspre}. The full data analysis results are 
 at \url{https://zenodo.org/record/3895125}.
 
 \section{Acknowledgments}
-% BCB would like to thank Harold Pimmentel and Andy Dahl for helpful feedback on the manuscript.
+BCB would like to thank Harold Pimmentel and Andy Dahl for helpful feedback on the manuscript.
 BCB would also like to thank Lior Pachter and Nicolas Bray for insightful discussion of the
 proposed method. DAK would like to thank Jonathan Pritchard for useful feedback on the
 initial concept. BCB is funded by post-doctoral fellowship from the Data Science Institute at
@@ -1081,6 +1098,25 @@ which reduces the impact of the initial choice of $\rho$. While this
 may appear to be a lot of parameters, they effect the convergence of
 the algorithm substantially more than the solution obtained.
 We always use the default values $\rho = 10,\;\mu = 10,\;\tau = 2$.
+
+\newpage
+\begin{figure}[H]\label{figureS0}
+\includegraphics[width=\textwidth]{figures/figure_S0.pdf}
+\caption{Weighted Egger regression improves power under the two-way alt.
+ We simulated GWAS summary statistics for two phenotypes ($A$, $B$) with $M=1,000,000$
+independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
+ the SNP discovery and effect estimation cohorts. In each simulation, there
+ were $5,000$ causal SNPs per phenotype of which $1,000$ were shared with uncorrelated
+ effect sizes. a) Power to detect the effect of $A$ on $B$ when the studies have equal
+ sample sizes. Our weighting scheme increases power of standard Egger regression, but both
+ methods struggle to detect when the traits cancel each other out. b) Power to detect the
+ effect of $B$ on $A$. Our approach improves power and the cancellation pattern is transposed.
+ c) Power to detect the effect of $A$ on $B$ when $A$ has a larger sample size. Our approach
+ improves power, though both do well. d) Power to detect the effect of $B$ on $A$ when
+  $A$ has a larger sample size. Our approach improves power substantially over standard
+  Egger regression, which struggles to detect the effect. Results are the average of 250
+  simulations per pair of effects.}
+\end{figure}
 
 \newpage
 \begin{figure}[H]\label{figureS1}
