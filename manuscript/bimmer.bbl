@@ -11436,6 +11436,251 @@
       \endverb
       \keyw{Atrial fibrillation,Risk factors}
     \endentry
+    \entry{Frot2019a}{article}{}
+      \name{author}{3}{}{%
+        {{hash=b2bcf338d67e859c1fe4f88dd40cd28d}{%
+           family={Frot},
+           familyi={F\bibinitperiod},
+           given={Benjamin},
+           giveni={B\bibinitperiod}}}%
+        {{hash=886a11a8868ea0bcd528ff9665afd02f}{%
+           family={Nandy},
+           familyi={N\bibinitperiod},
+           given={Preetam},
+           giveni={P\bibinitperiod}}}%
+        {{hash=61a7a14e950ba810e5505eea22de3312}{%
+           family={Maathuis},
+           familyi={M\bibinitperiod},
+           given={Marloes\bibnamedelima H.},
+           giveni={M\bibinitperiod\bibinitdelim H\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Blackwell Publishing Ltd}%
+      }
+      \strng{namehash}{475f341cff534d8013f215981616e88d}
+      \strng{fullhash}{475f341cff534d8013f215981616e88d}
+      \strng{bibnamehash}{475f341cff534d8013f215981616e88d}
+      \strng{authorbibnamehash}{475f341cff534d8013f215981616e88d}
+      \strng{authornamehash}{475f341cff534d8013f215981616e88d}
+      \strng{authorfullhash}{475f341cff534d8013f215981616e88d}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{We introduce a new method to estimate the Markov equivalence class of a directed acyclic graph (DAG) in the presence of hidden variables, in settings where the underlying DAG among the observed variables is sparse, and there are a few hidden variables that have a direct effect on many of the observed variables. Building on the so-called low rank plus sparse framework, we suggest a two-stage approach which first removes the effect of the hidden variables and then estimates the Markov equivalence class of the underlying DAG under the assumption that there are no remaining hidden variables. This approach is consistent in certain high dimensional regimes and performs favourably when compared with the state of the art, in terms of both graphical structure recovery and total causal effect estimation.}
+      \field{issn}{13697412}
+      \field{journaltitle}{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}
+      \field{month}{7}
+      \field{number}{3}
+      \field{title}{{Robust causal structure learning with some hidden variables}}
+      \field{volume}{81}
+      \field{year}{2019}
+      \field{pages}{459\bibrangedash 487}
+      \range{pages}{29}
+      \verb{doi}
+      \verb 10.1111/rssb.12315
+      \endverb
+      \verb{file}
+      \verb ::
+      \endverb
+      \verb{urlraw}
+      \verb http://doi.wiley.com/10.1111/rssb.12315
+      \endverb
+      \verb{url}
+      \verb http://doi.wiley.com/10.1111/rssb.12315
+      \endverb
+      \keyw{Causal structure learning,Causality,Confounding,Directed acyclic graphs,High dimensional consistency,Structured sparsity}
+    \endentry
+    \entry{Frot2019b}{article}{}
+      \name{author}{3}{}{%
+        {{hash=b2bcf338d67e859c1fe4f88dd40cd28d}{%
+           family={Frot},
+           familyi={F\bibinitperiod},
+           given={Benjamin},
+           giveni={B\bibinitperiod}}}%
+        {{hash=1c3fe451b53283daf057691c9707c3fa}{%
+           family={Jostins},
+           familyi={J\bibinitperiod},
+           given={Luke},
+           giveni={L\bibinitperiod}}}%
+        {{hash=26eddb5b50d498d6fbe63b58febda369}{%
+           family={McVean},
+           familyi={M\bibinitperiod},
+           given={Gilean},
+           giveni={G\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {American Statistical Association}%
+      }
+      \strng{namehash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{fullhash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{bibnamehash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{authorbibnamehash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{authornamehash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{authorfullhash}{fc142536810ff08297e3d5b2032ff3a7}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{We consider the problem of learning a conditional Gaussian graphical model in the presence of latent variables. Building on recent advances in this field, we suggest a method that decomposes the parameters of a conditional Markov random field into the sum of a sparse and a low-rank matrix. We derive convergence bounds for this estimator and show that it is well-behaved in the high-dimensional regime as well as \textquotedblleft{}sparsistent\textquotedblright{} (i.e., capable of recovering the graph structure). We then show how proximal gradient algorithms and semi-definite programming techniques can be employed to fit the model to thousands of variables. Through extensive simulations, we illustrate the conditions required for identifiability and show that there is a wide range of situations in which this model performs significantly better than its counterparts, for example, by accommodating more latent variables. Finally, the suggested method is applied to two datasets comprising individual level data on genetic variants and metabolites levels. We show our results replicate better than alternative approaches and show enriched biological signal. Supplementary materials for this article are available online.}
+      \field{issn}{1537274X}
+      \field{journaltitle}{Journal of the American Statistical Association}
+      \field{month}{4}
+      \field{number}{526}
+      \field{title}{{Graphical Model Selection for Gaussian Conditional Random Fields in the Presence of Latent Variables}}
+      \field{volume}{114}
+      \field{year}{2019}
+      \field{pages}{723\bibrangedash 734}
+      \range{pages}{12}
+      \verb{doi}
+      \verb 10.1080/01621459.2018.1434531
+      \endverb
+      \verb{file}
+      \verb ::
+      \endverb
+      \keyw{ALSPAC,Conditional Markov random field,Genetics,Low-Rank plus Sparse,Metabolites,Model Selection,Multivariate analysis}
+    \endentry
+    \entry{Chandrasekaran2012}{article}{}
+      \name{author}{3}{}{%
+        {{hash=6c455027167a2474bcbecfd17ec411fa}{%
+           family={Chandrasekaran},
+           familyi={C\bibinitperiod},
+           given={Venkat},
+           giveni={V\bibinitperiod}}}%
+        {{hash=2e156927d1a78c8b985a952958e3a37f}{%
+           family={Parrilo},
+           familyi={P\bibinitperiod},
+           given={Pablo\bibnamedelima A},
+           giveni={P\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+        {{hash=a5f4ca7af97ce52b52d890071457daf8}{%
+           family={Willsky},
+           familyi={W\bibinitperiod},
+           given={Alan\bibnamedelima S},
+           giveni={A\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+      }
+      \strng{namehash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{fullhash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{bibnamehash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{authorbibnamehash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{authornamehash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{authorfullhash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Suppose we observe samples of a subset of a collection of random variables. No additional information is provided about the number of latent variables , nor of the relationship between the latent and observed variables. Is it possible to discover the number of latent components, and to learn a statistical model over the entire collection of variables? We address this question in the setting in which the latent and observed variables are jointly Gaussian, with the conditional statistics of the observed variables conditioned on the latent variables being specified by a graphical model. As a first step we give natural conditions under which such latent-variable Gaussian graphical models are identifiable given marginal statistics of only the observed variables. Essentially these conditions require that the conditional graphical model among the observed variables is sparse, while the effect of the latent variables is "spread out" over most of the observed variables. Next we propose a tractable convex program based on regularized maximum-likelihood for model selection in this latent-variable setting; the regularizer uses both the 1 norm and the nuclear norm. Our modeling framework can be viewed as a combination of dimensionality reduction (to identify latent variables) and graphical mod-eling (to capture remaining statistical structure not attributable to the latent variables), and it consistently estimates both the number of latent components and the conditional graphical model structure among the observed variables. These results are applicable in the high-dimensional setting in which the number of latent/observed variables grows with the number of samples of the observed variables. The geometric properties of the algebraic varieties of sparse matrices and of low-rank matrices play an important role in our analysis.}
+      \field{journaltitle}{The Annals of Statistics}
+      \field{number}{4}
+      \field{title}{{LATENT VARIABLE GRAPHICAL MODEL SELECTION VIA CONVEX OPTIMIZATION 1}}
+      \field{volume}{40}
+      \field{year}{2012}
+      \field{pages}{1935\bibrangedash 1967}
+      \range{pages}{33}
+      \verb{doi}
+      \verb 10.1214/11-AOS949
+      \endverb
+      \verb{file}
+      \verb :home/brielin/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Chandrasekaran, Parrilo, Willsky - 2012 - LATENT VARIABLE GRAPHICAL MODEL SELECTION VIA CONVEX OPTIMIZATION 1.pdf:pdf
+      \endverb
+      \keyw{62F12,62H12,Gaussian graphical models,algebraic statistics,covariance selection,high-dimensional asymptotics,latent variables,low-rank,regularization,sparsity}
+    \endentry
+    \entry{Stegle2011}{report}{}
+      \name{author}{5}{}{%
+        {{hash=7a5535f1d9d7b08a2b684b894c37319d}{%
+           family={Stegle},
+           familyi={S\bibinitperiod},
+           given={Oliver},
+           giveni={O\bibinitperiod}}}%
+        {{hash=006e0de9144f28d1144a8563190cfdd6}{%
+           family={Lippert},
+           familyi={L\bibinitperiod},
+           given={Christoph},
+           giveni={C\bibinitperiod}}}%
+        {{hash=ce7c98ecd490ed138dd0d65d7207083a}{%
+           family={Mooij},
+           familyi={M\bibinitperiod},
+           given={Joris},
+           giveni={J\bibinitperiod}}}%
+        {{hash=aa520181c7ed14c3803f5ff137fa4b9b}{%
+           family={Lawrence},
+           familyi={L\bibinitperiod},
+           given={Neil},
+           giveni={N\bibinitperiod}}}%
+        {{hash=444d8d5fcbebf11f920c4fd033f0bb40}{%
+           family={Borgwardt},
+           familyi={B\bibinitperiod},
+           given={Karsten},
+           giveni={K\bibinitperiod}}}%
+      }
+      \strng{namehash}{b6ababf648630526be4b46a464405551}
+      \strng{fullhash}{191218c3a728c155a20a8bd953e475fb}
+      \strng{bibnamehash}{b6ababf648630526be4b46a464405551}
+      \strng{authorbibnamehash}{b6ababf648630526be4b46a464405551}
+      \strng{authornamehash}{b6ababf648630526be4b46a464405551}
+      \strng{authorfullhash}{191218c3a728c155a20a8bd953e475fb}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Inference in matrix-variate Gaussian models has major applications for multi-output prediction and joint learning of row and column covariances from matrix-variate data. Here, we discuss an approach for efficient inference in such models that explicitly account for iid observation noise. Computational tractability can be retained by exploiting the Kronecker product between row and column covariance matrices. Using this framework, we show how to generalize the Graphical Lasso in order to learn a sparse inverse covariance between features while accounting for a low-rank confounding covariance between samples. We show practical utility on applications to biology, where we model covariances with more than 100,000 dimensions. We find greater accuracy in recovering biological network structures and are able to better reconstruct the confounders.}
+      \field{title}{{Efficient inference in matrix-variate Gaussian models with iid observation noise}}
+      \field{type}{techreport}
+      \field{year}{2011}
+      \field{pages}{630\bibrangedash 638}
+      \range{pages}{9}
+      \verb{file}
+      \verb ::
+      \endverb
+    \endentry
+    \entry{Maathuis2009}{article}{}
+      \name{author}{4}{}{%
+        {{hash=ecd66388c82940198846653c86ad2a47}{%
+           family={Maathuis},
+           familyi={M\bibinitperiod},
+           given={Marloes\bibnamedelima H},
+           giveni={M\bibinitperiod\bibinitdelim H\bibinitperiod}}}%
+        {{hash=df9a0e9859bb9965919cd59d2523022d}{%
+           family={Kalisch},
+           familyi={K\bibinitperiod},
+           given={Markus},
+           giveni={M\bibinitperiod}}}%
+        {{hash=7582bab2df4aca99a7aba4db636ee8fb}{%
+           family={B{\"{u}}hlmann},
+           familyi={B\bibinitperiod},
+           given={Peter},
+           giveni={P\bibinitperiod}}}%
+        {{hash=2876286035a74e6d4167e795f5f6a757}{%
+           family={Z{\"{u}}rich},
+           familyi={Z\bibinitperiod},
+           given={Eth},
+           giveni={E\bibinitperiod}}}%
+      }
+      \strng{namehash}{50eb2193765281e6aed3312b458b193c}
+      \strng{fullhash}{6704c0d20d533967b1a551cb2dc4d9d7}
+      \strng{bibnamehash}{50eb2193765281e6aed3312b458b193c}
+      \strng{authorbibnamehash}{50eb2193765281e6aed3312b458b193c}
+      \strng{authornamehash}{50eb2193765281e6aed3312b458b193c}
+      \strng{authorfullhash}{6704c0d20d533967b1a551cb2dc4d9d7}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{We assume that we have observational data generated from an unknown underlying directed acyclic graph (DAG) model. A DAG is typically not identifiable from observational data, but it is possible to consistently estimate the equivalence class of a DAG. Moreover, for any given DAG, causal effects can be estimated using intervention calculus. In this paper, we combine these two parts. For each DAG in the estimated equivalence class, we use intervention calculus to estimate the causal effects of the covariates on the response. This yields a collection of estimated causal effects for each covariate. We show that the distinct values in this set can be consistently estimated by an algorithm that uses only local information of the graph. This local approach is computationally fast and feasible in high-dimensional problems. We propose to use summary measures of the set of possible causal effects to determine variable importance. In particular, we use the minimum absolute value of this set, since that is a lower bound on the size of the causal effect. We demonstrate the merits of our methods in a simulation study and on a data set about riboflavin production. 1. Introduction. Our work is motivated by the following problem in biology. We want to know which genes play a role in a certain phenotype, say a disease status or, in our case, a continuous value of riboflavin (vitamin B 2) production in the bacterium Bacillus subtilis. To be more precise, our goal is to infer which genes have an effect on the phenotype in terms of an intervention. If we knocked down single genes, which of them would show a relevant or important effect on the phenotype? The difficulty is, however, that the available data are only observational. For our concrete problem, we observe the logarithm of the riboflavin production rate as a continuous response and expression measurements from essentially the whole genome of B. subtilis as high-dimensional covariates. Using such observational data, we want to infer all (single gene) intervention effects. This task coincides with inferring causal effects, a well-established area in Statistics (e.g., [5, 8, 10, 11, 13, 18, 24-26] and [31]). We emphasize that, in our application, it is exactly the intervention or causal effect that is of interest, rather than a regression-type effect of association. If we can estimate the intervention effects from observational data, we can score each gene according to its potential to}
+      \field{journaltitle}{The Annals of Statistics}
+      \field{number}{6A}
+      \field{title}{{ESTIMATING HIGH-DIMENSIONAL INTERVENTION EFFECTS FROM OBSERVATIONAL DATA}}
+      \field{volume}{37}
+      \field{year}{2009}
+      \field{pages}{3133\bibrangedash 3164}
+      \range{pages}{32}
+      \verb{doi}
+      \verb 10.1214/09-AOS685
+      \endverb
+      \verb{file}
+      \verb :home/brielin/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Maathuis et al. - 2009 - ESTIMATING HIGH-DIMENSIONAL INTERVENTION EFFECTS FROM OBSERVATIONAL DATA.pdf:pdf
+      \endverb
+      \keyw{62-09,62H99,Causal analysis,PC-algorithm,directed acyclic graph (DAG),graphical modeling,intervention calculus,sparsity}
+    \endentry
     \entry{Davies2015}{article}{}
       \name{author}{6}{}{%
         {{hash=42e279b39573fb4e1035e393e2b08e57}{%
@@ -11510,6 +11755,112 @@
       \endverb
       \keyw{*Bias,*Causality,*Likelihood Functions,ALSPAC,Adolescent,Alleles,Body Height,Cohort Studies,Computer Simulation,England,Female,Genetic Variation,Humans,Least-Squares Analysis,Linear Models,Male,Mendelian Randomization Analysis/*methods,Mendelian randomization,Random Allocation,Risk Factors,Vital Capacity/genetics,allele scores,continuously updating estimator,height,many weak instruments}
     \endentry
+    \entry{Li2015}{article}{}
+      \name{author}{2}{}{%
+        {{hash=c256dfaaab7d054c7a776535deac3c43}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Yupeng},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=078d8c3523fb514407f06d7b5915e918}{%
+           family={Jackson},
+           familyi={J\bibinitperiod},
+           given={Scott\bibnamedelima A.},
+           giveni={S\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Genetics Society of America}%
+      }
+      \strng{namehash}{7f1e44718a926439283b952ec04c5ab8}
+      \strng{fullhash}{7f1e44718a926439283b952ec04c5ab8}
+      \strng{bibnamehash}{7f1e44718a926439283b952ec04c5ab8}
+      \strng{authorbibnamehash}{7f1e44718a926439283b952ec04c5ab8}
+      \strng{authornamehash}{7f1e44718a926439283b952ec04c5ab8}
+      \strng{authorfullhash}{7f1e44718a926439283b952ec04c5ab8}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{With the development of high-throughput genomic technologies, large, genome-wide datasets have been collected, and the integration of these datasets should provide large-scale, multidimensional, and insightful views of biological systems. We developed a method for gene association network construction based on gene expression data that integrate a variety of biological resources. Assuming gene expression data are from a multivariate Gaussian distribution, a graphical lasso (glasso) algorithm is able to estimate the sparse inverse covariance matrix by a lasso (L1) penalty. The inverse covariance matrix can be seen as direct correlation between gene pairs in the gene association network. In our work, instead of using a single penalty, different penalty values were applied for gene pairs based on a priori knowledge as to whether the two genes should be connected. The a priori information can be calculated or retrieved from other biological data, e.g., Gene Ontology similarity, protein-protein interaction, gene regulatory network. By incorporating prior knowledge, the weighted graphical lasso (wglasso) outperforms the original glasso both on simulations and on data from Arabidopsis. Simulation studies show that even when some prior knowledge is not correct, the overall quality of the wglasso network was still greater than when not incorporating that information, e.g., glasso.}
+      \field{issn}{21601836}
+      \field{journaltitle}{G3: Genes, Genomes, Genetics}
+      \field{month}{6}
+      \field{number}{6}
+      \field{title}{{Gene network reconstruction by integration of prior biological knowledge}}
+      \field{volume}{5}
+      \field{year}{2015}
+      \field{pages}{1075\bibrangedash 1079}
+      \range{pages}{5}
+      \verb{doi}
+      \verb 10.1534/g3.115.018127
+      \endverb
+      \verb{file}
+      \verb ::
+      \endverb
+      \keyw{Gene network,Graphical model,Prior knowledge,Systems biology and gene expression}
+    \endentry
+    \entry{Zuo2017}{article}{}
+      \name{author}{5}{}{%
+        {{hash=56610a9a7b56afee4435384331bd1691}{%
+           family={Zuo},
+           familyi={Z\bibinitperiod},
+           given={Yiming},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=ef7245fc707ae94c18e6a89096905470}{%
+           family={Cui},
+           familyi={C\bibinitperiod},
+           given={Yi},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=ab8e902b136bfbbe091271372348f84f}{%
+           family={Yu},
+           familyi={Y\bibinitperiod},
+           given={Guoqiang},
+           giveni={G\bibinitperiod}}}%
+        {{hash=0b9f1113d3710490e1686f110c5bdbce}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Ruijiang},
+           giveni={R\bibinitperiod}}}%
+        {{hash=37719c299d971cec0464ae8e36441cea}{%
+           family={Ressom},
+           familyi={R\bibinitperiod},
+           given={Habtom\bibnamedelima W.},
+           giveni={H\bibinitperiod\bibinitdelim W\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {BioMed Central Ltd.}%
+      }
+      \strng{namehash}{fddfeeb732fd6edf74b300c8fbedc21f}
+      \strng{fullhash}{5a5c3d33bc6e4168e8b35d7b58ed198f}
+      \strng{bibnamehash}{fddfeeb732fd6edf74b300c8fbedc21f}
+      \strng{authorbibnamehash}{fddfeeb732fd6edf74b300c8fbedc21f}
+      \strng{authornamehash}{fddfeeb732fd6edf74b300c8fbedc21f}
+      \strng{authorfullhash}{5a5c3d33bc6e4168e8b35d7b58ed198f}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Background: Conventional differential gene expression analysis by methods such as student's t-test, SAM, and Empirical Bayes often searches for statistically significant genes without considering the interactions among them. Network-based approaches provide a natural way to study these interactions and to investigate the rewiring interactions in disease versus control groups. In this paper, we apply weighted graphical LASSO (wgLASSO) algorithm to integrate a data-driven network model with prior biological knowledge (i.e., protein-protein interactions) for biological network inference. We propose a novel differentially weighted graphical LASSO (dwgLASSO) algorithm that builds group-specific networks and perform network-based differential gene expression analysis to select biomarker candidates by considering their topological differences between the groups. Results: Through simulation, we showed that wgLASSO can achieve better performance in building biologically relevant networks than purely data-driven models (e.g., neighbor selection, graphical LASSO), even when only a moderate level of information is available as prior biological knowledge. We evaluated the performance of dwgLASSO for survival time prediction using two microarray breast cancer datasets previously reported by Bild et al. and van de Vijver et al. Compared with the top 10 significant genes selected by conventional differential gene expression analysis method, the top 10 significant genes selected by dwgLASSO in the dataset from Bild et al. led to a significantly improved survival time prediction in the independent dataset from van de Vijver et al. Among the 10 genes selected by dwgLASSO, UBE2S, SALL2, XBP1 and KIAA0922 have been confirmed by literature survey to be highly relevant in breast cancer biomarker discovery study. Additionally, we tested dwgLASSO on TCGA RNA-seq data acquired from patients with hepatocellular carcinoma (HCC) on tumors samples and their corresponding non-tumorous liver tissues. Improved sensitivity, specificity and area under curve (AUC) were observed when comparing dwgLASSO with conventional differential gene expression analysis method. Conclusions: The proposed network-based differential gene expression analysis algorithm dwgLASSO can achieve better performance than conventional differential gene expression analysis methods by integrating information at both gene expression and network topology levels. The incorporation of prior biological knowledge can lead to the identification of biologically meaningful genes in cancer biomarker studies.}
+      \field{issn}{14712105}
+      \field{journaltitle}{BMC Bioinformatics}
+      \field{month}{2}
+      \field{number}{1}
+      \field{title}{{Incorporating prior biological knowledge for network-based differential gene expression analysis using differentially weighted graphical LASSO}}
+      \field{volume}{18}
+      \field{year}{2017}
+      \field{pages}{99}
+      \range{pages}{1}
+      \verb{doi}
+      \verb 10.1186/s12859-017-1515-1
+      \endverb
+      \verb{urlraw}
+      \verb https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-017-1515-1
+      \endverb
+      \verb{url}
+      \verb https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-017-1515-1
+      \endverb
+      \keyw{Gaussian graphical model,Network-based differential gene expression analysi,Prior biological knowledge,Weighted graphical LASSO}
+    \endentry
     \entry{Pasaniuc2017}{misc}{}
       \name{author}{2}{}{%
         {{hash=de5f8aff13fb184256315923644b2b83}{%
@@ -11532,8 +11883,8 @@
       \strng{authorbibnamehash}{27cdc6a75923863725cde22426f06a99}
       \strng{authornamehash}{27cdc6a75923863725cde22426f06a99}
       \strng{authorfullhash}{27cdc6a75923863725cde22426f06a99}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{sortinit}{5}
+      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{During the past decade, genome-wide association studies (GWAS) have been used to successfully identify tens of thousands of genetic variants associated with complex traits and diseases. These studies have produced extensive repositories of genetic variation and trait measurements across large numbers of individuals, providing tremendous opportunities for further analyses. However, privacy concerns and other logistical considerations often limit access to individual-level genetic data, motivating the development of methods that analyse summary association statistics. Here, we review recent progress on statistical methods that leverage summary association data to gain insights into the genetic basis of complex traits and diseases.}
@@ -12788,8 +13139,8 @@
       \strng{authorbibnamehash}{7bf6fb3f718dbb3ea92958827cb6f750}
       \strng{authornamehash}{7bf6fb3f718dbb3ea92958827cb6f750}
       \strng{authorfullhash}{a07142c8d6ad09ff4c9e07e47a99419e}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{sortinit}{5}
+      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Characterization of the molecular function of the human genome and its variation across individuals is essential for identifying the cellular mechanisms that underlie human genetic traits and diseases. The Genotype-Tissue Expression (GTEx) project aims to characterize variation in gene expression levels across individuals and diverse tissues of the human body, many of which are not easily accessible. Here we describe genetic effects on gene expression levels across 44 human tissues. We find that local genetic variation affects gene expression levels for the majority of genes, and we further identify inter-chromosomal genetic effects for 93 genes and 112 loci. On the basis of the identified genetic effects, we characterize patterns of tissue specificity, compare local and distal effects, and evaluate the functional properties of the genetic effects. We also demonstrate that multi-tissue, multi-individual data can be used to identify genes and pathways affected by human disease-associated variation, enabling a mechanistic interpretation of gene regulation and the genetic basis of disease.}
