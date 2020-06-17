@@ -634,6 +634,202 @@
       \endverb
       \keyw{BioBank Japan Project,Biobank,Genomic research,Personalized medicine}
     \endentry
+    \entry{Chandrasekaran2012}{article}{}
+      \name{author}{3}{}{%
+        {{hash=6c455027167a2474bcbecfd17ec411fa}{%
+           family={Chandrasekaran},
+           familyi={C\bibinitperiod},
+           given={Venkat},
+           giveni={V\bibinitperiod}}}%
+        {{hash=2e156927d1a78c8b985a952958e3a37f}{%
+           family={Parrilo},
+           familyi={P\bibinitperiod},
+           given={Pablo\bibnamedelima A},
+           giveni={P\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
+        {{hash=a5f4ca7af97ce52b52d890071457daf8}{%
+           family={Willsky},
+           familyi={W\bibinitperiod},
+           given={Alan\bibnamedelima S},
+           giveni={A\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+      }
+      \strng{namehash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{fullhash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{bibnamehash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{authorbibnamehash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{authornamehash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \strng{authorfullhash}{7c0ef947f6a4938ef348cbc84d95cf38}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Suppose we observe samples of a subset of a collection of random variables. No additional information is provided about the number of latent variables , nor of the relationship between the latent and observed variables. Is it possible to discover the number of latent components, and to learn a statistical model over the entire collection of variables? We address this question in the setting in which the latent and observed variables are jointly Gaussian, with the conditional statistics of the observed variables conditioned on the latent variables being specified by a graphical model. As a first step we give natural conditions under which such latent-variable Gaussian graphical models are identifiable given marginal statistics of only the observed variables. Essentially these conditions require that the conditional graphical model among the observed variables is sparse, while the effect of the latent variables is "spread out" over most of the observed variables. Next we propose a tractable convex program based on regularized maximum-likelihood for model selection in this latent-variable setting; the regularizer uses both the 1 norm and the nuclear norm. Our modeling framework can be viewed as a combination of dimensionality reduction (to identify latent variables) and graphical mod-eling (to capture remaining statistical structure not attributable to the latent variables), and it consistently estimates both the number of latent components and the conditional graphical model structure among the observed variables. These results are applicable in the high-dimensional setting in which the number of latent/observed variables grows with the number of samples of the observed variables. The geometric properties of the algebraic varieties of sparse matrices and of low-rank matrices play an important role in our analysis.}
+      \field{journaltitle}{The Annals of Statistics}
+      \field{number}{4}
+      \field{title}{{LATENT VARIABLE GRAPHICAL MODEL SELECTION VIA CONVEX OPTIMIZATION 1}}
+      \field{volume}{40}
+      \field{year}{2012}
+      \field{pages}{1935\bibrangedash 1967}
+      \range{pages}{33}
+      \verb{doi}
+      \verb 10.1214/11-AOS949
+      \endverb
+      \verb{file}
+      \verb :home/brielin/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Chandrasekaran, Parrilo, Willsky - 2012 - LATENT VARIABLE GRAPHICAL MODEL SELECTION VIA CONVEX OPTIMIZATION 1.pdf:pdf
+      \endverb
+      \keyw{62F12,62H12,Gaussian graphical models,algebraic statistics,covariance selection,high-dimensional asymptotics,latent variables,low-rank,regularization,sparsity}
+    \endentry
+    \entry{Frot2019a}{article}{}
+      \name{author}{3}{}{%
+        {{hash=b2bcf338d67e859c1fe4f88dd40cd28d}{%
+           family={Frot},
+           familyi={F\bibinitperiod},
+           given={Benjamin},
+           giveni={B\bibinitperiod}}}%
+        {{hash=886a11a8868ea0bcd528ff9665afd02f}{%
+           family={Nandy},
+           familyi={N\bibinitperiod},
+           given={Preetam},
+           giveni={P\bibinitperiod}}}%
+        {{hash=61a7a14e950ba810e5505eea22de3312}{%
+           family={Maathuis},
+           familyi={M\bibinitperiod},
+           given={Marloes\bibnamedelima H.},
+           giveni={M\bibinitperiod\bibinitdelim H\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Blackwell Publishing Ltd}%
+      }
+      \strng{namehash}{475f341cff534d8013f215981616e88d}
+      \strng{fullhash}{475f341cff534d8013f215981616e88d}
+      \strng{bibnamehash}{475f341cff534d8013f215981616e88d}
+      \strng{authorbibnamehash}{475f341cff534d8013f215981616e88d}
+      \strng{authornamehash}{475f341cff534d8013f215981616e88d}
+      \strng{authorfullhash}{475f341cff534d8013f215981616e88d}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{We introduce a new method to estimate the Markov equivalence class of a directed acyclic graph (DAG) in the presence of hidden variables, in settings where the underlying DAG among the observed variables is sparse, and there are a few hidden variables that have a direct effect on many of the observed variables. Building on the so-called low rank plus sparse framework, we suggest a two-stage approach which first removes the effect of the hidden variables and then estimates the Markov equivalence class of the underlying DAG under the assumption that there are no remaining hidden variables. This approach is consistent in certain high dimensional regimes and performs favourably when compared with the state of the art, in terms of both graphical structure recovery and total causal effect estimation.}
+      \field{issn}{13697412}
+      \field{journaltitle}{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}
+      \field{month}{7}
+      \field{number}{3}
+      \field{title}{{Robust causal structure learning with some hidden variables}}
+      \field{volume}{81}
+      \field{year}{2019}
+      \field{pages}{459\bibrangedash 487}
+      \range{pages}{29}
+      \verb{doi}
+      \verb 10.1111/rssb.12315
+      \endverb
+      \verb{file}
+      \verb ::
+      \endverb
+      \verb{urlraw}
+      \verb http://doi.wiley.com/10.1111/rssb.12315
+      \endverb
+      \verb{url}
+      \verb http://doi.wiley.com/10.1111/rssb.12315
+      \endverb
+      \keyw{Causal structure learning,Causality,Confounding,Directed acyclic graphs,High dimensional consistency,Structured sparsity}
+    \endentry
+    \entry{Frot2019b}{article}{}
+      \name{author}{3}{}{%
+        {{hash=b2bcf338d67e859c1fe4f88dd40cd28d}{%
+           family={Frot},
+           familyi={F\bibinitperiod},
+           given={Benjamin},
+           giveni={B\bibinitperiod}}}%
+        {{hash=1c3fe451b53283daf057691c9707c3fa}{%
+           family={Jostins},
+           familyi={J\bibinitperiod},
+           given={Luke},
+           giveni={L\bibinitperiod}}}%
+        {{hash=26eddb5b50d498d6fbe63b58febda369}{%
+           family={McVean},
+           familyi={M\bibinitperiod},
+           given={Gilean},
+           giveni={G\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {American Statistical Association}%
+      }
+      \strng{namehash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{fullhash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{bibnamehash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{authorbibnamehash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{authornamehash}{fc142536810ff08297e3d5b2032ff3a7}
+      \strng{authorfullhash}{fc142536810ff08297e3d5b2032ff3a7}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{We consider the problem of learning a conditional Gaussian graphical model in the presence of latent variables. Building on recent advances in this field, we suggest a method that decomposes the parameters of a conditional Markov random field into the sum of a sparse and a low-rank matrix. We derive convergence bounds for this estimator and show that it is well-behaved in the high-dimensional regime as well as \textquotedblleft{}sparsistent\textquotedblright{} (i.e., capable of recovering the graph structure). We then show how proximal gradient algorithms and semi-definite programming techniques can be employed to fit the model to thousands of variables. Through extensive simulations, we illustrate the conditions required for identifiability and show that there is a wide range of situations in which this model performs significantly better than its counterparts, for example, by accommodating more latent variables. Finally, the suggested method is applied to two datasets comprising individual level data on genetic variants and metabolites levels. We show our results replicate better than alternative approaches and show enriched biological signal. Supplementary materials for this article are available online.}
+      \field{issn}{1537274X}
+      \field{journaltitle}{Journal of the American Statistical Association}
+      \field{month}{4}
+      \field{number}{526}
+      \field{title}{{Graphical Model Selection for Gaussian Conditional Random Fields in the Presence of Latent Variables}}
+      \field{volume}{114}
+      \field{year}{2019}
+      \field{pages}{723\bibrangedash 734}
+      \range{pages}{12}
+      \verb{doi}
+      \verb 10.1080/01621459.2018.1434531
+      \endverb
+      \verb{file}
+      \verb ::
+      \endverb
+      \keyw{ALSPAC,Conditional Markov random field,Genetics,Low-Rank plus Sparse,Metabolites,Model Selection,Multivariate analysis}
+    \endentry
+    \entry{Stegle2011}{report}{}
+      \name{author}{5}{}{%
+        {{hash=7a5535f1d9d7b08a2b684b894c37319d}{%
+           family={Stegle},
+           familyi={S\bibinitperiod},
+           given={Oliver},
+           giveni={O\bibinitperiod}}}%
+        {{hash=006e0de9144f28d1144a8563190cfdd6}{%
+           family={Lippert},
+           familyi={L\bibinitperiod},
+           given={Christoph},
+           giveni={C\bibinitperiod}}}%
+        {{hash=ce7c98ecd490ed138dd0d65d7207083a}{%
+           family={Mooij},
+           familyi={M\bibinitperiod},
+           given={Joris},
+           giveni={J\bibinitperiod}}}%
+        {{hash=aa520181c7ed14c3803f5ff137fa4b9b}{%
+           family={Lawrence},
+           familyi={L\bibinitperiod},
+           given={Neil},
+           giveni={N\bibinitperiod}}}%
+        {{hash=444d8d5fcbebf11f920c4fd033f0bb40}{%
+           family={Borgwardt},
+           familyi={B\bibinitperiod},
+           given={Karsten},
+           giveni={K\bibinitperiod}}}%
+      }
+      \strng{namehash}{b6ababf648630526be4b46a464405551}
+      \strng{fullhash}{191218c3a728c155a20a8bd953e475fb}
+      \strng{bibnamehash}{b6ababf648630526be4b46a464405551}
+      \strng{authorbibnamehash}{b6ababf648630526be4b46a464405551}
+      \strng{authornamehash}{b6ababf648630526be4b46a464405551}
+      \strng{authorfullhash}{191218c3a728c155a20a8bd953e475fb}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Inference in matrix-variate Gaussian models has major applications for multi-output prediction and joint learning of row and column covariances from matrix-variate data. Here, we discuss an approach for efficient inference in such models that explicitly account for iid observation noise. Computational tractability can be retained by exploiting the Kronecker product between row and column covariance matrices. Using this framework, we show how to generalize the Graphical Lasso in order to learn a sparse inverse covariance between features while accounting for a low-rank confounding covariance between samples. We show practical utility on applications to biology, where we model covariances with more than 100,000 dimensions. We find greater accuracy in recovering biological network structures and are able to better reconstruct the confounders.}
+      \field{title}{{Efficient inference in matrix-variate Gaussian models with iid observation noise}}
+      \field{type}{techreport}
+      \field{year}{2011}
+      \field{pages}{630\bibrangedash 638}
+      \range{pages}{9}
+      \verb{file}
+      \verb ::
+      \endverb
+    \endentry
     \entry{Bowden2015}{article}{}
       \name{author}{3}{}{%
         {{hash=a27ffabf3bc6d787411d7cc53af2e9f9}{%
@@ -658,8 +854,8 @@
       \strng{authorbibnamehash}{99a0b0980f715379f389d6544f95c86e}
       \strng{authornamehash}{99a0b0980f715379f389d6544f95c86e}
       \strng{authorfullhash}{99a0b0980f715379f389d6544f95c86e}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{sortinit}{5}
+      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Background: The number of Mendelian randomization analyses including large numbers of genetic variants is rapidly increasing. This is due to the proliferation of genome-wide association studies, and the desire to obtain more precise estimates of causal effects. However, some genetic variants may not be valid instrumental variables, in particular due to them having more than one proximal phenotypic correlate (pleiotropy). Methods: We view Mendelian randomization with multiple instruments as a meta-analysis, and show that bias caused by pleiotropy can be regarded as analogous to small study bias. Causal estimates using each instrument can be displayed visually by a funnel plot to assess potential asymmetry. Egger regression, a tool to detect small study bias in meta-analysis, can be adapted to test for bias from pleiotropy, and the slope coefficient from Egger regression provides an estimate of the causal effect. Under the assumption that the association of each genetic variant with the exposure is independent of the pleiotropic effect of the variant (not via the exposure), Egger's test gives a valid test of the null causal hypothesis and a consistent causal effect estimate even when all the genetic variants are invalid instrumental variables. Results: We illustrate the use of this approach by re-analysing two published Mendelian randomization studies of the causal effect of height on lung function, and the causal effect of blood pressure on coronary artery disease risk. The conservative nature of this approach is illustrated with these examples. Conclusions: An adaption of Egger regression (which we call MR-Egger) can detect some violations of the standard instrumental variable assumptions, and provide an effect estimate which is not subject to these violations. The approach provides a sensitivity analysis for the robustness of the findings from a Mendelian randomization investigation.}
@@ -703,8 +899,8 @@
       \strng{authorbibnamehash}{9492be251fd1277cd1c19039045c7f99}
       \strng{authornamehash}{9492be251fd1277cd1c19039045c7f99}
       \strng{authorfullhash}{9492be251fd1277cd1c19039045c7f99}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{sortinit}{5}
+      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Background: Mendelian randomization (MR) is being increasingly used to strengthen causal inference in observational studies. Availability of summary data of genetic associations for a variety of phenotypes from large genome-wide association studies (GWAS) allows straightforward application of MR using summary data methods, typically in a two-sample design. In addition to the conventional inverse variance weighting (IVW) method, recently developed summary data MR methods, such as the MR-Egger and weighted median approaches, allow a relaxation of the instrumental variable assumptions. Methods: Here, a new method - the mode-based estimate (MBE) - is proposed to obtain a single causal effect estimate from multiple genetic instruments. The MBE is consistent when the largest number of similar (identical in infinite samples) individual-instrument causal effect estimates comes from valid instruments, even if the majority of instruments are invalid. We evaluate the performance of the method in simulations designed to mimic the two-sample summary data setting, and demonstrate its use by investigating the causal effect of plasma lipid fractions and urate levels on coronary heart disease risk. Results: The MBE presented less bias and lower type-I error rates than other methods under the null in many situations. Its power to detect a causal effect was smaller compared with the IVW and weighted median methods, but was larger than that of MR-Egger regression, with sample size requirements typically smaller than those available from GWAS consortia. Conclusions: The MBE relaxes the instrumental variable assumptions, and should be used in combination with other approaches in sensitivity analyses.}
@@ -743,8 +939,8 @@
       \strng{authorbibnamehash}{ebe3c16889debe662cacbc209aa7540c}
       \strng{authornamehash}{ebe3c16889debe662cacbc209aa7540c}
       \strng{authorfullhash}{ebe3c16889debe662cacbc209aa7540c}
-      \field{sortinit}{5}
-      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
+      \field{sortinit}{6}
+      \field{sortinithash}{57e57fb8451e7fcfa45d1e069f6d3136}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Mendelian randomization, a method to infer causal relationships, is confounded by genetic correlations reflecting shared etiology. We developed a model in which a latent causal variable mediates the genetic correlation; trait 1 is partially genetically causal for trait 2 if it is strongly genetically correlated with the latent causal variable, quantified using the genetic causality proportion. We fit this model using mixed fourth moments ... will have correlated effects on trait 2 (large $\alpha$1$\alpha$2), but not vice versa. In simulations, our method avoided false positives due to genetic correlations, unlike Mendelian randomization. Across 52 traits (average n = 331,000), we identified 30 causal relationships with high genetic causality proportion estimates. Novel findings included a causal effect of low-density lipoprotein on bone mineral density, consistent with clinical trials of statins in osteoporosis.}
@@ -810,8 +1006,8 @@
       \strng{authorbibnamehash}{424e1940766b8c43475beb6f4331d61c}
       \strng{authornamehash}{424e1940766b8c43475beb6f4331d61c}
       \strng{authorfullhash}{7136c44bf1aba7fc4b8f2f3ab1d7d8c7}
-      \field{sortinit}{6}
-      \field{sortinithash}{57e57fb8451e7fcfa45d1e069f6d3136}
+      \field{sortinit}{7}
+      \field{sortinithash}{c818dd9105a2852444fc9f5e145c294e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Context:The assignment of direction and causality within networks of observational associations is problematic outside randomized control trials, and the presence of a causal relationship between body mass index (BMI) and C-reactive protein (CRP) is disputed.Objective:Using reciprocal Mendelian randomization, we aim to assess the direction of causality in relationships between BMI and CRP and to demonstrate this as a promising analytical technique.Participants and methods:The study was based on a large, cross-sectional European study from Copenhagen, Denmark. Genetic associates of BMI (FTO(rs9939609)) and circulating CRP (CRP(rs3091244)) have been used to reexamine observational associations between them.Results:Observational analyses showed a strong, positive association between circulating CRP and BMI (change in BMI for a doubling in logCRP of 1.03 kg m-2(95{\%} confidence interval (95{\%} CI): 1.00, 1.07), P0.0001). Analysis using CRP(rs3091244) to re-estimate the causal effect of circulating CRP on BMI yielded null effects (change in BMI for a doubling in logCRP of 0.24 kg m-2(95{\%} CI: 0.58, 0.11), P=0.2). In contrast, analysis using FTO(rs9939609) to assess the causal effect of BMI on circulating CRP confirmed observational associations (ratio of geometric means of CRP per s.d. increase in BMI 1.41 (95{\%} CI: 1.10, 1.80), P=0.006).Conclusions:Taken together, these data suggest that the observed association between circulating CRP and measured BMI is likely to be driven by BMI, with CRP being a marker of elevated adiposity. More generally, the method of reciprocal randomization has general applicability in determining the direction of causation within inter-correlated networks of metabolic components. {{$\copyright$}} 2011 Macmillan Publishers Limited. All rights reserved.}
@@ -885,8 +1081,8 @@
       \strng{editorbibnamehash}{96a917df4f692b59e3d0aec82288db7c}
       \strng{editornamehash}{96a917df4f692b59e3d0aec82288db7c}
       \strng{editorfullhash}{96a917df4f692b59e3d0aec82288db7c}
-      \field{sortinit}{6}
-      \field{sortinithash}{57e57fb8451e7fcfa45d1e069f6d3136}
+      \field{sortinit}{7}
+      \field{sortinithash}{c818dd9105a2852444fc9f5e145c294e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Background:Cross-sectional studies have shown that objectively measured physical activity is associated with childhood adiposity, and a strong inverse dose-response association with body mass index (BMI) has been found. However, few studies have explored the extent to which this association reflects reverse causation. We aimed to determine whether childhood adiposity causally influences levels of physical activity using genetic variants reliably associated with adiposity to estimate causal effects.Methods and Findings:The Avon Longitudinal Study of Parents and Children collected data on objectively assessed activity levels of 4,296 children at age 11 y with recorded BMI and genotypic data. We used 32 established genetic correlates of BMI combined in a weighted allelic score as an instrumental variable for adiposity to estimate the causal effect of adiposity on activity.In observational analysis, a 3.3 kg/m2 (one standard deviation) higher BMI was associated with 22.3 (95{\%} CI, 17.0, 27.6) movement counts/min less total physical activity (p = 1.6\x{00d7}10-16), 2.6 (2.1, 3.1) min/d less moderate-to-vigorous-intensity activity (p = 3.7\x{00d7}10-29), and 3.5 (1.5, 5.5) min/d more sedentary time (p = 5.0\x{00d7}10-4). In Mendelian randomization analyses, the same difference in BMI was associated with 32.4 (0.9, 63.9) movement counts/min less total physical activity (p = 0.04) ({\~{}}5.3{\%} of the mean counts/minute), 2.8 (0.1, 5.5) min/d less moderate-to-vigorous-intensity activity (p = 0.04), and 13.2 (1.3, 25.2) min/d more sedentary time (p = 0.03). There was no strong evidence for a difference between variable estimates from observational estimates. Similar results were obtained using fat mass index. Low power and poor instrumentation of activity limited causal analysis of the influence of physical activity on BMI.Conclusions:Our results suggest that increased adiposity causes a reduction in physical activity in children and support research into the targeting of BMI in efforts to increase childhood activity levels. Importantly, this does not exclude lower physical activity also leading to increased adiposity, i.e., bidirectional causation.Please see later in the article for the Editors' Summary. {{$\copyright$}} 2014 Richmond et al.}
@@ -954,8 +1150,8 @@
       \strng{authorbibnamehash}{f770445e1397caf531b65707186bc258}
       \strng{authornamehash}{f770445e1397caf531b65707186bc258}
       \strng{authorfullhash}{bc6686d0e6a96dd7b19961fd61e11b74}
-      \field{sortinit}{7}
-      \field{sortinithash}{c818dd9105a2852444fc9f5e145c294e}
+      \field{sortinit}{8}
+      \field{sortinithash}{07edf88d4ea82509b9c4b4d13f41c452}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{We performed a scan for genetic variants associated with multiple phenotypes by comparing large genome-wide association studies (GWAS) of 42 traits or diseases. We identified 341 loci (at a false discovery rate of 10{\%}) associated with multiple traits. Several loci are associated with multiple phenotypes; for example, a nonsynonymous variant in the zinc transporter SLC39A8 influences seven of the traits, including risk of schizophrenia (rs13107325: log-transformed odds ratio (log OR) = 0.15, P = 2 \x{00d7} 10 {\^{a}} '12) and Parkinson disease (log OR = {\^{a}} '0.15, P = 1.6 \x{00d7} 10 {\^{a}} '7), among others. Second, we used these loci to identify traits that have multiple genetic causes in common. For example, variants associated with increased risk of schizophrenia also tended to be associated with increased risk of inflammatory bowel disease. Finally, we developed a method to identify pairs of traits that show evidence of a causal relationship. For example, we show evidence that increased body mass index causally increases triglyceride levels.}
@@ -1020,8 +1216,8 @@
       \strng{authorbibnamehash}{94b98fb655c311d83c271d5ad40ea109}
       \strng{authornamehash}{94b98fb655c311d83c271d5ad40ea109}
       \strng{authorfullhash}{addd1edf314937a0f82ef2f13ef38d47}
-      \field{sortinit}{9}
-      \field{sortinithash}{1dd72ab054147731c9d824b49aba0534}
+      \field{sortinit}{1}
+      \field{sortinithash}{2174f786c6195e7fe2ee1c229b416e29}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{BACKGROUND: Mendelian randomization uses genetic variants, assumed to be instrumental variables for a particular exposure, to estimate the causal effect of that exposure on an outcome. If the instrumental variable criteria are satisfied, the resulting estimator is consistent even in the presence of unmeasured confounding and reverse causation. METHODS: We extend the Mendelian randomization paradigm to investigate more complex networks of relationships between variables, in particular where some of the effect of an exposure on the outcome may operate through an intermediate variable (a mediator). If instrumental variables for the exposure and mediator are available, direct and indirect effects of the exposure on the outcome can be estimated, for example using either a regression-based method or structural equation models. The direction of effect between the exposure and a possible mediator can also be assessed. Methods are illustrated in an applied example considering causal relationships between body mass index, C-reactive protein and uric acid. RESULTS: These estimators are consistent in the presence of unmeasured confounding if, in addition to the instrumental variable assumptions, the effects of both the exposure on the mediator and the mediator on the outcome are homogeneous across individuals and linear without interactions. Nevertheless, a simulation study demonstrates that even considerable heterogeneity in these effects does not lead to bias in the estimates. CONCLUSIONS: These methods can be used to estimate direct and indirect causal effects in a mediation setting, and have potential for the investigation of more complex networks between multiple interrelated exposures and disease outcomes.}
@@ -1379,8 +1575,8 @@
       \strng{authorbibnamehash}{8ea7dff1d5d95506150119bcc3b4bb93}
       \strng{authornamehash}{8ea7dff1d5d95506150119bcc3b4bb93}
       \strng{authorfullhash}{8ea7dff1d5d95506150119bcc3b4bb93}
-      \field{sortinit}{1}
-      \field{sortinithash}{2174f786c6195e7fe2ee1c229b416e29}
+      \field{sortinit}{2}
+      \field{sortinithash}{cbff857e587bcb4635511624d773949e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{issn}{00211133}
@@ -3388,8 +3584,8 @@
       \strng{authorbibnamehash}{02d767dcb30d538bd1b91bcae3d76a88}
       \strng{authornamehash}{02d767dcb30d538bd1b91bcae3d76a88}
       \strng{authorfullhash}{e0ed3b32c0e4cf3d0fbab0348677505e}
-      \field{sortinit}{2}
-      \field{sortinithash}{cbff857e587bcb4635511624d773949e}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Total cholesterol level is significantly related to risk of coronary heart disease (CHD), adjusting for other risk factors in women 50 to 79 years old and in men aged 50 to 64 years, at P {<} .001. Determining the levels of lipoproteins such as low-density-lipoprotein (LDL) cholesterol and high-density-lipoprotein (HDL) cholesterol improves the prediction of risk. Triglycerides are independently related in women at all ages but miss statistical significance in the multivariate studies in men. The total cholesterol-HDL cholesterol ratio is another powerful predictor at all ages in women and is the only lipid predictor independently related to CHD in men 65 to 80 years old. Inspection of the age-specific association of cholesterol with risk in men and women also reveals that the absolute rates of disease worsen with age. {{$\copyright$}} 1992.}
@@ -3921,247 +4117,275 @@
       \endverb
       \keyw{asthma,innate lymphoid cells,sex hormones,testosterone}
     \endentry
-    \entry{Colangelo2012}{article}{}
-      \name{author}{7}{}{%
-        {{hash=e8055a13c0d2dd945ecf6abfd472960a}{%
-           family={Colangelo},
+    \entry{Casey1973}{article}{}
+      \name{author}{1}{}{%
+        {{hash=c68d2405af86b6ced370d62d24d22929}{%
+           family={Casey},
            familyi={C\bibinitperiod},
-           given={Laura\bibnamedelima A.},
-           giveni={L\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
-        {{hash=741f2c247a29b5f302eef342addc842d}{%
-           family={Craft},
-           familyi={C\bibinitperiod},
-           given={Lynette\bibnamedelima L.},
-           giveni={L\bibinitperiod\bibinitdelim L\bibinitperiod}}}%
-        {{hash=22c1146259a09e0b1648ddaa2cb49f90}{%
-           family={Ouyang},
-           familyi={O\bibinitperiod},
-           given={Pamela},
-           giveni={P\bibinitperiod}}}%
-        {{hash=9dc2aa908554dc1184f2f0f8d55afc42}{%
-           family={Liu},
-           familyi={L\bibinitperiod},
-           given={Kiang},
-           giveni={K\bibinitperiod}}}%
-        {{hash=5acb48b7523ef910c460f34d017c726a}{%
-           family={Schreiner},
-           familyi={S\bibinitperiod},
-           given={Pamela\bibnamedelima J.},
-           giveni={P\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
-        {{hash=6c46456c3b97586fbad2b44da087bcd3}{%
-           family={Michos},
-           familyi={M\bibinitperiod},
-           given={Erin\bibnamedelima D.},
-           giveni={E\bibinitperiod\bibinitdelim D\bibinitperiod}}}%
-        {{hash=e8fca1623635f0d7dea6444a270aa133}{%
-           family={Gapstur},
-           familyi={G\bibinitperiod},
-           given={Susan\bibnamedelima M.},
-           giveni={S\bibinitperiod\bibinitdelim M\bibinitperiod}}}%
+           given={A\bibnamedelima E},
+           giveni={A\bibinitperiod\bibinitdelim E\bibinitperiod}}}%
       }
-      \list{publisher}{1}{%
-        {NIH Public Access}%
-      }
-      \strng{namehash}{1020c743a0893a664168e9345fd30404}
-      \strng{fullhash}{2f3df5b21ea47c76f63520fc64bb1d9f}
-      \strng{bibnamehash}{1020c743a0893a664168e9345fd30404}
-      \strng{authorbibnamehash}{1020c743a0893a664168e9345fd30404}
-      \strng{authornamehash}{1020c743a0893a664168e9345fd30404}
-      \strng{authorfullhash}{2f3df5b21ea47c76f63520fc64bb1d9f}
+      \strng{namehash}{c68d2405af86b6ced370d62d24d22929}
+      \strng{fullhash}{c68d2405af86b6ced370d62d24d22929}
+      \strng{bibnamehash}{c68d2405af86b6ced370d62d24d22929}
+      \strng{authorbibnamehash}{c68d2405af86b6ced370d62d24d22929}
+      \strng{authornamehash}{c68d2405af86b6ced370d62d24d22929}
+      \strng{authorfullhash}{c68d2405af86b6ced370d62d24d22929}
       \field{sortinit}{3}
       \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{abstract}{OBJECTIVE: Sex hormones are thought to play an important role in the pathophysiology of depressive disorders in women. This study assessed the associations of total testosterone (T), bioavailable T, estradiol, dehydroepiandrosterone, and sex hormone-binding globulin (SHBG) with depressive symptoms stratified on postmenopausal stage to determine whether the associations were strongest for early postmenopausal women. METHODS: Women (N = 1,824) free of depressive symptoms at baseline (2000-2002) in the Multiethnic Study of Atherosclerosis were categorized into tertiles of years postmenopause: T1, 0 to 10 years; T2, 11 to 20 years; and T3, 21 to 58 years. Multivariable-adjusted relative risks (RRs) and 95{\%} CIs were computed for the incidence of depressive symptoms, as defined by a score of 16 or higher on the Center for Epidemiologic Studies Depression scale at examination 3 (2004-2005). RESULTS: In analysis including all sex hormones, the RR for incident depressive symptoms associated with 1 unit higher log total T was 0.57 (P = 0.13), with log estradiol was 0.78 (P = 0.04), with log SHBG was 1.84 (P = 0.003), and with log dehydroepiandrosterone was 1.45 (P = 0.08) in T1. Without adjustment for SHBG, the RR for log bioavailable T was 0.16 (P = 0.04). However, in T2 and T3, there were no meaningful associations of hormone or SHBG levels with incident depressive symptoms. When stratified by HT use, results were consistent for HT users but attenuated for HT nonusers. CONCLUSIONS: In early postmenopausal women, sex hormones were associated with incident depressive symptoms. {{$\copyright$}} 2012 by The North American Menopause Society.}
-      \field{issn}{10723714}
-      \field{journaltitle}{Menopause}
-      \field{month}{8}
-      \field{number}{8}
-      \field{title}{{Association of sex hormones and sex hormone-binding globulin with depressive symptoms in postmenopausal women: The Multiethnic Study of Atherosclerosis}}
-      \field{volume}{19}
-      \field{year}{2012}
-      \field{pages}{877\bibrangedash 885}
-      \range{pages}{9}
+      \field{issn}{0098-7484}
+      \field{journaltitle}{JAMA}
+      \field{month}{6}
+      \field{number}{11}
+      \field{title}{{Serum chemistry in the anxiety states: albumin and urea changes.}}
+      \field{volume}{224}
+      \field{year}{1973}
+      \field{pages}{1532}
+      \range{pages}{1}
       \verb{doi}
-      \verb 10.1097/gme.0b013e3182432de6
+      \verb 10.1001/jama.1973.03220250054026
+      \endverb
+      \verb{urlraw}
+      \verb http://www.ncbi.nlm.nih.gov/pubmed/4739967
+      \endverb
+      \verb{url}
+      \verb http://www.ncbi.nlm.nih.gov/pubmed/4739967
       \endverb
     \endentry
-    \entry{Asselmann2019}{article}{}
-      \name{author}{9}{}{%
-        {{hash=27475a59216f4ee6b7c5f45408f0577b}{%
-           family={Asselmann},
-           familyi={A\bibinitperiod},
-           given={Eva},
-           giveni={E\bibinitperiod}}}%
-        {{hash=2de8a8645fecfce4052145e3cccd21c2}{%
-           family={Kische},
-           familyi={K\bibinitperiod},
-           given={Hanna},
-           giveni={H\bibinitperiod}}}%
-        {{hash=6c2bf1599d3e5a64b1913d665e4de6e3}{%
-           family={Haring},
-           familyi={H\bibinitperiod},
-           given={Robin},
-           giveni={R\bibinitperiod}}}%
-        {{hash=f209a19e750d7e6b393e603fd253c88f}{%
-           family={Hertel},
-           familyi={H\bibinitperiod},
-           given={Johannes},
-           giveni={J\bibinitperiod}}}%
-        {{hash=6260417418402727528f54755ae7e36d}{%
-           family={Schmidt},
+    \entry{Segers1976}{article}{}
+      \name{author}{2}{}{%
+        {{hash=10c9f18885465ad71b1d6a0ed00be90f}{%
+           family={Segers},
            familyi={S\bibinitperiod},
-           given={Carsten\bibnamedelima Oliver},
-           giveni={C\bibinitperiod\bibinitdelim O\bibinitperiod}}}%
-        {{hash=227b241f68735cd6810be12976d205ba}{%
-           family={Nauck},
-           familyi={N\bibinitperiod},
-           given={Matthias},
-           giveni={M\bibinitperiod}}}%
-        {{hash=264b41e9ef17fb1e568c26db41c9089e}{%
-           family={Beesdo-Baum},
-           familyi={B\bibinithyphendelim B\bibinitperiod},
-           given={Katja},
-           giveni={K\bibinitperiod}}}%
-        {{hash=2dac2aa890d26df10b14f9fb6ed52e48}{%
-           family={Grabe},
-           familyi={G\bibinitperiod},
-           given={Hans\bibnamedelima J{\"{o}}rgen},
-           giveni={H\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
-        {{hash=793f4af1940779c5525ef1cfd53d82e0}{%
-           family={Pan{\'{e}}-Farr{\'{e}}},
-           familyi={P\bibinithyphendelim F\bibinitperiod},
-           given={Christiane},
+           given={Marie\bibnamedelima Jeanne},
+           giveni={M\bibinitperiod\bibinitdelim J\bibinitperiod}}}%
+        {{hash=00e38633195683271f0444e711e11573}{%
+           family={Mertens},
+           familyi={M\bibinitperiod},
+           given={Charles},
            giveni={C\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Elsevier}%
+      }
+      \strng{namehash}{8459b178972985d86c0146d6c914cbf7}
+      \strng{fullhash}{8459b178972985d86c0146d6c914cbf7}
+      \strng{bibnamehash}{8459b178972985d86c0146d6c914cbf7}
+      \strng{authorbibnamehash}{8459b178972985d86c0146d6c914cbf7}
+      \strng{authornamehash}{8459b178972985d86c0146d6c914cbf7}
+      \strng{authorfullhash}{8459b178972985d86c0146d6c914cbf7}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Psychosomatic interactions leading to the development of Coronary Heart Disease (CHD) have yet to be clarified. This study explores further whether and how an important CHD risk factor, relative weight, affects the relationships between psychological and bioclinical parameters. A principal factorial components solution (linear procedure) and an extension of the median test (non-linear procedure) were run on the scores of self-reported anxiety (IPAT Anxiety Scale) and depression (Zung Self-rating Scale), the indices of anxiety expression style, and the bioclinical measures (systolic and diastolic blood pressure, fasting blood glucose, urea and lip concentrations). The statistical procedures were carried out separately in the six subgroups which subdivide 1,694 male volunteers to a CHD detection examination, according to age (under- and over-45 yr) and relative weight (obese, normal and lean subjects). Results indicate that the relationship between psychological and bioclinical measures are specific to the subgroup considered: they are recurrent in obese and lean individuals, and more frequent in older than in younger subjects. The composition of the first factorial component is psycho-bioclinical in the under-45 obese subgroup; the second factorial component is biopsychological in the obese and lean, under- as well as over-45-yr old, subgroups. The expression style indices and the lipid concentrations are associated when the statistical method does not presuppose linearity. Present theories on psychological and bioclinical determinants of relative weight are reported, since the experimental data upon which these theories are based parallel interestingly the results of our correlational study. Indeed, both approaches suggest that cognitive factors, operationally defined by response tendencies and anxiety expression style, are different in obese and nonobese humans, and that these differences determine psycho-bioclinical relationships which are specific to these relative weight groups. Could these mechanisms of action be specified, an important step would be made in the understanding of the CHD etiology. {{$\copyright$}} 1976.}
+      \field{issn}{00223999}
+      \field{journaltitle}{Journal of Psychosomatic Research}
+      \field{month}{1}
+      \field{number}{1}
+      \field{title}{{Relationships between anxiety, depression self-ratings and CHD risk factors among obese, normal and lean individuals}}
+      \field{volume}{20}
+      \field{year}{1976}
+      \field{pages}{25\bibrangedash 35}
+      \range{pages}{11}
+      \verb{doi}
+      \verb 10.1016/0022-3999(76)90097-0
+      \endverb
+    \endentry
+    \entry{Wang2019}{article}{}
+      \name{author}{32}{}{%
+        {{hash=f0283de3ba239b0905f9bda8d651d8bd}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Hongkai},
+           giveni={H\bibinitperiod}}}%
+        {{hash=7cd4786e64889d935f471a73e44ed1fd}{%
+           family={Huang},
+           familyi={H\bibinitperiod},
+           given={Boyue},
+           giveni={B\bibinitperiod}}}%
+        {{hash=b877e94246080230c0acc68f8b47348e}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Weiling},
+           giveni={W\bibinitperiod}}}%
+        {{hash=cf5ed6b57659c99280b4e6f3a784526c}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Jinfang},
+           giveni={J\bibinitperiod}}}%
+        {{hash=426a0c83bf824d0896deb25b742107f7}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Yi},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=e498756f47722377a7619bd09e595a0b}{%
+           family={Flynn},
+           familyi={F\bibinitperiod},
+           given={Trevor},
+           giveni={T\bibinitperiod}}}%
+        {{hash=f940488b8cacbd6c6b508212c6d05168}{%
+           family={Zhao},
+           familyi={Z\bibinitperiod},
+           given={Meng},
+           giveni={M\bibinitperiod}}}%
+        {{hash=15aea634f46fd22fdef3608b4e629895}{%
+           family={Zhou},
+           familyi={Z\bibinitperiod},
+           given={Zhiming},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=8e6ed7eb29acdfdd792a1ec8064f690d}{%
+           family={Lin},
+           familyi={L\bibinitperiod},
+           given={Xiaojing},
+           giveni={X\bibinitperiod}}}%
+        {{hash=a41b154e9b52e4ea1b1176624e947a6f}{%
+           family={Zhang},
+           familyi={Z\bibinitperiod},
+           given={Yinan},
+           giveni={Y\bibinitperiod}}}%
+        {{hash=28c3664d45706df83040ece01b12dd8f}{%
+           family={Xu},
+           familyi={X\bibinitperiod},
+           given={Mengmeng},
+           giveni={M\bibinitperiod}}}%
+        {{hash=7ef0bcd54bb26920c3d2d21abb26733b}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Keqiong},
+           giveni={K\bibinitperiod}}}%
+        {{hash=58f67a3c7ded8ccfbcd73f300c538f8c}{%
+           family={Tian},
+           familyi={T\bibinitperiod},
+           given={Kuan},
+           giveni={K\bibinitperiod}}}%
+        {{hash=0fe6cae3da0024ae8d40eb8c7835229e}{%
+           family={Yuan},
+           familyi={Y\bibinitperiod},
+           given={Dezhi},
+           giveni={D\bibinitperiod}}}%
+        {{hash=a5a7e1da5f8e899211f04d84a59d0dd6}{%
+           family={Zhou},
+           familyi={Z\bibinitperiod},
+           given={Peng},
+           giveni={P\bibinitperiod}}}%
+        {{hash=3ad244a23ddae120263c0fa186eea397}{%
+           family={Hu},
+           familyi={H\bibinitperiod},
+           given={Ling},
+           giveni={L\bibinitperiod}}}%
+        {{hash=538ccfb215023d22c3f3bf1c5bdd9be7}{%
+           family={Zhong},
+           familyi={Z\bibinitperiod},
+           given={Dandan},
+           giveni={D\bibinitperiod}}}%
+        {{hash=2254f62f2cc26c0bd90223f1b8dd1f52}{%
+           family={Zhu},
+           familyi={Z\bibinitperiod},
+           given={Shuai},
+           giveni={S\bibinitperiod}}}%
+        {{hash=bcdd73174e26b44169c10e9083e72469}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Jing},
+           giveni={J\bibinitperiod}}}%
+        {{hash=5f7697300328672295881ab6cdad2c20}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Dilong},
+           giveni={D\bibinitperiod}}}%
+        {{hash=9c8b2f33dadda802bfe9c03837a851d6}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Kejian},
+           giveni={K\bibinitperiod}}}%
+        {{hash=b2f76ac0393ce7fd55a9fe8af9941986}{%
+           family={Liang},
+           familyi={L\bibinitperiod},
+           given={Jianhui},
+           giveni={J\bibinitperiod}}}%
+        {{hash=1cc3e6a45f746169be4fde99b802064b}{%
+           family={He},
+           familyi={H\bibinitperiod},
+           given={Qihua},
+           giveni={Q\bibinitperiod}}}%
+        {{hash=9f183ecd6875f4c78481b7d9c1cd7fc4}{%
+           family={Sun},
+           familyi={S\bibinitperiod},
+           given={Jianbin},
+           giveni={J\bibinitperiod}}}%
+        {{hash=8ce0d7213dfde041dfdbabd28e8b8342}{%
+           family={Shi},
+           familyi={S\bibinitperiod},
+           given={Jie},
+           giveni={J\bibinitperiod}}}%
+        {{hash=f8c3de6828fd5a189e537cf06a0140b2}{%
+           family={Yan},
+           familyi={Y\bibinitperiod},
+           given={Li},
+           giveni={L\bibinitperiod}}}%
+        {{hash=1bd2ce4780309e033703208b430169bd}{%
+           family={Sands},
+           familyi={S\bibinitperiod},
+           given={Jeff\bibnamedelima M.},
+           giveni={J\bibinitperiod\bibinitdelim M\bibinitperiod}}}%
+        {{hash=9a06b834b31d82d30facf304be80a15b}{%
+           family={Xie},
+           familyi={X\bibinitperiod},
+           given={Zhengwei},
+           giveni={Z\bibinitperiod}}}%
+        {{hash=9b5dd4b7b486ef8253130ab5fcef0768}{%
+           family={Lian},
+           familyi={L\bibinitperiod},
+           given={Xuemei},
+           giveni={X\bibinitperiod}}}%
+        {{hash=d873b43b5b154cc30cb0344a8c2223ca}{%
+           family={Xu},
+           familyi={X\bibinitperiod},
+           given={Duan},
+           giveni={D\bibinitperiod}}}%
+        {{hash=c3ffe4c55b92305169643b5593974f05}{%
+           family={Ran},
+           familyi={R\bibinitperiod},
+           given={Jianhua},
+           giveni={J\bibinitperiod}}}%
+        {{hash=475934b97c56611609357cde70f86c33}{%
+           family={Yang},
+           familyi={Y\bibinitperiod},
+           given={Baoxue},
+           giveni={B\bibinitperiod}}}%
       }
       \list{publisher}{1}{%
         {Elsevier B.V.}%
       }
-      \strng{namehash}{8d8c91612ce884a95acc18068514434a}
-      \strng{fullhash}{d1f58da87c37d1d8863b323c94129a07}
-      \strng{bibnamehash}{8d8c91612ce884a95acc18068514434a}
-      \strng{authorbibnamehash}{8d8c91612ce884a95acc18068514434a}
-      \strng{authornamehash}{8d8c91612ce884a95acc18068514434a}
-      \strng{authorfullhash}{d1f58da87c37d1d8863b323c94129a07}
+      \strng{namehash}{cbeb19d1c0ac2bd217d7616c17d3e44c}
+      \strng{fullhash}{bbe2434211fc3a0ddcea558f735ce11b}
+      \strng{bibnamehash}{cbeb19d1c0ac2bd217d7616c17d3e44c}
+      \strng{authorbibnamehash}{cbeb19d1c0ac2bd217d7616c17d3e44c}
+      \strng{authornamehash}{cbeb19d1c0ac2bd217d7616c17d3e44c}
+      \strng{authorfullhash}{bbe2434211fc3a0ddcea558f735ce11b}
       \field{sortinit}{3}
       \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{abstract}{Background: Findings on associations of androgens and sex hormone-binding globulin (SHBG) with anxiety and depressive disorders in the general population remain inconclusive. Methods: We used data of n = 993 men and n = 980 women from the Study of Health in Pomerania (SHIP, a prospective-longitudinal general population study from northeastern Germany). Immunoassay-measured serum concentrations of total testosterone, androstenedione and SHBG were assessed when participants were aged 20--80. 12-month, lifetime and incident DSM-IV anxiety and depressive disorders were assessed with the DIA-X/M-CIDI at 10-year follow-up, when participants were aged 29--89. Logistic regressions were adjusted for age, smoking, alcohol consumption, physical activity, waist circumference, hypertension and oral contraceptive use (women only) at baseline and follow-up interval. Results: In men and women, androgens and SHBG were not associated significantly with incident anxiety and depressive disorders. In men, higher total testosterone predicted any 12-month (OR = 1.46) and lifetime (OR = 1.34) anxiety disorder, lifetime social phobia (OR = 2.15), and 12-month (OR = 1.48) and lifetime (OR = 1.39) specific phobia, but neither 12-month nor lifetime depression. Moreover, androstenedione in men interacted with age in predicting lifetime anxiety disorders (OR = 0.98): Higher androstenedione more strongly predicted lifetime anxiety in younger vs. older men. These findings, however, did not survive correction for multiple testing. In women, androgens and SHBG were not associated significantly with 12-month and lifetime anxiety and depressive disorders. Limitations: The follow-up period was relatively long and other factors might have affected the examined associations. Conclusions: Higher serum total testosterone in men and androstenedione in younger men may relate to an increased risk of anxiety disorders.}
-      \field{issn}{15732517}
-      \field{journaltitle}{Journal of Affective Disorders}
-      \field{month}{2}
-      \field{title}{{Prospective associations of androgens and sex hormone-binding globulin with 12-month, lifetime and incident anxiety and depressive disorders in men and women from the general population}}
-      \field{volume}{245}
+      \field{abstract}{Background: Urea, the end product of protein metabolism, has been considered to have negligible toxicity for a long time. Our previous study showed a depression phenotype in urea transporter (UT) B knockout mice, which suggests that abnormal urea metabolism may cause depression. The purpose of this study was to determine if urea accumulation in brain is a key factor causing depression using clinical data and animal models. Methods: A meta-analysis was used to identify the relationship between depression and chronic diseases. Functional Magnetic Resonance Imaging (fMRI) brain scans and common biochemical indexes were compared between the patients and healthy controls. We used behavioural tests, electrophysiology, and molecular profiling techniques to investigate the functional role and molecular basis in mouse models. Findings: After performing a meta-analysis, we targeted the relevance between chronic kidney disease (CKD) and depression. In a CKD mouse model and a patient cohort, depression was induced by impairing the medial prefrontal cortex. The enlarged cohort suggested that urea was responsible for depression. In mice, urea was sufficient to induce depression, interrupt long-term potentiation (LTP) and cause loss of synapses in several models. The mTORC1-S6K pathway inhibition was necessary for the effect of urea. Lastly, we identified that the hydrolysate of urea, cyanate, was also involved in this pathophysiology. Interpretation: These data indicate that urea accumulation in brain is an independent factor causing depression, bypassing the psychosocial stress. Urea or cyanate carbamylates mTOR to inhibit the mTORC1-S6K dependent dendritic protein synthesis, inducing impairment of synaptic plasticity in mPFC and depression-like behaviour. CKD patients may be able to attenuate depression only by strict management of blood urea.}
+      \field{issn}{23523964}
+      \field{journaltitle}{EBioMedicine}
+      \field{month}{10}
+      \field{title}{{High urea induces depression and LTP impairment through mTOR signalling suppression caused by carbamylation}}
+      \field{volume}{48}
       \field{year}{2019}
-      \field{pages}{905\bibrangedash 911}
-      \range{pages}{7}
+      \field{pages}{478\bibrangedash 490}
+      \range{pages}{13}
       \verb{doi}
-      \verb 10.1016/j.jad.2018.11.052
+      \verb 10.1016/j.ebiom.2019.09.049
       \endverb
-      \keyw{Androgens,Anxiety,Cohort,Depression,Sex hormones,Testosterone}
-    \endentry
-    \entry{Ekholm2014}{article}{}
-      \name{author}{4}{}{%
-        {{hash=a6791c50ab0686635aaac2017fdf2f08}{%
-           family={Ekholm},
-           familyi={E\bibinitperiod},
-           given={Ulla-Britt},
-           giveni={U\bibinithyphendelim B\bibinitperiod}}}%
-        {{hash=bab0a28e98dd2a81698e863c1b7b3369}{%
-           family={Turkmen},
-           familyi={T\bibinitperiod},
-           given={Sahruh},
-           giveni={S\bibinitperiod}}}%
-        {{hash=df4e2b2e7cedccf6aa04a109cded8d4d}{%
-           family={Hammarb{\"{a}}ck},
-           familyi={H\bibinitperiod},
-           given={Stefan},
-           giveni={S\bibinitperiod}}}%
-        {{hash=cb680932fb0cbe23652b75b374b41162}{%
-           family={B{\"{a}}ckstr{\"{o}}m},
-           familyi={B\bibinitperiod},
-           given={Torbj{\"{o}}rn},
-           giveni={T\bibinitperiod}}}%
-      }
-      \strng{namehash}{4cfe153a2f0c70702542522878c5c794}
-      \strng{fullhash}{e0e4659de24379d7a4c177a889853284}
-      \strng{bibnamehash}{4cfe153a2f0c70702542522878c5c794}
-      \strng{authorbibnamehash}{4cfe153a2f0c70702542522878c5c794}
-      \strng{authornamehash}{4cfe153a2f0c70702542522878c5c794}
-      \strng{authorfullhash}{e0e4659de24379d7a4c177a889853284}
-      \field{sortinit}{3}
-      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{abstract}{Objective To study the relation between androgen levels and sexual interest in women with different kinds of pre-menstrual syndrome (PMS). Design Causal comparative study. Setting Swedish university hospital outpatient clinic. Population Seventy women with cyclical mood changes. Methods Pre-menstrual syndrome patients were divided into those with and those without preovulatory symptoms. In 37 women, early follicular phase blood samples were analyzed for androstenedione, testosterone, sex hormone-binding globulin (SHBG), progesterone and estradiol, using radioimmunoassay. The participants were divided into subgroups depending on whether the levels of androgens and SHBG were above or below the median. In 33 of them it was possible to compare the cyclicity in sexual parameters between these subgroups. Main outcome measures Daily ratings of sexual parameters and hormonal analyses. Results Plasma testosterone was significantly lower and SHBG significantly higher in women with luteal phase symptoms compared with those with additional follicular phase symptoms. ANOVA showed significant cyclicity for all sexual parameters consistently. For the sexual feelings and pleasant sexual thoughts parameters, cyclicity was the same whether or not the hormonal levels were high or low. Conclusions The Pure-PMS group and the pre-menstrual-exacerbation groups differed in their androgen and SHBG levels. Women suffering from PMS with higher neuroticism Eysenck Personality Inventory scores or low levels of androgens and SHBG would be more likely to have a decreased sexual interest pre-menstrually than would women with a high level. {{$\copyright$}} 2014 Nordic Federation of Societies of Obstetrics and Gynecology.}
-      \field{issn}{00016349}
-      \field{journaltitle}{Acta Obstetricia et Gynecologica Scandinavica}
-      \field{month}{3}
-      \field{number}{3}
-      \field{title}{{Sexuality and androgens in women with cyclical mood changes and pre-menstrual syndrome}}
-      \field{volume}{93}
-      \field{year}{2014}
-      \field{pages}{248\bibrangedash 255}
-      \range{pages}{8}
-      \verb{doi}
-      \verb 10.1111/aogs.12327
+      \verb{file}
+      \verb ::
       \endverb
-      \verb{urlraw}
-      \verb http://doi.wiley.com/10.1111/aogs.12327
-      \endverb
-      \verb{url}
-      \verb http://doi.wiley.com/10.1111/aogs.12327
-      \endverb
-      \keyw{Pre-menstrual syndrome,androgens,cyclical mood changes,sex hormone-binding globulin,sexuality}
-    \endentry
-    \entry{Aluja2014}{article}{}
-      \name{author}{4}{}{%
-        {{hash=87cf0a55ee34112ec2b07b66c5bd2d4e}{%
-           family={Aluja},
-           familyi={A\bibinitperiod},
-           given={A.},
-           giveni={A\bibinitperiod}}}%
-        {{hash=051ceb5874aef211cc4206283d5f60c6}{%
-           family={Garc{\'{\i}}a},
-           familyi={G\bibinitperiod},
-           given={L.F.},
-           giveni={L\bibinitperiod}}}%
-        {{hash=a420a946e4b10e4d899936b50e89b75a}{%
-           family={Garc{\'{\i}}a},
-           familyi={G\bibinitperiod},
-           given={O.},
-           giveni={O\bibinitperiod}}}%
-        {{hash=663c7da9ecaf0be7e161eedccb73af1c}{%
-           family={Blach},
-           familyi={B\bibinitperiod},
-           given={A.},
-           giveni={A\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {Elsevier BV}%
-      }
-      \strng{namehash}{5ed1145803020d73436f5270e9d614b5}
-      \strng{fullhash}{f0ac03f4bfa9c0fccd1f753979e07082}
-      \strng{bibnamehash}{5ed1145803020d73436f5270e9d614b5}
-      \strng{authorbibnamehash}{5ed1145803020d73436f5270e9d614b5}
-      \strng{authornamehash}{5ed1145803020d73436f5270e9d614b5}
-      \strng{authorfullhash}{f0ac03f4bfa9c0fccd1f753979e07082}
-      \field{sortinit}{3}
-      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{issn}{01918869}
-      \field{journaltitle}{Personality and Individual Differences}
-      \field{month}{4}
-      \field{title}{{Desinhibited personality and gonodal hormones in man}}
-      \field{volume}{60}
-      \field{year}{2014}
-      \field{pages}{S54}
-      \range{pages}{-1}
-      \verb{doi}
-      \verb 10.1016/j.paid.2013.07.226
-      \endverb
+      \keyw{Carbamylation,Depression,LTP,Urea,mTOR}
     \endentry
     \entry{Locke2015}{article}{}
       \name{author}{1411}{}{%
@@ -11436,202 +11660,6 @@
       \endverb
       \keyw{Atrial fibrillation,Risk factors}
     \endentry
-    \entry{Frot2019a}{article}{}
-      \name{author}{3}{}{%
-        {{hash=b2bcf338d67e859c1fe4f88dd40cd28d}{%
-           family={Frot},
-           familyi={F\bibinitperiod},
-           given={Benjamin},
-           giveni={B\bibinitperiod}}}%
-        {{hash=886a11a8868ea0bcd528ff9665afd02f}{%
-           family={Nandy},
-           familyi={N\bibinitperiod},
-           given={Preetam},
-           giveni={P\bibinitperiod}}}%
-        {{hash=61a7a14e950ba810e5505eea22de3312}{%
-           family={Maathuis},
-           familyi={M\bibinitperiod},
-           given={Marloes\bibnamedelima H.},
-           giveni={M\bibinitperiod\bibinitdelim H\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {Blackwell Publishing Ltd}%
-      }
-      \strng{namehash}{475f341cff534d8013f215981616e88d}
-      \strng{fullhash}{475f341cff534d8013f215981616e88d}
-      \strng{bibnamehash}{475f341cff534d8013f215981616e88d}
-      \strng{authorbibnamehash}{475f341cff534d8013f215981616e88d}
-      \strng{authornamehash}{475f341cff534d8013f215981616e88d}
-      \strng{authorfullhash}{475f341cff534d8013f215981616e88d}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{abstract}{We introduce a new method to estimate the Markov equivalence class of a directed acyclic graph (DAG) in the presence of hidden variables, in settings where the underlying DAG among the observed variables is sparse, and there are a few hidden variables that have a direct effect on many of the observed variables. Building on the so-called low rank plus sparse framework, we suggest a two-stage approach which first removes the effect of the hidden variables and then estimates the Markov equivalence class of the underlying DAG under the assumption that there are no remaining hidden variables. This approach is consistent in certain high dimensional regimes and performs favourably when compared with the state of the art, in terms of both graphical structure recovery and total causal effect estimation.}
-      \field{issn}{13697412}
-      \field{journaltitle}{Journal of the Royal Statistical Society: Series B (Statistical Methodology)}
-      \field{month}{7}
-      \field{number}{3}
-      \field{title}{{Robust causal structure learning with some hidden variables}}
-      \field{volume}{81}
-      \field{year}{2019}
-      \field{pages}{459\bibrangedash 487}
-      \range{pages}{29}
-      \verb{doi}
-      \verb 10.1111/rssb.12315
-      \endverb
-      \verb{file}
-      \verb ::
-      \endverb
-      \verb{urlraw}
-      \verb http://doi.wiley.com/10.1111/rssb.12315
-      \endverb
-      \verb{url}
-      \verb http://doi.wiley.com/10.1111/rssb.12315
-      \endverb
-      \keyw{Causal structure learning,Causality,Confounding,Directed acyclic graphs,High dimensional consistency,Structured sparsity}
-    \endentry
-    \entry{Frot2019b}{article}{}
-      \name{author}{3}{}{%
-        {{hash=b2bcf338d67e859c1fe4f88dd40cd28d}{%
-           family={Frot},
-           familyi={F\bibinitperiod},
-           given={Benjamin},
-           giveni={B\bibinitperiod}}}%
-        {{hash=1c3fe451b53283daf057691c9707c3fa}{%
-           family={Jostins},
-           familyi={J\bibinitperiod},
-           given={Luke},
-           giveni={L\bibinitperiod}}}%
-        {{hash=26eddb5b50d498d6fbe63b58febda369}{%
-           family={McVean},
-           familyi={M\bibinitperiod},
-           given={Gilean},
-           giveni={G\bibinitperiod}}}%
-      }
-      \list{publisher}{1}{%
-        {American Statistical Association}%
-      }
-      \strng{namehash}{fc142536810ff08297e3d5b2032ff3a7}
-      \strng{fullhash}{fc142536810ff08297e3d5b2032ff3a7}
-      \strng{bibnamehash}{fc142536810ff08297e3d5b2032ff3a7}
-      \strng{authorbibnamehash}{fc142536810ff08297e3d5b2032ff3a7}
-      \strng{authornamehash}{fc142536810ff08297e3d5b2032ff3a7}
-      \strng{authorfullhash}{fc142536810ff08297e3d5b2032ff3a7}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{abstract}{We consider the problem of learning a conditional Gaussian graphical model in the presence of latent variables. Building on recent advances in this field, we suggest a method that decomposes the parameters of a conditional Markov random field into the sum of a sparse and a low-rank matrix. We derive convergence bounds for this estimator and show that it is well-behaved in the high-dimensional regime as well as \textquotedblleft{}sparsistent\textquotedblright{} (i.e., capable of recovering the graph structure). We then show how proximal gradient algorithms and semi-definite programming techniques can be employed to fit the model to thousands of variables. Through extensive simulations, we illustrate the conditions required for identifiability and show that there is a wide range of situations in which this model performs significantly better than its counterparts, for example, by accommodating more latent variables. Finally, the suggested method is applied to two datasets comprising individual level data on genetic variants and metabolites levels. We show our results replicate better than alternative approaches and show enriched biological signal. Supplementary materials for this article are available online.}
-      \field{issn}{1537274X}
-      \field{journaltitle}{Journal of the American Statistical Association}
-      \field{month}{4}
-      \field{number}{526}
-      \field{title}{{Graphical Model Selection for Gaussian Conditional Random Fields in the Presence of Latent Variables}}
-      \field{volume}{114}
-      \field{year}{2019}
-      \field{pages}{723\bibrangedash 734}
-      \range{pages}{12}
-      \verb{doi}
-      \verb 10.1080/01621459.2018.1434531
-      \endverb
-      \verb{file}
-      \verb ::
-      \endverb
-      \keyw{ALSPAC,Conditional Markov random field,Genetics,Low-Rank plus Sparse,Metabolites,Model Selection,Multivariate analysis}
-    \endentry
-    \entry{Chandrasekaran2012}{article}{}
-      \name{author}{3}{}{%
-        {{hash=6c455027167a2474bcbecfd17ec411fa}{%
-           family={Chandrasekaran},
-           familyi={C\bibinitperiod},
-           given={Venkat},
-           giveni={V\bibinitperiod}}}%
-        {{hash=2e156927d1a78c8b985a952958e3a37f}{%
-           family={Parrilo},
-           familyi={P\bibinitperiod},
-           given={Pablo\bibnamedelima A},
-           giveni={P\bibinitperiod\bibinitdelim A\bibinitperiod}}}%
-        {{hash=a5f4ca7af97ce52b52d890071457daf8}{%
-           family={Willsky},
-           familyi={W\bibinitperiod},
-           given={Alan\bibnamedelima S},
-           giveni={A\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
-      }
-      \strng{namehash}{7c0ef947f6a4938ef348cbc84d95cf38}
-      \strng{fullhash}{7c0ef947f6a4938ef348cbc84d95cf38}
-      \strng{bibnamehash}{7c0ef947f6a4938ef348cbc84d95cf38}
-      \strng{authorbibnamehash}{7c0ef947f6a4938ef348cbc84d95cf38}
-      \strng{authornamehash}{7c0ef947f6a4938ef348cbc84d95cf38}
-      \strng{authorfullhash}{7c0ef947f6a4938ef348cbc84d95cf38}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{abstract}{Suppose we observe samples of a subset of a collection of random variables. No additional information is provided about the number of latent variables , nor of the relationship between the latent and observed variables. Is it possible to discover the number of latent components, and to learn a statistical model over the entire collection of variables? We address this question in the setting in which the latent and observed variables are jointly Gaussian, with the conditional statistics of the observed variables conditioned on the latent variables being specified by a graphical model. As a first step we give natural conditions under which such latent-variable Gaussian graphical models are identifiable given marginal statistics of only the observed variables. Essentially these conditions require that the conditional graphical model among the observed variables is sparse, while the effect of the latent variables is "spread out" over most of the observed variables. Next we propose a tractable convex program based on regularized maximum-likelihood for model selection in this latent-variable setting; the regularizer uses both the 1 norm and the nuclear norm. Our modeling framework can be viewed as a combination of dimensionality reduction (to identify latent variables) and graphical mod-eling (to capture remaining statistical structure not attributable to the latent variables), and it consistently estimates both the number of latent components and the conditional graphical model structure among the observed variables. These results are applicable in the high-dimensional setting in which the number of latent/observed variables grows with the number of samples of the observed variables. The geometric properties of the algebraic varieties of sparse matrices and of low-rank matrices play an important role in our analysis.}
-      \field{journaltitle}{The Annals of Statistics}
-      \field{number}{4}
-      \field{title}{{LATENT VARIABLE GRAPHICAL MODEL SELECTION VIA CONVEX OPTIMIZATION 1}}
-      \field{volume}{40}
-      \field{year}{2012}
-      \field{pages}{1935\bibrangedash 1967}
-      \range{pages}{33}
-      \verb{doi}
-      \verb 10.1214/11-AOS949
-      \endverb
-      \verb{file}
-      \verb :home/brielin/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Chandrasekaran, Parrilo, Willsky - 2012 - LATENT VARIABLE GRAPHICAL MODEL SELECTION VIA CONVEX OPTIMIZATION 1.pdf:pdf
-      \endverb
-      \keyw{62F12,62H12,Gaussian graphical models,algebraic statistics,covariance selection,high-dimensional asymptotics,latent variables,low-rank,regularization,sparsity}
-    \endentry
-    \entry{Stegle2011}{report}{}
-      \name{author}{5}{}{%
-        {{hash=7a5535f1d9d7b08a2b684b894c37319d}{%
-           family={Stegle},
-           familyi={S\bibinitperiod},
-           given={Oliver},
-           giveni={O\bibinitperiod}}}%
-        {{hash=006e0de9144f28d1144a8563190cfdd6}{%
-           family={Lippert},
-           familyi={L\bibinitperiod},
-           given={Christoph},
-           giveni={C\bibinitperiod}}}%
-        {{hash=ce7c98ecd490ed138dd0d65d7207083a}{%
-           family={Mooij},
-           familyi={M\bibinitperiod},
-           given={Joris},
-           giveni={J\bibinitperiod}}}%
-        {{hash=aa520181c7ed14c3803f5ff137fa4b9b}{%
-           family={Lawrence},
-           familyi={L\bibinitperiod},
-           given={Neil},
-           giveni={N\bibinitperiod}}}%
-        {{hash=444d8d5fcbebf11f920c4fd033f0bb40}{%
-           family={Borgwardt},
-           familyi={B\bibinitperiod},
-           given={Karsten},
-           giveni={K\bibinitperiod}}}%
-      }
-      \strng{namehash}{b6ababf648630526be4b46a464405551}
-      \strng{fullhash}{191218c3a728c155a20a8bd953e475fb}
-      \strng{bibnamehash}{b6ababf648630526be4b46a464405551}
-      \strng{authorbibnamehash}{b6ababf648630526be4b46a464405551}
-      \strng{authornamehash}{b6ababf648630526be4b46a464405551}
-      \strng{authorfullhash}{191218c3a728c155a20a8bd953e475fb}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{abstract}{Inference in matrix-variate Gaussian models has major applications for multi-output prediction and joint learning of row and column covariances from matrix-variate data. Here, we discuss an approach for efficient inference in such models that explicitly account for iid observation noise. Computational tractability can be retained by exploiting the Kronecker product between row and column covariance matrices. Using this framework, we show how to generalize the Graphical Lasso in order to learn a sparse inverse covariance between features while accounting for a low-rank confounding covariance between samples. We show practical utility on applications to biology, where we model covariances with more than 100,000 dimensions. We find greater accuracy in recovering biological network structures and are able to better reconstruct the confounders.}
-      \field{title}{{Efficient inference in matrix-variate Gaussian models with iid observation noise}}
-      \field{type}{techreport}
-      \field{year}{2011}
-      \field{pages}{630\bibrangedash 638}
-      \range{pages}{9}
-      \verb{file}
-      \verb ::
-      \endverb
-    \endentry
     \entry{Maathuis2009}{article}{}
       \name{author}{4}{}{%
         {{hash=ecd66388c82940198846653c86ad2a47}{%
@@ -11681,6 +11709,179 @@
       \endverb
       \keyw{62-09,62H99,Causal analysis,PC-algorithm,directed acyclic graph (DAG),graphical modeling,intervention calculus,sparsity}
     \endentry
+    \entry{Barzel2013}{article}{}
+      \name{author}{2}{}{%
+        {{hash=81d01eafde1d9acbfdb9ea8e25e78100}{%
+           family={Barzel},
+           familyi={B\bibinitperiod},
+           given={Baruch},
+           giveni={B\bibinitperiod}}}%
+        {{hash=dafe091e0ec5121c0dd1acdf731cec6a}{%
+           family={Barab{\'{a}}si},
+           familyi={B\bibinitperiod},
+           given={Albert\bibnamedelima L{\'{a}}szl{\'{o}}},
+           giveni={A\bibinitperiod\bibinitdelim L\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Nature Publishing Group}%
+      }
+      \strng{namehash}{0ad379433a893785ddfd452a17e6076a}
+      \strng{fullhash}{0ad379433a893785ddfd452a17e6076a}
+      \strng{bibnamehash}{0ad379433a893785ddfd452a17e6076a}
+      \strng{authorbibnamehash}{0ad379433a893785ddfd452a17e6076a}
+      \strng{authornamehash}{0ad379433a893785ddfd452a17e6076a}
+      \strng{authorfullhash}{0ad379433a893785ddfd452a17e6076a}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Predictions of physical and functional links between cellular components are often based on correlations between experimental measurements, such as gene expression. However, correlations are affected by both direct and indirect paths, confounding our ability to identify true pairwise interactions. Here we exploit the fundamental properties of dynamical correlations in networks to develop a method to silence indirect effects. The method receives as input the observed correlations between node pairs and uses a matrix transformation to turn the correlation matrix into a highly discriminative silenced matrix, which enhances only the terms associated with direct causal links. Against empirical data for Escherichia coli regulatory interactions, the method enhanced the discriminative power of the correlations by twofold, yielding \x{2265}50{\%} predictive improvement over traditional correlation measures and 6{\%} over mutual information. Overall this silencing method will help translate the abundant correlation data into insights about a system's interactions, with applications ranging from link prediction to inferring the dynamical mechanisms governing biological networks. {{$\copyright$}} 2013 Nature America, Inc. All rights reserved.}
+      \field{issn}{10870156}
+      \field{journaltitle}{Nature Biotechnology}
+      \field{month}{8}
+      \field{number}{8}
+      \field{title}{{Network link prediction by global silencing of indirect correlations}}
+      \field{volume}{31}
+      \field{year}{2013}
+      \field{pages}{720\bibrangedash 725}
+      \range{pages}{6}
+      \verb{doi}
+      \verb 10.1038/nbt.2601
+      \endverb
+      \verb{file}
+      \verb ::
+      \endverb
+      \keyw{Biochemical networks,Complexity,Regulatory networks,Systems analysis}
+    \endentry
+    \entry{Pachter}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=059c1a4d3f73f79262e66893b9121aad}{%
+           family={Pachter},
+           familyi={P\bibinitperiod},
+           given={Lior\bibnamedelima S},
+           giveni={L\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
+      }
+      \strng{namehash}{059c1a4d3f73f79262e66893b9121aad}
+      \strng{fullhash}{059c1a4d3f73f79262e66893b9121aad}
+      \strng{bibnamehash}{059c1a4d3f73f79262e66893b9121aad}
+      \strng{authorbibnamehash}{059c1a4d3f73f79262e66893b9121aad}
+      \strng{authornamehash}{059c1a4d3f73f79262e66893b9121aad}
+      \strng{authorfullhash}{059c1a4d3f73f79262e66893b9121aad}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{{The network nonsense of Albert-L{\'{a}}szl{\'{o}} Barab{\'{a}}si | Bits of DNA}}
+      \field{urlday}{29}
+      \field{urlmonth}{4}
+      \field{urlyear}{2020}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://liorpachter.wordpress.com/2014/02/10/the-network-nonsense-of-albert-laszlo-barabasi/
+      \endverb
+      \verb{url}
+      \verb https://liorpachter.wordpress.com/2014/02/10/the-network-nonsense-of-albert-laszlo-barabasi/
+      \endverb
+    \endentry
+    \entry{Dahl2013}{report}{}
+      \name{author}{4}{}{%
+        {{hash=1a36be316985afdd9a0c4f12074b1a7d}{%
+           family={Dahl},
+           familyi={D\bibinitperiod},
+           given={Andy},
+           giveni={A\bibinitperiod}}}%
+        {{hash=31e1d70f7ed0b88b8d55653620398b85}{%
+           family={Hore},
+           familyi={H\bibinitperiod},
+           given={Victoria},
+           giveni={V\bibinitperiod}}}%
+        {{hash=d1dfd5b2fe1a68d1002d7067ac8ee7a0}{%
+           family={Iotchkova},
+           familyi={I\bibinitperiod},
+           given={Valentina},
+           giveni={V\bibinitperiod}}}%
+        {{hash=483d6539602b223f8eeed2e6169d0538}{%
+           family={Marchini},
+           familyi={M\bibinitperiod},
+           given={Jonathan},
+           giveni={J\bibinitperiod}}}%
+      }
+      \strng{namehash}{c9aaca3b67efc8c0557a92a76c25c085}
+      \strng{fullhash}{9a03a8fbfe1022bd0ee20cc55e2fc6e6}
+      \strng{bibnamehash}{c9aaca3b67efc8c0557a92a76c25c085}
+      \strng{authorbibnamehash}{c9aaca3b67efc8c0557a92a76c25c085}
+      \strng{authornamehash}{c9aaca3b67efc8c0557a92a76c25c085}
+      \strng{authorfullhash}{9a03a8fbfe1022bd0ee20cc55e2fc6e6}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Inferring a graphical model or network from observational data from a large number of variables is a well studied problem in machine learning and computational statistics. In this paper we consider a version of this problem that is relevant to the analysis of multiple phenotypes collected in genetic studies. In such datasets we expect correlations between phenotypes and between individuals. We model observations as a sum of two matrix normal variates such that the joint covariance function is a sum of Kronecker products. This model, which generalizes the Graph-ical Lasso, assumes observations are correlated due to known genetic relationships and corrupted with non-independent noise. We have developed a computation-ally efficient EM algorithm to fit this model. On simulated datasets we illustrate substantially improved performance in network reconstruction by allowing for a general noise distribution.}
+      \field{eprinttype}{arXiv}
+      \field{title}{{Network inference in matrix-variate Gaussian models with non-independent noise}}
+      \field{type}{techreport}
+      \field{year}{2013}
+      \verb{eprint}
+      \verb 1312.1622v1
+      \endverb
+      \verb{file}
+      \verb :home/brielin/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Dahl et al. - 2013 - Network inference in matrix-variate Gaussian models with non-independent noise.pdf:pdf
+      \endverb
+    \endentry
+    \entry{Morrison2020}{article}{}
+      \name{author}{5}{}{%
+        {{hash=fc62c5c8b9eaba1eff0edd2169c57d7f}{%
+           family={Morrison},
+           familyi={M\bibinitperiod},
+           given={Jean},
+           giveni={J\bibinitperiod}}}%
+        {{hash=45979b03141f4b641908bf6802d0638c}{%
+           family={Knoblauch},
+           familyi={K\bibinitperiod},
+           given={Nicholas},
+           giveni={N\bibinitperiod}}}%
+        {{hash=81ba888fc0a27a8bfb8a0e7b10782136}{%
+           family={Marcus},
+           familyi={M\bibinitperiod},
+           given={Joseph\bibnamedelima H.},
+           giveni={J\bibinitperiod\bibinitdelim H\bibinitperiod}}}%
+        {{hash=b6392ab77144d0d73f3f35bd39da607c}{%
+           family={Stephens},
+           familyi={S\bibinitperiod},
+           given={Matthew},
+           giveni={M\bibinitperiod}}}%
+        {{hash=8c6ba049f603b2bd1a05026dd9c99aac}{%
+           family={He},
+           familyi={H\bibinitperiod},
+           given={Xin},
+           giveni={X\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Nature Research}%
+      }
+      \strng{namehash}{1ca3f1d16843117046ab2250edd026d9}
+      \strng{fullhash}{49632dfe348550da95d412decb79f00f}
+      \strng{bibnamehash}{1ca3f1d16843117046ab2250edd026d9}
+      \strng{authorbibnamehash}{1ca3f1d16843117046ab2250edd026d9}
+      \strng{authornamehash}{1ca3f1d16843117046ab2250edd026d9}
+      \strng{authorfullhash}{49632dfe348550da95d412decb79f00f}
+      \field{sortinit}{5}
+      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Mendelian randomization (MR) is a valuable tool for detecting causal effects by using genetic variant associations. Opportunities to apply MR are growing rapidly with the increasing number of genome-wide association studies (GWAS). However, existing MR methods rely on strong assumptions that are often violated, leading to false positives. Correlated horizontal pleiotropy, which arises when variants affect both traits through a heritable shared factor, remains a particularly challenging problem. We propose a new MR method, Causal Analysis Using Summary Effect estimates (CAUSE), that accounts for correlated and uncorrelated horizontal pleiotropic effects. We demonstrate, in simulations, that CAUSE avoids more false positives induced by correlated horizontal pleiotropy than other methods. Applied to traits studied in recent GWAS studies, we find that CAUSE detects causal relationships that have strong literature support and avoids identifying most unlikely relationships. Our results suggest that shared heritable factors are common and may lead to many false positives using alternative methods.}
+      \field{issn}{15461718}
+      \field{journaltitle}{Nature Genetics}
+      \field{month}{5}
+      \field{title}{{Mendelian randomization accounting for correlated and uncorrelated pleiotropic effects using genome-wide summary statistics}}
+      \field{year}{2020}
+      \field{pages}{1\bibrangedash 8}
+      \range{pages}{8}
+      \verb{doi}
+      \verb 10.1038/s41588-020-0631-4
+      \endverb
+      \keyw{Epidemiology,Genome,Software,wide association studies}
+    \endentry
     \entry{Davies2015}{article}{}
       \name{author}{6}{}{%
         {{hash=42e279b39573fb4e1035e393e2b08e57}{%
@@ -11726,8 +11927,8 @@
       \strng{authorbibnamehash}{01345967b821d0b2091a2171408ce3e6}
       \strng{authornamehash}{01345967b821d0b2091a2171408ce3e6}
       \strng{authorfullhash}{ff844b58cb212d2f5a7c09e07167e898}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{sortinit}{5}
+      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Instrumental variable estimates of causal effects can be biased when using many instruments that are only weakly associated with the exposure. We describe several techniques to reduce this bias and estimate corrected standard errors. We present our findings using a simulation study and an empirical application. For the latter, we estimate the effect of height on lung function, using genetic variants as instruments for height. Our simulation study demonstrates that, using many weak individual variants, two-stage least squares (2SLS) is biased, whereas the limited information maximum likelihood (LIML) and the continuously updating estimator (CUE) are unbiased and have accurate rejection frequencies when standard errors are corrected for the presence of many weak instruments. Our illustrative empirical example uses data on 3631 children from England. We used 180 genetic variants as instruments and compared conventional ordinary least squares estimates with results for the 2SLS, LIML, and CUE instrumental variable estimators using the individual height variants. We further compare these with instrumental variable estimates using an unweighted or weighted allele score as single instruments. In conclusion, the allele scores and CUE gave consistent estimates of the causal effect. In our empirical example, estimates using the allele score were more efficient. CUE with corrected standard errors, however, provides a useful additional statistical tool in applications with many weak instruments. The CUE may be preferred over an allele score if the population weights for the allele score are unknown or when the causal effects of multiple risk factors are estimated jointly.}
@@ -11777,8 +11978,8 @@
       \strng{authorbibnamehash}{7f1e44718a926439283b952ec04c5ab8}
       \strng{authornamehash}{7f1e44718a926439283b952ec04c5ab8}
       \strng{authorfullhash}{7f1e44718a926439283b952ec04c5ab8}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{sortinit}{5}
+      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{With the development of high-throughput genomic technologies, large, genome-wide datasets have been collected, and the integration of these datasets should provide large-scale, multidimensional, and insightful views of biological systems. We developed a method for gene association network construction based on gene expression data that integrate a variety of biological resources. Assuming gene expression data are from a multivariate Gaussian distribution, a graphical lasso (glasso) algorithm is able to estimate the sparse inverse covariance matrix by a lasso (L1) penalty. The inverse covariance matrix can be seen as direct correlation between gene pairs in the gene association network. In our work, instead of using a single penalty, different penalty values were applied for gene pairs based on a priori knowledge as to whether the two genes should be connected. The a priori information can be calculated or retrieved from other biological data, e.g., Gene Ontology similarity, protein-protein interaction, gene regulatory network. By incorporating prior knowledge, the weighted graphical lasso (wglasso) outperforms the original glasso both on simulations and on data from Arabidopsis. Simulation studies show that even when some prior knowledge is not correct, the overall quality of the wglasso network was still greater than when not incorporating that information, e.g., glasso.}
@@ -11836,8 +12037,8 @@
       \strng{authorbibnamehash}{fddfeeb732fd6edf74b300c8fbedc21f}
       \strng{authornamehash}{fddfeeb732fd6edf74b300c8fbedc21f}
       \strng{authorfullhash}{5a5c3d33bc6e4168e8b35d7b58ed198f}
-      \field{sortinit}{4}
-      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
+      \field{sortinit}{5}
+      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Background: Conventional differential gene expression analysis by methods such as student's t-test, SAM, and Empirical Bayes often searches for statistically significant genes without considering the interactions among them. Network-based approaches provide a natural way to study these interactions and to investigate the rewiring interactions in disease versus control groups. In this paper, we apply weighted graphical LASSO (wgLASSO) algorithm to integrate a data-driven network model with prior biological knowledge (i.e., protein-protein interactions) for biological network inference. We propose a novel differentially weighted graphical LASSO (dwgLASSO) algorithm that builds group-specific networks and perform network-based differential gene expression analysis to select biomarker candidates by considering their topological differences between the groups. Results: Through simulation, we showed that wgLASSO can achieve better performance in building biologically relevant networks than purely data-driven models (e.g., neighbor selection, graphical LASSO), even when only a moderate level of information is available as prior biological knowledge. We evaluated the performance of dwgLASSO for survival time prediction using two microarray breast cancer datasets previously reported by Bild et al. and van de Vijver et al. Compared with the top 10 significant genes selected by conventional differential gene expression analysis method, the top 10 significant genes selected by dwgLASSO in the dataset from Bild et al. led to a significantly improved survival time prediction in the independent dataset from van de Vijver et al. Among the 10 genes selected by dwgLASSO, UBE2S, SALL2, XBP1 and KIAA0922 have been confirmed by literature survey to be highly relevant in breast cancer biomarker discovery study. Additionally, we tested dwgLASSO on TCGA RNA-seq data acquired from patients with hepatocellular carcinoma (HCC) on tumors samples and their corresponding non-tumorous liver tissues. Improved sensitivity, specificity and area under curve (AUC) were observed when comparing dwgLASSO with conventional differential gene expression analysis method. Conclusions: The proposed network-based differential gene expression analysis algorithm dwgLASSO can achieve better performance than conventional differential gene expression analysis methods by integrating information at both gene expression and network topology levels. The incorporation of prior biological knowledge can lead to the identification of biologically meaningful genes in cancer biomarker studies.}
@@ -13161,36 +13362,6 @@
       \endverb
       \keyw{Gene regulation,Transcriptomics}
     \endentry
-    \entry{Pachter}{misc}{}
-      \name{author}{1}{}{%
-        {{hash=059c1a4d3f73f79262e66893b9121aad}{%
-           family={Pachter},
-           familyi={P\bibinitperiod},
-           given={Lior\bibnamedelima S},
-           giveni={L\bibinitperiod\bibinitdelim S\bibinitperiod}}}%
-      }
-      \strng{namehash}{059c1a4d3f73f79262e66893b9121aad}
-      \strng{fullhash}{059c1a4d3f73f79262e66893b9121aad}
-      \strng{bibnamehash}{059c1a4d3f73f79262e66893b9121aad}
-      \strng{authorbibnamehash}{059c1a4d3f73f79262e66893b9121aad}
-      \strng{authornamehash}{059c1a4d3f73f79262e66893b9121aad}
-      \strng{authorfullhash}{059c1a4d3f73f79262e66893b9121aad}
-      \field{sortinit}{5}
-      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
-      \field{labelnamesource}{author}
-      \field{labeltitlesource}{title}
-      \field{title}{{The network nonsense of Albert-L{\'{a}}szl{\'{o}} Barab{\'{a}}si | Bits of DNA}}
-      \field{urlday}{29}
-      \field{urlmonth}{4}
-      \field{urlyear}{2020}
-      \field{urldateera}{ce}
-      \verb{urlraw}
-      \verb https://liorpachter.wordpress.com/2014/02/10/the-network-nonsense-of-albert-laszlo-barabasi/
-      \endverb
-      \verb{url}
-      \verb https://liorpachter.wordpress.com/2014/02/10/the-network-nonsense-of-albert-laszlo-barabasi/
-      \endverb
-    \endentry
     \entry{Boyd2010}{article}{}
       \name{author}{5}{}{%
         {{hash=ec94d94cc487dd71939a90cbeaaf47d0}{%
@@ -13225,8 +13396,8 @@
       \strng{authorbibnamehash}{60ec9bf707fa51b002fec03e755dd98d}
       \strng{authornamehash}{60ec9bf707fa51b002fec03e755dd98d}
       \strng{authorfullhash}{0ed62155139f29aa99cdd8d945a2291b}
-      \field{sortinit}{5}
-      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
+      \field{sortinit}{6}
+      \field{sortinithash}{57e57fb8451e7fcfa45d1e069f6d3136}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Many problems of recent interest in statistics and machine learning can be posed in the framework of convex optimization. Due to the explosion in size and complexity of modern datasets, it is increasingly important to be able to solve problems with a very large number of features or training examples. As a result, both the decentralized collection or storage of these datasets as well as accompanying distributed solution methods are either necessary or at least highly desirable. In this review, we argue that the alternating direction method of multipliers is well suited to distributed convex optimization, and in particular to large-scale problems arising in statistics, machine learning, and related areas. The method was developed in the 1970s, with roots in the 1950s, and is equivalent or closely related to many other algorithms, such as dual decomposition, the method of multipliers, Douglas-Rachford splitting, Spingarn's method of partial inverses, Dykstra's alternating projections, Bregman iterative algorithms for \x{2113}1 problems, proximal methods, and thers. After briefly surveying the theory and history of the algorithm, we discuss applications to a wide variety of statistical and machine learning problems of recent interest, including the lasso, sparse logistic regression, basis pursuit, covariance selection, support vector machines, and many others. We also discuss general distributed optimization, extensions to the nonconvex setting, and efficient implementation, including some details on distributed MPI and Hadoop MapReduce implementations. {{$\copyright$}} 2011 S. Boyd, N. Parikh, E. Chu, B. Peleato and J. Eckstein.}
@@ -13259,8 +13430,8 @@
       \strng{authorbibnamehash}{282dae16c6e1f87efa57b8ec3b317876}
       \strng{authornamehash}{282dae16c6e1f87efa57b8ec3b317876}
       \strng{authorfullhash}{282dae16c6e1f87efa57b8ec3b317876}
-      \field{sortinit}{5}
-      \field{sortinithash}{3c19c3776b658b3558e9e2e4840c01e2}
+      \field{sortinit}{6}
+      \field{sortinithash}{57e57fb8451e7fcfa45d1e069f6d3136}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{annotation}{R package version 0.3.0}
