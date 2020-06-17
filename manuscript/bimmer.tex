@@ -53,18 +53,20 @@ bidirectional mediated Mendelian randomization}
 \begin{abstract}
 Inference of directed biological networks from observational genomics datasets is a crucial
 but notoriously difficult challenge. Modern population-scale biobanks, containing simultaneous
-measurements of traits, molecular markers and genetic variation, offer unprecedented opportunity
+measurements of traits, biomarkers and genetic variation, offer unprecedented opportunity
 to study biological networks. Mendelian randomization (MR) has received attention as a class
 of methods for inferring causal effects in observational data that uses genetic variants (SNPs)
 as instrumental variables, but MR methods rely on assumptions that limit their application
 to complex traits at the biobank-scale. Moreover, MR estimates the total effect of one trait 
 on another, which may be mediated by other factors. Biobanks allow simultaneous measurement 
 of possible mediators, in principle enabling the conversion of MR estimates into direct effects 
-representing a causal network. Here, we introduce a new method, bi-directional mediated Mendelian 
-randomization (bimmer), for inferring sparse causal networks from biobank summary statistics. 
-bimmer leverages a new Egger regression weighting coupled to a novel algorithm for finding a sparse
-approximate matrix inverse to learn causal network structures even in the presence of non-causal 
-genetic correlation, which we validate through extensive simulations. We apply bimmer to 405 
+representing a causal network.
+Here, we show that this can be accomplished by a flexible two stage procedure we call
+\emph{bidirectional mediated Mendelian randomization} (bimmer). First,
+estimate the effect of every trait on every other. Next, approximately invert the resulting matrix.
+We introduce novel methods for both steps and show via extensive simulations that bimmer is able
+to learn causal network structures even in the presence of non-causal 
+genetic correlation. We apply bimmer to 405 
 phenotypes from the UK biobank and demonstrate that learning the network structure is invaluable 
 for interpreting the results of phenome-wide MR, while lending causal support to several
 recent observational studies.
@@ -81,9 +83,10 @@ owing to factors such as unmeasured confounding and reverse causation~\cite{Pars
 In spite of these challenges, modern population-scale biobanks 
 offer unprecedented opportunity to study biological networks
  because they contain measurements of
-traits, molecular markers and genetic variation in the same individuals~\cite{Sudlow2015,Nagai2017}. To date,
-there are no methods that are able to infer directed biological networks
-in the presence of unmeasured confounding at the biobank-scale.
+traits, biomarkers and genetic variation in the same individuals~\cite{Sudlow2015,Nagai2017}.
+Current methods for estimating biological networks from observational data with confounding
+are severely limited~\cite{Chandrasekaran2012,Frot2019a,Frot2019b,Stegle2011} and have no strategy
+for integrating genetic data.
 
 Mendelian randomization (MR) has recently received increased attention as a class of methods
 that can mitigate issues in causal inference
@@ -103,7 +106,7 @@ also presuppose the direction of effect, specifying one phenotype as the outcome
 the other as the exposure. This is sound when the outcome
 is clearly biologically downstream of the exposure, but in some cases it is better
 to learn the direction of the effect from the data.
-Some researchers have instead used bi-directional MR~\cite{Timpson2011, Richmond2014}, which tests for
+Some researchers have instead used bidirectional MR~\cite{Timpson2011, Richmond2014}, which tests for
 and effect in each direction, or gwas-pw~\cite{Pickrell2016}, which infers the effect
 direction from the data.
 However, the utility of these approaches for complex traits,
@@ -124,23 +127,18 @@ A causes B or B causes A, but not both, is equivalent to assuming
 that the underlying causal network
 lacks cycles, which are thought to be an important part of real biological networks~\cite{Zhu2007}.
 
-Here, we introduce an approach called
-\emph{bi-directional mediated Mendelian randomization} (bimmer)
-for inferring sparse networks of direct causal effects from phenome-scale
-GWAS summary statistics.
-Our approach has two parts. First, we perform bi-directional Mendelian randomization
-between every pair of phenotypes using Egger regression with a
-modified SNP selection and weighting scheme that reduces the
-influence of pleiotropic SNPs.
-This gives an estimate of the TCE of each phenotype on every other (Figure~\ref{figure0}a-b).
-Second,
-we perform a causal mediation analysis to convert the matrix
-of total causal effects into a sparse, directed network of direct causal effects.
-We show that this conversion can be modeled as an $L_1$-regularized matrix inverse problem,
-drawing analogy to the graphical lasso~\cite{Friedman2007}, and introduce a new
-algorithm for finding a sparse inverse to a partially-observed matrix called
+Here, we show that directed causal graphs can be estimated from phenome-scale GWAS summary
+statistics using a simple two-stage framework. First, calculate the TCE of every phenotype
+on every other. Next, approximately invert that matrix to produce a causal graph.
+We call this framework \emph{bi-directional mediated Mendelian randomization} (bimmer),
+and introduce novel methods for both components. To calculate the TCE matrix, we
+use a new weighting scheme for Egger regression that reduces the
+influence of pleiotropic SNPs (Figure~\ref{figure0}a-b). Then, we convert the TCE
+estimates into a DCE graph by solving an $L_1$-regularized matrix inverse problem,
+similar to the graphical LASSO~\cite{Friedman2007}, using a novel
+algorithm for finding a sparse inverse to a partially-observed matrix that we call
 \emph{inverse sparse regression} (inspre, Figure~\ref{figure0}b-c).
-We show in extensive simulations that our approach is able to learn causal
+In extensive simulations, we show that our approach is able to learn causal
  network structures even in the presence of non-causal genetic correlation.
 We apply our method to $405$ phenotypes from the UK Biobank, finding thousands
  of direct causal effects, complex causal pathways, and densely-connected sub-networks
@@ -149,7 +147,7 @@ We apply our method to $405$ phenotypes from the UK Biobank, finding thousands
 \begin{figure}
 \includegraphics[width=\textwidth]{figures/bimmer_fig1.pdf}
 \caption{Overview of the bimmer model. a) Modern biobanks contains measurements
-of genetic variants (green squares), molecular markers
+of genetic variants (green squares), biomarkers
 (orange triangles), complex traits (purple circles) and diseases (pink diamonds). Genetic variants
 affect these phenotypes which in turn affect each other. The presence of unmeasured latent factors
 (white circle)
@@ -159,58 +157,52 @@ estimates the total causal effect of the phenotypes on each other (dashed bi-dir
 which includes both direct and indirect effects. c) The direct effects can be
 found by estimating a sparse approximate inverse to the matrix of total effects, a process we
 call inverse sparse regression. This gives an estimate of the causal network (gray arrows), which
-can be imperfect.}
+can be imperfect. The modular nature of our approach allows us to use any method for bidirectional
+Mendelian randomization or approximate matrix inversion, providing flexibility
+and naturally accommodating future progress on both tasks.}
 \label{figure0}
 \end{figure}
 
 
 \section{Results}
 \subsection*{Overview of model}
-
-We motivate our model by considering a linear dynamical system at equilibrium.
-We model each phenotype as a function of 1) time-invariant genetic factors, 2)
-time-invariant environmental factors, and 3) other phenotypes at the previous
-time-point.
+We propose a simple regression model that accommodates complex, bi-directional relationships.
+We assume each phenotype is a linear function
+of other phenotypes, genetic factors, and environmental factors.
 Assume we have $N$ individuals, $D$ phenotypes and $M$ SNPs,
-with $Y_t$ the matrix of phenotypes indexed by time $t$, $X$ the genotype
+with $Y$ the matrix of phenotypes, $X$ the genotype
 matrix, $\beta$ the SNP effect matix and $\gamma$ a matrix of unknown
-environmental effects. Let $R$ be the $D \times D$ matrix of
-direct causal effects, with $R_{i, j}$ the DCE of phenotype $i$ on
-phenotype $j$. We assume that phenotypes do not effect themselves ($R_{i,i} = 0$),
-and that the network is sparse ($R$ has many entries that are $0$).
-Our goal is to estimate $R$ given summary statistics
- for the association of the genotypes $X$ with the phenotypes measured when
- the system has reached equilibrium, $Y = Y_{t}$.
- Our trait model is $Y_{t+1} = Y_{t} R + X\beta + \gamma$, which converges to
-\begin{equation}\label{model}
-Y = (X\beta + \gamma)(I-R)^{-1}
-\end{equation}
-if the largest eigenvalue of $R$ has magnitude below 1.
-
-Let $R^{TCE}$ be the matrix of TCE estimates from MR, with $R^{TCE}_{i,j}$ the total
-causal effect of phenotype $i$ on phenotype $j$ and $S_{i,j}$ it's standard error.
+environmental effects. Let $G$ be the $D \times D$ matrix of
+direct causal effects (the \emph{causal graph}), with $G_{i, j}$ the DCE of phenotype $i$ on
+phenotype $j$. We assume that phenotypes do not effect themselves ($G_{i,i} = 0$),
+and that the network is sparse ($G$ has many entries that are $0$).
+Our goal is to estimate $G$ given summary statistics
+ for the association of the genotypes $X$ with the phenotypes $Y$.
+ Our trait model is $Y = Y G + X\beta + \gamma$.
+Let $R$ be the matrix of TCE estimates from MR, with $R_{i,j}$ the total
+causal effect of phenotype $i$ on phenotype $j$ and $S_{i,j}$ its standard error.
 We show in section~\ref{methods} that under this model,
 \begin{equation}\label{r_dce_main}
-R = I - R^{TCE^{-1}} D[1 / R^{TCE^{-1}}]
+G = I - R^{-1} D[1 / R^{-1}]
 \end{equation}
 where $D$ is an operator that sets all off-diagonal elements to 0, and $/$
 represents element-wise division.
 
-In practice, the matrix $R^{TCE}$ need not be well-conditioned or
+In practice, the matrix $R$ need not be well-conditioned or
  even invertible, leading
-to challenges when calculating $R$ via~\eqref{r_dce_main}. Instead of calculating an exact
+to challenges when calculating $G$ via~\eqref{r_dce_main}. Instead of calculating an exact
 or psuedo-inverse, we exploit the assumption that the underlying
-DCE matrix is sparse. Specifically, we seek matrices $U$ and $V$ such that $VU=I$, $U \approx R^{TCE}$
+DCE matrix is sparse. Specifically, we seek matrices $U$ and $V$ such that $VU=I$, $U \approx R$
 and $V$ is sparse. We find them by solving the following constrained optimization problem,
 \begin{equation} \label{opt_main}
-\min_{\{U, V : VU = I\}} \frac{1}{2} ||W \circ (R^{TCE} - U)||_F^2 +
+\min_{\{U, V : VU = I\}} \frac{1}{2} ||W \circ (R - U)||_F^2 +
    \lambda \sum_{i\neq j}|V_{ij}|
 \end{equation}
 where $W = W_{i,j} = 1/S_{i,j}^2$ is a set of per-entry inverse variance weights,
 and $\lambda$ is the $L_1$ shrinkage parameter~\cite{Friedman2007,Tishbirani1996}.
 We refer to $U$ as bimmer shrunk estimates of the TCE, and
-use $V \approx R^{TCE^{-1}}$ to solve~\eqref{r_dce_main}.
- Note that in this method, missing entries in $R^{TCE}$ can be accommodated simply
+use $V \approx R^{-1}$ to solve~\eqref{r_dce_main}.
+ Note that in this method, missing entries in $R$ can be accommodated simply
 by setting their weights to 0. We use this property to our advantage in choosing the
 regularization parameter. Specifically, we use a novel adaptation of Stability Approach
 to Regularization Selection (StARS)~\cite{Liu2010} where we mask entries of the TCE
@@ -228,7 +220,7 @@ the precision matrix, is the graphical lasso (glasso)~\cite{Friedman2007}.
 glasso assumes the data come from a multivariate normal distribution with a sparse
 precision matrix, and maximizes the likelihood with a $L_1$ penalty on elements of $\Sigma^{-1}$.
 
-This leaves the problem of producing a reliable estimate for $R^{TCE}$,
+This leaves the problem of producing a reliable estimate for $R$,
 which can be particularly challenging when there is non-causal genetic correlation or
 differential power across phenotypes. Most MR studies use the set of
 genome-wide significant (GWS, $p \le 5\times 10^{-8}$) SNPs for a trait as instruments.
@@ -236,7 +228,7 @@ Instead, we exploit the observation that in the absence of horizontal pleiotropy
 if $A$ causes $B$ and a SNP effects $A$ directly,
 the effect of the SNP on $B$ can be no larger than the effect of the SNP on $A$ times
 the effect of $A$ on $B$. That is, the SNP must have its per-variance contribution to
-$B$ reduced by the network. We use this intuition to construct a new
+$B$ reduced by the network. We use this intuition to construct a novel
 weighting scheme for Egger regression.
 First, we select a $p$-value threshold $p_t$. For every phenotype $i$, we
  construct a set of marginally associated SNPs at threshold $p_t$. Next,
@@ -255,13 +247,14 @@ and our weight is $w^{i, j}_k = t^{i,j}_k/\bar{t} \hat{s}_{k, j}^2$.
 We use these SNP weights in the Egger regression of $j$ on $i$.
 To avoid bias, we must use two sets of summary
 statistics: one set for SNP selection and weight construction,
- and the second set for $R^{TCE}$ estimation.
+ and the second set for estimating $R$.
 
 
 \subsection*{Simulations}
 \subsubsection*{Weighted Egger regression improves calibration and power in Mendelian randomization}
 Our first goal was to assess whether our weighted Egger regression approach
-had a well-controlled type-I error rate (FPR) under the two-way null (no causal effect in either direction). To this
+had a well-controlled type-I error rate (FPR) under the two-way null
+(no causal effect in either direction). To this
 end we simulated GWAS summary statistics for two phenotypes with $M=1,000,000$
 independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
  the SNP discovery and effect estimation cohorts. In each simulation, there
@@ -359,7 +352,7 @@ while reducing control of the type-I error rate
 As detailed above, both inspre and glasso can be viewed as methods
 for finding a sparse, approximate inverse to a noisily measured matrix.
 Therefore, we sought to compare these two methods when data are simulated
-from the glasso model. We generated data
+from an undirected graph with normally-distributed observations (the glasso model). We generated data
 from a multivariate-normal distribution with a sparse precision matrix
 for various graph structures, sample sizes, and numbers of features.
 We considered three kinds of graph structures: 1) Erd\"os-R\'eyni (random) graphs,
@@ -483,8 +476,10 @@ performs quite poorly compared to bimmer.}
 \subsubsection*{bimmer identifies thousands of direct causal effects in complex pathways}
 We obtained summary statistics for sex-split UK Biobank phenotypes from
 the Neale lab~\cite{NealeUKBB}. For ease of interpretation,
-we transformed all effect sizes to the per-variance scale. As previously suggested~\cite{BulikSullivan2015,NealeUKBB},
-we used only phenotypes with $Z$-score above $4$ and at least ``medium'' confidence. We removed one phenotype from every pair with genetic
+we transformed all effect sizes to the per-variance scale.
+ As previously suggested~\cite{BulikSullivan2015,NealeUKBB},
+we used only phenotypes with $Z$-score above $4$ and at least ``medium'' confidence.
+ We removed one phenotype from every pair with genetic
 correlation above $0.9$, leaving $423$ phenotypes. We clumped the UKBB
 summary statistics to $p=5 \times 10^{-6}$ with $r^2 < 0.05$ and distance $500$ kilobases using
 the UKBB European genotypes as a reference panel. We use male summary statistics for SNP selection
@@ -493,7 +488,7 @@ phenotypes where at least $50\%$ of the standard errors of the TCE were above $0
 as either an exposure or an outcome, resulting in $405$ phenotypes (Table S5).
 $8,268~(\sim 5\%)$ of the $163,620$ pairs of traits considered had TCEs significant at FDR $5\%$.
 
-We applied inspre~\eqref{opt_main} to the resulting TCE matrix to infer the DCE network,
+We applied inspre~\eqref{opt_main} to the resulting TCE matrix ($R$) to infer the DCE network ($G$),
  using inverse-variance weights
 as previously described with one slight modification. To avoid having a very small
 number of pairs with very small SE dominate the loss, all entries in the TCE matrix with
@@ -503,34 +498,34 @@ We chose a target stability of $0.025$ which gave reliable results across our va
 which we pruned to $2,826$ edges by removing DCEs with absolute value less than $0.01$. 
 
 We were curious to compare estimated
-genetic correlation, weighted Egger estimated TCE ($R^{TCE}$), bimmer's
-shrunk TCE ($U$) and bimmer's inferred DCE (R). First, we clustered phenotypes by genetic correlation
+genetic correlation, weighted Egger estimated TCE ($R$), bimmer's
+shrunk TCE ($U$) and bimmer's inferred DCE ($G$). First, we clustered phenotypes by genetic correlation
 to determine if the patterns observed are shared in the TCE estimates.
 While there are some similar patterns across the two matrices, the structure in the TCE estimates
 is not as well-defined (Figure~S6a-b).
 Indeed, we find that while the TCE estimates
 and genetic correlation estimates are correlated, that correlation is fairly
 weak ($r = 0.270\pm 0.005$). We actually find a slightly lower correlation between
- $U$ and $R^{TCE}$ ($r = 0.238 \pm 0.005$), but this is driven by TCE entries with high 
+ $U$ and $R$ ($r = 0.238 \pm 0.005$), but this is driven by TCE entries with high 
 standard error that are consequently ignored by inspre's weighting procedure.
 Restricting our analysis to TCE entries with an
-SE below $0.05$ the correlation of the TCE with the genetic correlation is smaller
+SE below $0.05$, the correlation of the TCE with the genetic correlation is smaller
 than the correlation of the TCE with $U$ ($r = 0.666 \pm 0.005$ vs $r = 0.949 \pm 0.004$, respectively).
 Moreover, entries in $U$ tend to be close to $0$ when the corresponding
 entry in the TCE has a large standard error (mean ${|U|} = 0.0003 \pm 0.0003$ for entries of
 the TCE with SE $> 0.05$). We conclude that bimmer produces a conservative
-estimate $U \approx R^{TCE}$ that accurately captures high confidence
-entries of $R^{TCE}$ but performs aggressive shrinkage on edges with weak statistical support. 
+estimate $U \approx R$ that accurately captures high confidence
+entries of $R$ but performs aggressive shrinkage on edges with weak statistical support. 
 
 Most ($303/405$, $\sim 75\%$) phenotypes have out-degree $0$ in our network, that is they have no
 downstream causal effects on the traits we consider. However, there is a path from every node with non-zero
 out-degree to every other node in the network. The majority of these connections
 are indirect and result in small effect sizes that do not reach
-statistical significance as TCEs
-($6,007$ of $39,200$ connected nodes have FDR-corrected TCE $p$-value above 0.05).
-Non-significant TCE entries have an average absolute shrunk TCE of $0.0036$
+statistical significance as TCEs; only
+$6,007$ of $39,200$ pairs of connected nodes have FDR-corrected TCE $p$-value below 0.05.
+Non-significant connections have an average absolute shrunk TCE of $0.0036$
 and a median DCE network path length of $3$ nodes, while
-significant entries have an average shrunk TCE of $0.029$ and DCE network path length of $2$ nodes
+significant connections have an average shrunk TCE of $0.029$ and median DCE network path length of $2$ nodes
 (Figure~\ref{figure6}a-b). Despite this, the majority
  ($3,831$ connections, $63.7\%$) of significant TCEs result from indirect paths in the DCE network.
 The effect explained by the shortest path between two nodes is often only a small
@@ -549,9 +544,9 @@ Access to the DCE network, rather than just the TCEs, greatly aids data analysis
 For example, bimmer is able to impute the existence of some edges that have low statistical
 support as TCEs, but are required in order to explain other highly significant effects. Of the
 2,826 edges in our network, 571 correspond to FDR-corrected TCE $p$-values above 0.05. A striking
-example of this is an effect of `time spent watching television'' (TSWT) on body mass index (BMI).
-This has no initial statistical support ($R^{TCE} = 0.008 \pm 0.1$, $p = 0.94$) but bimmer
-infers a strong effect ($R = 0.110$) in order to explain strong effects of TSWT on numerous downstream
+example of this is an effect of ``time spent watching television'' (TSWT) on body mass index (BMI).
+This has no initial statistical support ($R = 0.008 \pm 0.1$, $p = 0.94$) but bimmer
+infers a strong effect ($G = 0.110$) in order to explain strong effects of TSWT on numerous downstream
 phenotypes such as ``usual walking pace'' ($p < 2 \times 10^{-5}$, $U = -0.022$),  wheezing in the chest
 ($p < 4\times 10^{-5}$, $U = 0.018$) and ``father's age at death'' ($p < 5\times 10^{-4}$, $U = -0.010$).
 This gives evidence of a direct causal effect of a sedentary lifestyle on higher BMI, contradicting
@@ -562,12 +557,12 @@ of surprising outcomes including knee pain ($U = -0.064$, $p < 3 \times 10^{-7}$
 wheezing in the chest ($U = -0.067$, $p < 1 \times 10^{-16}$) and
 lower overall health rating ($U = -0.058$, $p < 4 \times 10^{-9}$). These effects are again
 mediated by a DCE on BMI, which does not survive
-correction for multiple testing ($R^{TCE} = -0.20 \pm 0.07$, $U = -0.37$, $p < 0.07$),
+correction for multiple testing ($R = -0.20 \pm 0.07$, $U = -0.37$, $p < 0.07$),
 but is required by the network to explain observed effects of AFSI on the aforementioned phenotypes.
 While this may not represent a literal causal effect, the network structure lends
 insight into the results and may lend additional evidence to recent work
 showing that BMI-associated loci are involved
-in neuronal pathways linked to reward~\cite{Ndiaye2020}. Taken together we consider
+in neuronal pathways linked to reward~\cite{Ndiaye2020}. Taken together, we consider
 this evidence of a complex relationship between BMI and lifestyle with causal effects
 likely flowing in both directions.
 
@@ -576,18 +571,19 @@ In contrast, there are highly significant TCEs that are not reflected in
 the network structure. There is no path between the nodes in $2,261$ significant TCEs.
 Compared to connected nodes with significant TCEs, unconnected nodes tended to have fewer instruments
 (median instrument count $55$ SNPs vs $568$ SNPs for connected nodes), larger initial
-TCE estimates (median $R^{TCE}$ $0.44$ vs $0.07$) and larger standard errors
+TCE estimates (median $R$ $0.44$ vs $0.07$) and larger standard errors
 (median $0.11$ vs $0.01$). There are also cases where the nodes are connected, but the network
 estimated effect is extremely small.
 For example, we observe a strong TCE of 
-past tobacco smoking on ``ever taken cannabis'' ($R^{TCE} = -0.88 \pm 0.13$, $p < 3 \times 10^{-9}$).
+past tobacco smoking on ``ever taken cannabis'' ($R = -0.88 \pm 0.13$, $p < 3 \times 10^{-9}$).
 Here the path between these nodes flows through BMI, followed by leukocyte count,
 resulting in a shrunk TCE of only $-0.0002$.
  
 
 \begin{figure}
 \includegraphics[width=\textwidth]{figures/figure6.png}
-\caption{bimmer identifies indirect effects and paths explaining a small proportion of the total effect.
+\caption{Applied to 405 phenotypes from the UK Biobank,
+bimmer identifies indirect effects and paths explaining a small proportion of the total effect.
 The distribution of path lengths between connected nodes for (a) all connected nodes and (b) connected
 nodes with an FDR $5\%$ significant TCE. Our analysis shows that there are many long paths between
 nodes that result in very small effect sizes; closer connections are much more likely to reach
@@ -622,7 +618,7 @@ sitting height and predicted forced expiratory volume in one second. While this 
 bimmer generally succeeds at identifying groups of traits which could be analyzed jointly. 
 
 \begin{figure}
-\includegraphics[width=0.99\textwidth]{figures/figure5.png}
+\includegraphics[width=0.98\textwidth]{figures/figure5.png}
 \caption{Clustering by bimmer shrunk TCE reveals groups of nodes with correlated downstream effects.
 We show (a) the genetic correlation, (b) the weighted Egger TCE, (c) the bimmer shrunk
 TCE and (d) the bimmer inferred DCE for the 102 phenotypes with non-zero out-degree (y-axis)
@@ -636,25 +632,25 @@ in the latter plots, we use an alternate scale which emphasizes weak positive an
 Part of the heart-disease network, leukocyte count had the highest overall out-degree with $244$ DCEs
 and $177$ FDR $5\%$ significant TCEs. The heart disease network includes several well-studied phenomena
 including the causal effects of hypertension~\cite{MacMahon1990} and high cholesterol~\cite{Castelli1992}
-on heart disease ($R=0.023$, $p < 3 \times 10^{-5}$ and $R=0.178$, $p < 1 \times 10^{-16}$ respectively).
+on heart disease ($G=0.023$, $p < 3 \times 10^{-5}$ and $G=0.178$, $p < 1 \times 10^{-16}$ respectively).
  There is  evidence for both a DCE of leukocyte count on heart disease
-($R=0.023$, $p < 2 \times 10^{-3}$, ~\cite{Lee2001})
-and indirect effects via high cholesterol ($R=0.051$, $p < 4 \times 10^{-7}$) and diastolic blood pressure
-($R=0.074$, $p < 7 \times 10^{-4}$), both of which are previously studied pathways~\cite{Facchini1992}.
+($G=0.023$, $p < 2 \times 10^{-3}$, ~\cite{Lee2001})
+and indirect effects via high cholesterol ($G=0.051$, $p < 4 \times 10^{-7}$) and diastolic blood pressure
+($G=0.074$, $p < 7 \times 10^{-4}$), both of which are previously studied pathways~\cite{Facchini1992}.
 Interestingly, the network has an edge from
 leukocyte count to both systolic blood pressure and hypertension, but these do not survive correction
 for multiple testing as TCEs ($p = 0.055$ and $p = 0.063$, respectively). We consider this evidence of
 a complex mechanism by which white blood cell traits effect heart disease risk via multiple causal pathways,
 warranting further study. One interesting downstream effect of the heart-disease sub-network is related
 to choice of pain medication. We detect a positive DCE of high cholesterol on aspirin use
-($R = 0.065$, $p < 3 \times 10^{-6}$) and a negative effect on ibuprofen use ($R = -0.025$, $p < 0.001$).
+($G = 0.065$, $p < 3 \times 10^{-6}$) and a negative effect on ibuprofen use ($G = -0.025$, $p < 0.001$).
 This could reflect common medical advice for patients at risk of heart disease to choose aspirin,
 which has long been thought to reduce risk~\cite{Sanmuganathan2001}, and avoid ibuprofen, which
-is thought to reduce effectiveness~\cite{MacDonald2006}. Another interesting set of traits
+is thought to reduce the effectiveness of aspirin~\cite{MacDonald2006}. Another interesting set of traits
 downstream of this sub-network are related to personality. We find evidence for a causal effect of
-leukocyte count on ``suffer from nerves'' ($R=0.036$, $p < 1 \times 10^{-10}$), ``worrier / anxious feelings'' 
-($R=0.036$, $p < 2 \times 10^{-10}$), neuroticism score ($R=0.042$, $p < 1 \times 10^{-7}$)
-and ``tense / highly strung'' ($R = 0.035$, $p < 5 \times 10^{-10}$).
+leukocyte count on ``suffer from nerves'' ($G=0.036$, $p < 1 \times 10^{-10}$), ``worrier / anxious feelings'' 
+($G=0.036$, $p < 2 \times 10^{-10}$), neuroticism score ($G=0.042$, $p < 1 \times 10^{-7}$)
+and ``tense / highly strung'' ($G = 0.035$, $p < 5 \times 10^{-10}$).
 This adds to a growing body of literature on the relationship between
 inflammatory biomarkers and personality~\cite{Allen2017,Sutin2012}.
 
@@ -663,31 +659,24 @@ consisting of $255$ direct connections, $236$ of which represent
 significant TCEs at FDR $5\%$.
 The network implies that higher testosterone levels have numerous health consequences, many of
 which are related to lung function. For example, higher testosterone protects against
-shortness of breath ($R = -0.028$, $p < 4\times 10^{-3}$)
-while directly increasing risk of lung cancer (i.e. not mediated through smoking, $R = 0.013$, $p < 0.02$).
-There is also a direct protective effect of testosterone on asthma ($R = -0.008$, $p < 0.05$) that
+shortness of breath ($G = -0.028$, $p < 4\times 10^{-3}$)
+while directly increasing risk of lung cancer (i.e. not mediated through smoking, $G = 0.013$, $p < 0.02$).
+There is also a direct protective effect of testosterone on asthma ($G = -0.008$, $p < 0.05$) that
 does not survive our pruning procedure. This lends causal support to
 recent observational studies linking increased testosterone to lung cancer risk after controlling
 for smoking status~\cite{Hyde2012}
 and mouse studies linking decreased testosterone to asthma risk~\cite{Cephus2017}.
-Our results also support the possibility of a causal effect of sex-hormone
-levels on personality~\cite{Colangelo2012,Asselmann2019,Ekholm2014,Aluja2014}.
-For example, we observe an effect of testosterone on loud
-music exposure frequency ($R = 0.018$, $p < 0.001$), and
-an effect of sex-hormone binding globulin on
-``been in a confiding relationship as an adult'' ($p < 3 \times 10^{-10}$),
- anxious feelings ($p<4\times 10^{-9}$), neuroticism score ($p<6\times 10^{9}$), and ``suffer from nerves''
-($p < 3\times 10^{-7}$). Some of these results have been debated;
- the findings in~\cite{Asselmann2019} do not survive correction for multiple testing and
-in~\cite{Aluja2014} the relationship between sex hormones and personality decreases after controlling
-for age. Indeed we generally find that while these effects have very low TCE $p$-values, they 
-are also quite small (bimmer shrunk TCE from $-0.007$ to $0.002$).
+We also observe an effect of testosterone on loud
+music exposure frequency ($G = 0.018$, $p < 0.001$). bimmer also infers a DCE of lower urea
+on ``worrier / anxious feelings'' that does not survive correction for multiple testing as
+a TCE ($G = 0.011$, $p = 0.062$). This lends additional evidence urea levels can have psychological
+consequences~\cite{Casey1973,Segers1976,Wang2019}.
 
 BMI has the second-highest out-degree of any phenotype considered with
 $215$ direct effects, and $175$ FDR $5\%$ significant TCEs.
 Many of the strongest downstream effects of BMI are dietary
-in nature, including vegetable intake ($R = 0.09$, $p < 1\times 10^{-16}$),
-milk-type ($R = 0.15$, $p < 1\times 10^{-16}$), and dietary variation ($R = 0.115$, $p < 1\times 10^{-16}$).
+in nature, including vegetable intake ($G = 0.09$, $p < 1\times 10^{-16}$),
+milk-type ($G = 0.15$, $p < 1\times 10^{-16}$), and dietary variation ($G = 0.115$, $p < 1\times 10^{-16}$).
 These findings lend additional support to the recent literature on BMI the cause of
 traits thought to lead to higher BMI (e.g. exercise~\cite{Richmond2014}) and the observation that
 BMI-increasing genetic variants tend to be linked to genes with a role in brain
@@ -695,20 +684,20 @@ function~\cite{Locke2015,Zhu2016,Ndiaye2020}. We consider this further evidence 
 BMI and lifestyle flow in both directions.
 Morphology-related traits are also linked
 to numerous diseases, perhaps best exemplified by the strong causal effect of BMI on lower overall
-health rating ($R = 0.1$, $p < 1 \times 10^{-16}$).
+health rating ($G = 0.100$, $p < 1 \times 10^{-16}$).
 
 In the red blood cell network, erythrocyte count and haemoglobin concentration (HC)
 both have high out-degree, with $117$ and $132$ direct effects, respectively.
 Erythrocyte count has numerous health consequences,
-for example a direct effect on lower overall health rating ($R = 0.03$, $p < 3 \times 10^{-10}$).
+for example a direct effect on lower overall health rating ($G = 0.03$, $p < 3 \times 10^{-10}$).
 Many of the top direct effects of HC involve platelet structure,
-for example volume of blood occupied by platelets (plateletcrit, $R = -0.13$, $p < 3 \times 10^{-11}$)
+for example volume of blood occupied by platelets (plateletcrit, $G = -0.13$, $p < 3 \times 10^{-11}$)
 and platelet count
-($R = -0.15$, $p < 2 \times 10^{-10}$). Interestingly, our model predicts a direct effect of
-HC on bleeding gums ($R = 0.036$, $p < 2 \times 10^{-9}$); that is, one
+($G = -0.15$, $p < 2 \times 10^{-10}$). Interestingly, our model predicts a direct effect of
+HC on bleeding gums ($G = 0.036$, $p < 2 \times 10^{-9}$); that is, one
 that is not mediated by the aforementioned effects on platelets. This may reflect a lack of power to detect
 the direct effect of platelets on bleeding gums, or the existence of an alternative pathway.
-Finally, we detect a DCE of HC on cardiac arrythmia, lending causal
+Finally, we detect a DCE of HC on cardiac arrythmia ($G = -0.042$, $p < 5e-9$), lending causal
 support to a recent population-based study linking HC and atrial fibrillation~\cite{Lim2020}.
 
 
@@ -725,7 +714,7 @@ network (b), red blood cell network (c) and heart disease network (d).}
 As biobanks continue to grow in size and scope, new methods that are able to
 leverage their power while overcoming common pitfalls are required.
 These datasets offer unprecedented opportunity to study
-the causal relationship between molecular markers, complex traits and diseases.
+the causal relationship between biomarkers, complex traits and diseases.
 Here, we have introduced bi-directional mediated Mendelian randomization (bimmer),
 a novel approach to inferring sparse networks of direct causal effects from phenome-scale
 GWAS summary statistics. We have shown through extensive simulations that
@@ -751,24 +740,33 @@ cannot be coherently incorporated into the network, and enables interpretation o
 
 Our approach is conceptually simple and can be viewed both as a method and a framework.
 First, we calculate a TCE matrix.
-This is analogous to a correlation matrix, except that it is not symmetric and it's entries
+This is analogous to a correlation matrix, except that it is not symmetric and its entries
 represent causal effects rather than correlations. Then, we find a sparse approximate inverse
 to this matrix, which represents a causal graph.
 This is analogous to glasso, except that we produce a directed graph instead
 of an undirected one. This means that bimmer can use any MR method
-that is able to produce bi-drected effect estimates,
+that is able to produce bi-directed effect estimates,
 allowing researchers to choose the method that best accommodates the assumptions of
 the setting they work in. It also allows bimmer to naturally accommodate other potential
-approaches to convert this matrix into a causal network.
+approaches to convert the TCE matrix into a causal network.
 While we are not aware of other methods for this specific problem, our method contributes to the
 extensive fields of biological and causal network discovery.
 For example, \cite{Frot2019a} combines a low-rank plus sparse decomposition
-of the covariance matrix~\cite{Frot2019b,Chandrasekaran2012,Stegle2011} with intervention calculus when the
-DAG is absent~\cite{Maathuis2009} to learn directed causal graphs. There, the low-rank
-component is interpreted as a latent variable capturing unobserved confounding, whereas
-our method instead uses Mendelian randomization. The integration of genetic data with low-rank
-plus sparse methods to learn causal graphs that potentially contain cycles is another
-potential avenue to approach the problem we consider.
+of the covariance matrix~\cite{Frot2019b,Chandrasekaran2012} with
+the algorithm \emph{intervention calculus when the
+DAG is absent}~\cite{Maathuis2009} to learn directed acyclic causal graphs. There, the low-rank
+component is interpreted as a set of latent variables capturing unobserved confounding, whereas
+our method instead uses Mendelian randomization for this task.
+Because of the modular nature of our approach, inspre could be easily
+extended to include a low-rank component which could help capture residual confounding.
+Our method is also related to \emph{silencing}~\cite{Barzel2013}. There,
+the authors use physical arguments pertaining to perturbations at equilibrium to derive
+a formula similar to~\eqref{r_dce_main}. However, they use an exact inversion which
+leads to poor performance in practice~\cite{Pachter}. Finally,~\cite{Dahl2013} and~\cite{Stegle2011}
+model a low rank component in the observed data to capture population structure and latent
+gene expression factors, respectively. However these methods require access to the primary data,
+learn undirected graphs, and do not scale to biobanks.
+
 
 Our approach also builds on recent MR literature. In particular, multi-variable Mendelian
 randomization methods are able to compute direct causal effects when there
@@ -778,8 +776,8 @@ to the more general network inference problem that we consider here. Another app
 Mendelian randomization, calculates the effect of an exposure on an outcome while
 accounting for the effects of a third variable~\cite{Burgess2015}. Our method can
 be thought of as a generalization of this approach to an arbitrary number of phenotypes
-without pre-specifying any as exposures or outcomes. The first step in our method
-involves bi-directional MR with Egger regression weights that reduce the effect
+without pre-specifying any as exposures or outcomes. To calculate the TCE matrix, we use
+a novel approach to bi-directional MR with Egger regression weights that reduce the effect
 of pleiotropic SNPs. This is related to several recent methods.
 In particular, gwas-pc uses asymmetry in the effect size distributions
 to choose an effect direction between the two phenotypes. Similarly, 
@@ -791,7 +789,11 @@ when there is non-causal genetic correlation and differential power. Second, lik
 but unlike LCV, our method estimates a quantity that is interpretable as the
 effect of one phenotype on the other. Finally unlike both,
 we are able to estimate both effect directions simultaneously, allowing our
-model to accommodate graphs with cycles.
+model to accommodate graphs with cycles. Our method is also related to the
+recently proposed CAUSE~\cite{Morrison2020}. There, the authors model observed SNPs effects
+as coming from a mixture of pleiotropic and non-pleiotropic SNPs. Our method can be viewed as
+a simple and fast approximation to this method where SNPs that appear pleiotropic are given a lower
+regression weight.
 
 However, our approach does have some weaknesses. First, our method
 requires that we split the initial cohort into instrument discovery and
@@ -820,6 +822,8 @@ sparsity in the inverse. This enables stability-based selection of lasso paramet
  $\lambda$ without access to the underlying data by using random masks.
 There are other approaches to weighted graphical lasso~\cite{Li2015,Zuo2017}, however 
 these weights represent prior knowledge and not statistical uncertainty.
+Here again, our method could easily accommodate prior biological knowledge through a simple
+modification of the LASSO penalty.
 We found that for many classes of graphs,
 inspre and glasso produced similar results, however there were some settings where glasso
 clearly performed better and vice versa.
@@ -838,8 +842,8 @@ data is large~\cite{Pasaniuc2017}. They also enable researchers to work with dat
 standardized analysis pipeline, such as~\cite{NealeUKBB}.
 Strictly speaking, our method does not even require summary statistics. If
 MR analysis results are already available for every pair of a set of phenotypes,
-one can use them to construct the matrix $R^{TCE}$ and then infer $R$ with
-bimmer. In this setting, it is of paramount importance that the researcher verify
+one can use them to construct the matrix $R$ and then infer $G$ with
+inspre. In this setting, it is of paramount importance that the researcher verify
 the underlying studies were conducted in a way to minimize the effect of
 horizontal pleiotropy.
 
@@ -858,67 +862,74 @@ We look forward to pursuing these avenues in future work.
 
 \section{Methods}\label{methods}
 \subsection{Trait model}
-Our goal is to estimate a sparse graph of direct causal effects (DCE), $R$, from
+Our goal is to estimate a sparse graph of direct causal effects (DCE), $G$, from
 summary association statistics between genotypes $X$ and phenotypes $Y$. We model
 the SNP effects $\beta$ and the causal graph as fixed effects, and assume that the genotypes
 $X$ are sampled independently from a population. For convenience, we assume that SNPs
  and phenotypes have been normalized
  to have mean $0$ and variance $1$. We also assume that SNPs are uncorrelated (no linkage disequilibrium, LD)
 and use LD-pruned variants in all analyses of real data.
-For the purposes of this derivation,
-we consider fitting the above model~\eqref{model} $Y = (X\beta + \gamma)(I-R)^{-1} + \epsilon$,
-where $\gamma$ and $\epsilon$ are environmental and measurement noise,
-using two-stage least-squares with $X$ as instruments.
+Our model is
+\begin{equation}\label{model0}
+ Y = Y G + X \beta + \gamma
+\end{equation}
+where $\gamma$ represents unmeasured factors. If $I - G$ is invertible, this can be re-written
+\begin{equation}\label{model1}
+Y = (X \beta + \gamma)(I - G)^{-1}
+\end{equation}
+For the purposes of this derivation, we consider solving~\eqref{model1}
+using two-stage least-squares with $X$ as instruments, but in practice any MR method can be used.
 For now, we assume each SNP acts only on one phenotype
 (there is no pleiotropy) and that we know which phenotype it is.
 First we regress each instrument on its phenotype and use these effect
  estimates to calculate a set of phenotype scores for each individual.
 Next, we regress each phenotype score on the observed values of the other phenotypes,
  creating a matrix containing estimates of the total causal effect (TCE) of
- each phenotype on every other. This gives the estimated effect matrix $\hat{\beta}$,
+ each phenotype on every other. This gives the estimated effect matrix $\hat{\beta}$.
+Using~\eqref{model1}, we can find $\mathbb{E}[\hat{\beta} ]$,
 \begin{align*}
 \hat{\beta}_{ij} &= \left\{
  \begin{array}{ll}
   \frac{1}{N} X_{:, i}^{\top}Y_{:,j} & |\beta_{i,j}| > 0 \\
   0 & otherwise
  \end{array} \right. \\
- \mathbb{E}[\hat{\beta} ] &= \beta (I-R)^{-1} \circ \mathds{1}[|\beta| > 0]
+ \mathbb{E}[\hat{\beta} ] &= \beta (I-G)^{-1} \circ \mathds{1}[|\beta| > 0]
 \end{align*}
 where $\mathds{1}$ is an indicator function and $\circ$ is the Hadamard matrix
-product. Using the model recurrence at equilibrum, $Y = Y R + X \beta + \gamma$, the TCE matrix is
+product. Using~\eqref{model0}, the TCE matrix is
 \begin{align*}
-\hat{R}^{TCE} &= \frac{1}{N} (X\hat{\beta})^{\top} Y \\
-  &= \frac{1}{N} (X\hat{\beta})^{\top} Y R + \frac{1}{N}(X\hat{\beta})^{\top} X \beta +
+\hat{R} &= \frac{1}{N} (X\hat{\beta})^{\top} Y \\
+  &= \frac{1}{N} (X\hat{\beta})^{\top} Y G + \frac{1}{N}(X\hat{\beta})^{\top} X \beta +
      \frac{1}{N}(X\hat{\beta})^{\top} \gamma
   \end{align*}
-Taking expectations and using that the environment random effect $\gamma$ has 0 mean we obtain,
+Taking expectations and assuming that the environment random effect $\gamma$ has 0 mean we obtain,
 \begin{align*}
-\mathbb{E}[\hat{R}^{TCE}]  &= \mathbb{E}[\hat{R}^{TCE}] R + D[\beta (I-R)^{-1}],
+\mathbb{E}[\hat{R}]  &= \mathbb{E}[\hat{R}] G + D[\beta (I-G)^{-1}],
 \end{align*}
 where the diagonal operator $D[X]_{i,j} = \left\{ \begin{array}{ll}
   X_{i,j} & i=j \\ 0 & i \neq j \end{array} \right.$ sets off-diagonal elements
   of a matrix to 0.
-  Since $\mathbb{E}[\hat{R}^{TCE}] =R^{TCE}$,
-this tells us that $R^{TCE}$ satisfies the recurrence
-  $R^{TCE}$ = $R^{TCE} R$ off the diagonal, from
+  Since $\mathbb{E}[\hat{R}] = R$,
+this tells us that $R$ satisfies the recurrence
+  $R$ = $R G$ off the diagonal, from
   which it follows that~\cite{Pachter},
 \begin{equation}\label{r_dce}
-R = I - R^{TCE^{-1}} D[1 / R^{TCE^{-1}}]
+G = I - R^{-1} D[1 / R^{-1}]
 \end{equation}
 where $/$ indicates elementwise division.
 
 In practice we don't know which SNP effects which phenotype,
 and there can be correlated pleiotropic effects.
 Consider a pair of phenotypes $i$ and $j$ where phenotype $i$ has a direct causal
-effect of $R_{i, j}$ on phenotype $j$. If SNP $k$ has a direct effect on phenotype $i$
+effect of $G_{i, j}$ on phenotype $j$. If SNP $k$ has a direct effect on phenotype $i$
 of size $\beta_{k, i}$, but no direct effect on phenotype $j$ (i.e. no pleiotropy)
 then the observed effect of SNP $k$ on phenotype $j$ is
 \begin{equation}\label{MR}
-\beta_{k,j} \approx \beta_{k,i} R_{i,j}
+\beta_{k,j} \approx \beta_{k,i} G_{i,j}
 \end{equation}
 This SNP therefore contributes
-$\beta_{k, i}^2 R_{i, j}^2$ to the variance of $Y_j$, whereas
-pleiotropic SNPs will contribute $\beta_{k, i}^2 R_{i, j}^2 + \alpha^2$
+$\beta_{k, i}^2 G_{i, j}^2$ to the variance of $Y_j$, whereas
+pleiotropic SNPs will contribute $\beta_{k, i}^2 G_{i, j}^2 + \alpha^2$
 for some pleiotropic effect size $\alpha$. Therefore, SNPs that appear to
 have a larger absolute effect on the exposure relative to the outcome in a discovery 
 cohort are more likely to satisfy~\eqref{MR}.
@@ -936,13 +947,13 @@ t^{i,j}_k = \frac{|\hat{\beta}_{k, i}| - |\hat{\beta}_{k, j}|}
 and use this to construct a weight $w^{i, j}_k = t^{i,j}_k/\bar{t} \hat{s}_{k, j}^2$.
   
 \subsection{Inverse sparse regression}
-If we knew $R^{TCE}$ exactly, we could simply invert it and plug the inverse
-into~\eqref{r_dce}. However, we only have access to the noisy estimate $\hat{R}^{TCE}$,
+If we knew $R$ exactly, we could simply invert it and plug the inverse
+into~\eqref{r_dce}. However, we only have access to the noisy estimate $\hat{R}$,
 which is not necessarily well-conditioned or even invertible. Instead, we assume that
-the underlying directed graph of DCE is sparse. We observe that in~\eqref{r_dce}, $R$ is
-sparse if and only if $\hat{R}^{TCE^{-1}}$ is sparse, and so we can think of
+the underlying directed graph of DCE is sparse. We observe that in~\eqref{r_dce}, $G$ is
+sparse if and only if $\hat{R}^{-1}$ is sparse, and so we can think of
 solving~\eqref{r_dce} as finding a sparse matrix inverse. Let $A$ be an arbitrary $D\times D$
-matrix ($\hat{R}^{TCE}$ in bimmer). We seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
+matrix ($\hat{R}$ in bimmer). We seek matrices $U$, $V$ with $VU=I$ that minimize the loss,
 \begin{equation}\label{opt_methods}
 \frac{1}{2} ||W \circ (A - U)||_F^2 + \lambda \sum_{i\neq j}|V_{ij}|
 \end{equation}
