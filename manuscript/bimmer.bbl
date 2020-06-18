@@ -1556,6 +1556,52 @@
       \field{title}{{Causality: Models, Reasoning, and Inference}}
       \field{year}{2000}
     \endentry
+    \entry{Zhao2012}{report}{}
+      \name{author}{5}{}{%
+        {{hash=5aabe643c77f92846adf1b83e9c78387}{%
+           family={Zhao},
+           familyi={Z\bibinitperiod},
+           given={Tuo},
+           giveni={T\bibinitperiod}}}%
+        {{hash=1fd24db54860bcc68afc8ed6e58bfa9a}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Han},
+           giveni={H\bibinitperiod}}}%
+        {{hash=05b461b94ae0c05f5f954c648ee571d9}{%
+           family={Roeder},
+           familyi={R\bibinitperiod},
+           given={Kathryn},
+           giveni={K\bibinitperiod}}}%
+        {{hash=88426f033c21f91cad168597555d363d}{%
+           family={Lafferty},
+           familyi={L\bibinitperiod},
+           given={John},
+           giveni={J\bibinitperiod}}}%
+        {{hash=6b27f4592197d058b81cb25b0b285942}{%
+           family={Wasserman},
+           familyi={W\bibinitperiod},
+           given={Larry},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{deabf1eb54f74e22d17cb979d27b6946}
+      \strng{fullhash}{4d52af2a6811966b3cac3ee0803dd2cd}
+      \strng{bibnamehash}{deabf1eb54f74e22d17cb979d27b6946}
+      \strng{authorbibnamehash}{deabf1eb54f74e22d17cb979d27b6946}
+      \strng{authornamehash}{deabf1eb54f74e22d17cb979d27b6946}
+      \strng{authorfullhash}{4d52af2a6811966b3cac3ee0803dd2cd}
+      \field{sortinit}{1}
+      \field{sortinithash}{2174f786c6195e7fe2ee1c229b416e29}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{We describe an R package named huge which provides easy-to-use functions for estimating high dimensional undirected graphs from data. This package implements recent results in the literature, including Friedman et al. [2007b], Liu et al. [2009] and Liu et al. [2010]. Compared with the existing graph estimation package glasso, the huge package provides extra features: (1) instead of using Fortan, it is written in C, which makes the code more portable and easier to modify; (2) besides fitting Gaussian graphical models, it also provides functions for fitting high dimensional semiparametric Gaussian copula models; (3) more functions like data-dependent model selection, data generation and graph visualization; (4) a minor convergence problem of the graphical lasso algorithm is corrected; (5) the package allows the user to apply both lossless and lossy screening rules to scale up large-scale problems, making a tradeoff between computational and statistical efficiency.}
+      \field{title}{{The huge Package for High-dimensional Undirected Graph Estimation in R}}
+      \field{type}{techreport}
+      \field{year}{2012}
+      \verb{file}
+      \verb :home/brielin/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Zhao et al. - 2012 - The huge Package for High-dimensional Undirected Graph Estimation in R.pdf:pdf
+      \endverb
+    \endentry
     \entry{Barabasi1999}{article}{}
       \name{author}{2}{}{%
         {{hash=7286b44b1f1ba854e19b99a1ec63fc7e}{%
@@ -3439,8 +3485,8 @@
       \strng{authorbibnamehash}{f31318e9af75756ec7000af4911082fa}
       \strng{authornamehash}{f31318e9af75756ec7000af4911082fa}
       \strng{authorfullhash}{e9ffac944b4d82a1ba7f005b6df26deb}
-      \field{sortinit}{2}
-      \field{sortinithash}{cbff857e587bcb4635511624d773949e}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Background: Genome-wide association studies (GWAS) have identified more than 250 loci associated with body mass index (BMI) and obesity. However, post-GWAS functional genomic investigations have been inadequate for understanding how these genetic loci physiologically impact disease development. Methods: We performed a PCR-free expression assay targeting genes located nearby the GWAS-identified SNPs associated with BMI/obesity in a large panel of human tissues. Furthermore, we analyzed several genetic risk scores (GRS) summing GWAS-identified alleles associated with increased BMI in 4236 individuals. Results: We found that the expression of BMI/obesity susceptibility genes was strongly enriched in the brain, especially in the insula (p = 4.7 \x{00d7} 10--9) and substantia nigra (p = 6.8 \x{00d7} 10--7), which are two brain regions involved in addiction and reward. Inversely, we found that top obesity/BMI-associated loci, including FTO, showed the strongest gene expression enrichment in the two brain regions. Conclusions: Our data suggest for the first time that the susceptibility genes for common obesity may have an effect on eating addiction and reward behaviors through their high expression in substantia nigra and insula, i.e., a different pattern from monogenic obesity genes that act in the hypothalamus and cause hyperphagia. Further epidemiological studies with relevant food behavior phenotypes are necessary to confirm these findings.}
@@ -3534,8 +3580,8 @@
       \strng{authorbibnamehash}{b346a34be876506623b4c123198a15f6}
       \strng{authornamehash}{b346a34be876506623b4c123198a15f6}
       \strng{authorfullhash}{955010c17fc57cfa16ad7251747d1309}
-      \field{sortinit}{2}
-      \field{sortinithash}{cbff857e587bcb4635511624d773949e}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{The associations of diastolic blood pressure (DBP) with stroke and with coronary heart disease (CHD) were investigated in nine major prospective observational studies: total 420 000 individuals, 843 strokes, and 4856 CHD events, 6-25 (mean 10) years of follow-up. The combined results demonstrate positive, continuous, and apparently independent associations, with no significant heterogeneity of effect among different studies. Within the range of DBP studied (about 70-110 mm Hg), there was no evidence of any "threshold" below which lower levels of DBP were not associated with lower risks of stroke and of CHD. Previous analyses have described the uncorrected associations of DBP measured just at "baseline" with subsequent disease rates. But, because of the diluting effects of random fluctuations in DBP, these substantially underestimate the true associations of the usual DBP (ie, an individual's long-term average DBP) with disease. After correction for this "regression dilution" bias, prolonged differences in usual DBP of 5,7{\textperiodcentered{}}5, and 10 mm Hg were respectively associated with at least 34{\%}, 46{\%}, and 56{\%} less stroke and at least 21{\%}. 29{\%}, and 37{\%} less CHD. These associations are about 60{\%} greater than in previous uncorrected analyses. (This regression dilution bias is quite general, so analogous corrections to the relations of cholesterol to CHD or of various other risk factors to C H D or to other diseases would likewise increase their estimated strengths.) The DBP results suggest that for the large majority of individuals, whether conventionally "hypertensive" or "normotensive", a lower blood pressure should eventually confer a lower risk of vascular disease. {{$\copyright$}} 1990.}
@@ -4131,8 +4177,8 @@
       \strng{authorbibnamehash}{c68d2405af86b6ced370d62d24d22929}
       \strng{authornamehash}{c68d2405af86b6ced370d62d24d22929}
       \strng{authorfullhash}{c68d2405af86b6ced370d62d24d22929}
-      \field{sortinit}{3}
-      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{issn}{0098-7484}
@@ -4176,8 +4222,8 @@
       \strng{authorbibnamehash}{8459b178972985d86c0146d6c914cbf7}
       \strng{authornamehash}{8459b178972985d86c0146d6c914cbf7}
       \strng{authorfullhash}{8459b178972985d86c0146d6c914cbf7}
-      \field{sortinit}{3}
-      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Psychosomatic interactions leading to the development of Coronary Heart Disease (CHD) have yet to be clarified. This study explores further whether and how an important CHD risk factor, relative weight, affects the relationships between psychological and bioclinical parameters. A principal factorial components solution (linear procedure) and an extension of the median test (non-linear procedure) were run on the scores of self-reported anxiety (IPAT Anxiety Scale) and depression (Zung Self-rating Scale), the indices of anxiety expression style, and the bioclinical measures (systolic and diastolic blood pressure, fasting blood glucose, urea and lip concentrations). The statistical procedures were carried out separately in the six subgroups which subdivide 1,694 male volunteers to a CHD detection examination, according to age (under- and over-45 yr) and relative weight (obese, normal and lean subjects). Results indicate that the relationship between psychological and bioclinical measures are specific to the subgroup considered: they are recurrent in obese and lean individuals, and more frequent in older than in younger subjects. The composition of the first factorial component is psycho-bioclinical in the under-45 obese subgroup; the second factorial component is biopsychological in the obese and lean, under- as well as over-45-yr old, subgroups. The expression style indices and the lipid concentrations are associated when the statistical method does not presuppose linearity. Present theories on psychological and bioclinical determinants of relative weight are reported, since the experimental data upon which these theories are based parallel interestingly the results of our correlational study. Indeed, both approaches suggest that cognitive factors, operationally defined by response tendencies and anxiety expression style, are different in obese and nonobese humans, and that these differences determine psycho-bioclinical relationships which are specific to these relative weight groups. Could these mechanisms of action be specified, an important step would be made in the understanding of the CHD etiology. {{$\copyright$}} 1976.}
@@ -4366,8 +4412,8 @@
       \strng{authorbibnamehash}{cbeb19d1c0ac2bd217d7616c17d3e44c}
       \strng{authornamehash}{cbeb19d1c0ac2bd217d7616c17d3e44c}
       \strng{authorfullhash}{bbe2434211fc3a0ddcea558f735ce11b}
-      \field{sortinit}{3}
-      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Background: Urea, the end product of protein metabolism, has been considered to have negligible toxicity for a long time. Our previous study showed a depression phenotype in urea transporter (UT) B knockout mice, which suggests that abnormal urea metabolism may cause depression. The purpose of this study was to determine if urea accumulation in brain is a key factor causing depression using clinical data and animal models. Methods: A meta-analysis was used to identify the relationship between depression and chronic diseases. Functional Magnetic Resonance Imaging (fMRI) brain scans and common biochemical indexes were compared between the patients and healthy controls. We used behavioural tests, electrophysiology, and molecular profiling techniques to investigate the functional role and molecular basis in mouse models. Findings: After performing a meta-analysis, we targeted the relevance between chronic kidney disease (CKD) and depression. In a CKD mouse model and a patient cohort, depression was induced by impairing the medial prefrontal cortex. The enlarged cohort suggested that urea was responsible for depression. In mice, urea was sufficient to induce depression, interrupt long-term potentiation (LTP) and cause loss of synapses in several models. The mTORC1-S6K pathway inhibition was necessary for the effect of urea. Lastly, we identified that the hydrolysate of urea, cyanate, was also involved in this pathophysiology. Interpretation: These data indicate that urea accumulation in brain is an independent factor causing depression, bypassing the psychosocial stress. Urea or cyanate carbamylates mTOR to inhibit the mTORC1-S6K dependent dendritic protein synthesis, inducing impairment of synaptic plasticity in mPFC and depression-like behaviour. CKD patients may be able to attenuate depression only by strict management of blood urea.}
