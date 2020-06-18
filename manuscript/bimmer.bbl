@@ -3534,8 +3534,8 @@
       \strng{authorbibnamehash}{b346a34be876506623b4c123198a15f6}
       \strng{authornamehash}{b346a34be876506623b4c123198a15f6}
       \strng{authorfullhash}{955010c17fc57cfa16ad7251747d1309}
-      \field{sortinit}{2}
-      \field{sortinithash}{cbff857e587bcb4635511624d773949e}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{The associations of diastolic blood pressure (DBP) with stroke and with coronary heart disease (CHD) were investigated in nine major prospective observational studies: total 420 000 individuals, 843 strokes, and 4856 CHD events, 6-25 (mean 10) years of follow-up. The combined results demonstrate positive, continuous, and apparently independent associations, with no significant heterogeneity of effect among different studies. Within the range of DBP studied (about 70-110 mm Hg), there was no evidence of any "threshold" below which lower levels of DBP were not associated with lower risks of stroke and of CHD. Previous analyses have described the uncorrected associations of DBP measured just at "baseline" with subsequent disease rates. But, because of the diluting effects of random fluctuations in DBP, these substantially underestimate the true associations of the usual DBP (ie, an individual's long-term average DBP) with disease. After correction for this "regression dilution" bias, prolonged differences in usual DBP of 5,7{\textperiodcentered{}}5, and 10 mm Hg were respectively associated with at least 34{\%}, 46{\%}, and 56{\%} less stroke and at least 21{\%}. 29{\%}, and 37{\%} less CHD. These associations are about 60{\%} greater than in previous uncorrected analyses. (This regression dilution bias is quite general, so analogous corrections to the relations of cholesterol to CHD or of various other risk factors to C H D or to other diseases would likewise increase their estimated strengths.) The DBP results suggest that for the large majority of individuals, whether conventionally "hypertensive" or "normotensive", a lower blood pressure should eventually confer a lower risk of vascular disease. {{$\copyright$}} 1990.}
@@ -13445,6 +13445,7 @@
       \endverb
     \endentry
   \enddatalist
+  \missing{Zhao2012}
 \endrefsection
 \endinput
 
