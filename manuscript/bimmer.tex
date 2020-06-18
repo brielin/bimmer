@@ -102,7 +102,7 @@ Another approach, the latent causal variable (LCV) model, is able to detect caus
 under arbitrarily-structured pleiotropy~\cite{OConnor2018}. However, the quantity that LCV
 calculates is not interpretable as the causal effect size of A on B. Most MR studies
 also presuppose the direction of effect, specifying one phenotype as the outcome and
-the other as the exposure. This is sound when the outcome
+the other as the exposure. Pre-specifying the effect direction is sound when the outcome
 is clearly biologically downstream of the exposure, but in some cases it is better
 to learn the direction of the effect from the data.
 Some researchers have instead used bidirectional MR~\cite{Timpson2011, Richmond2014}, which tests for
@@ -133,9 +133,8 @@ We call this framework \emph{bi-directional mediated Mendelian randomization} (b
 and introduce novel methods for both components. To calculate the TCE matrix, we
 use a new weighting scheme for Egger regression that reduces the
 influence of pleiotropic SNPs (Figure~\ref{figure0}a-b). Then, we convert the TCE
-estimates into a DCE graph by solving an $L_1$-regularized matrix inverse problem,
-similar to the graphical LASSO~\cite{Friedman2007}, using a novel
-algorithm for finding a sparse inverse to a partially-observed matrix that we call
+estimates into a DCE graph via a novel algorithm for finding a sparse inverse
+to a partially-observed matrix that we call
 \emph{inverse sparse regression} (inspre, Figure~\ref{figure0}b-c).
 In extensive simulations, we show that our approach is able to learn causal
  network structures even in the presence of non-causal genetic correlation.
@@ -165,7 +164,7 @@ and naturally accommodating future progress on both tasks.}
 
 \section{Results}
 \subsection*{Overview of model}
-We propose a simple regression model that accommodates complex, bi-directional relationships.
+We propose a simple regression model that nevertheless accommodates complex, bi-directional relationships.
 We assume each phenotype is a linear function
 of other phenotypes, genetic factors, and environmental factors.
 Assume we have $N$ individuals, $D$ phenotypes and $M$ SNPs,
@@ -347,7 +346,7 @@ while reducing control of the type-I error rate
 As detailed above, both inspre and glasso can be viewed as methods
 for finding a sparse, approximate inverse to a noisily measured matrix.
 Therefore, we sought to compare these two methods when data are simulated
-from an undirected graph with normally-distributed observations (the glasso model). We generated data
+from an undirected graph with normally-distributed observations (the glasso model). We used the \emph{huge}~\cite{Zhao2012} package to generate data
 from a multivariate-normal distribution with a sparse precision matrix
 for various graph structures, sample sizes, and numbers of features.
 We considered three kinds of graph structures: 1) Erd\"os-R\'eyni (random) graphs,
@@ -356,7 +355,12 @@ are partitioned into
 disjoint sets and every node in each set is connected to a central ``hub" vertex,
 3) scale-free graphs, where the vertex degree distribution
 follows a power law. Hub and scale-free networks are intended to mimic common
-biological networks~\cite{Barabasi1999}. In each setting we calculated the precision,
+biological networks~\cite{Barabasi1999}.
+We used the default edge weight in huge of $\approx 0.3$.
+While it is important to evaluate both the presence of the edge and the accuracy of the inferred weight,
+the sparse nature of the problem renders traditional accuracy metrics such as
+the mean squared error uninformative. We follow standard convention
+~\cite{Friedman2007, Liu2010, Zhao2012} and focus on the precision,
 the number of true edges among all inferred edges, and recall, the proportion
 of true edges detected. We used these to calculate the $F_1$ score, the
 harmonic mean of precision and recall, as a function of the
@@ -613,9 +617,9 @@ sitting height and predicted forced expiratory volume in one second. While this 
 bimmer generally succeeds at identifying groups of traits which could be analyzed jointly. 
 
 \begin{figure}
-\includegraphics[width=0.98\textwidth]{figures/figure5.png}
-\caption{Clustering by bimmer shrunk TCE reveals groups of nodes with correlated downstream effects.
-We show (a) the genetic correlation, (b) the weighted Egger TCE, (c) the bimmer shrunk
+\includegraphics[width=0.97\textwidth]{figures/figure5.png}
+\caption{Clustering by bimmer shrunk TCE reveals groups of nodes with correlated downstream effects in the
+UK Biobank. We show (a) the genetic correlation, (b) the weighted Egger TCE, (c) the bimmer shrunk
 TCE and (d) the bimmer inferred DCE for the 102 phenotypes with non-zero out-degree (y-axis)
 against all 405 phenotypes (x-axis), clustered by shrunk TCE. To emphasize the smaller effects
 in the latter plots, we use an alternate scale which emphasizes weak positive and negative effects
@@ -751,7 +755,7 @@ of the covariance matrix~\cite{Frot2019b,Chandrasekaran2012} with
 the algorithm \emph{intervention calculus when the
 DAG is absent}~\cite{Maathuis2009} to learn directed acyclic causal graphs. There, the low-rank
 component is interpreted as a set of latent variables capturing unobserved confounding, whereas
-our method instead uses Mendelian randomization for this task.
+our method uses Mendelian randomization for this task.
 Because of the modular nature of our approach, inspre could be easily
 extended to include a low-rank component which could help capture residual confounding.
 Our method is also related to \emph{silencing}~\cite{Barzel2013}. There,
@@ -829,7 +833,8 @@ there may be ways of improving the speed of our approach, and in spite of these 
 the novel capabilities of inspre suggest it may find utility
 outside the scope of MR.
 
-Importantly, bimmer only requires GWAS summary statistics.
+Importantly, bimmer only requires GWAS summary statistics. This allows us to apply our method to
+the realistic setting where each phenotype is only measured on a subset of individuals.
 While the UK BioBank primary genotypes and phenotypes are readily available,
 this is not the case for many cohorts. Summary
 statistics are both legally and practically easier to share, and faster to work with when the primary
@@ -868,7 +873,11 @@ Our model is
 \begin{equation}\label{model0}
  Y = Y G + X \beta + \gamma
 \end{equation}
-where $\gamma$ represents unmeasured factors. If $I - G$ is invertible, this can be re-written
+where $\gamma$ represents unmeasured factors.
+Let $R$ be the $D \times D$ matrix of estimated TCEs from
+MR. Our goal is to show that under this model
+$G = I - R^{-1} D[1 / R^{-1}]$.
+If $I - G$ is invertible,~\eqref{model0} can be re-written
 \begin{equation}\label{model1}
 Y = (X \beta + \gamma)(I - G)^{-1}
 \end{equation}
@@ -1192,7 +1201,7 @@ effects, but most nodes have no downstream effects (empty rows).
 \centering
 \begin{tabular}{lrrrrrrrr}
 \toprule
-Method & stat1 & se\_stat1 & stat2 & se\_stat2 & mae1 & se\_mae1 & mae2 & se\_mae2\\
+Method & $FPR_A$ & $SE_A$ & $FPR_B$ & $SE_B$ & $MAE_A$ & $SE_A$ & $MAE_B$ & $SE_B$ \\
 \midrule
 \addlinespace[0.3em]
 \multicolumn{9}{l}{\textbf{Null: Uncorrelated pleiotropy}}\\
@@ -1226,14 +1235,13 @@ independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
   false positives, which our weighting scheme corrects. Values reflect averages
   over $1,000$ simulations.}
 \end{table}
-\todo{Merge separate columns into stat (SE) and relabel right before submitting and 1/2->A/B}
 
 \newpage
 \begin{table}[H]\label{table2}
 \centering
 \begin{tabular}{lrrrrrrrr}
 \toprule
-Method & stat1 & se\_stat1 & stat2 & se\_stat2 & mae1 & se\_mae1 & mae2 & se\_mae2\\
+Method & $PWR_A$ & $SE_A$ & $FPR_B$ & $SE_B$ & $MAE_A$ & $SE_A$ & $MAE_B$ & $SE_B$ \\
 \midrule
 \addlinespace[0.3em]
 \multicolumn{9}{l}{\textbf{Alt: Equal sample sizes, R=0.2}}\\
@@ -1284,7 +1292,7 @@ independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
 \centering
 \begin{tabular}{lrrrrrrrr}
 \toprule
-p\_thresh & stat1 & se\_stat1 & stat2 & se\_stat2 & mae1 & se\_mae1 & mae2 & se\_mae2\\
+$p_t$ & $FPR_A$ & $SE_A$ & $FPR_B$ & $SE_B$ & $MAE_A$ & $SE_A$ & $MAE_B$ & $SE_B$\\
 \midrule
 \addlinespace[0.3em]
 \multicolumn{9}{l}{\textbf{Null: Uncorrelated pleiotropy}}\\
@@ -1326,7 +1334,7 @@ independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
 \centering
 \begin{tabular}{lrrrrrrrr}
 \toprule
-p\_thresh & stat1 & se\_stat1 & stat2 & se\_stat2 & mae1 & se\_mae1 & mae2 & se\_mae2\\
+$p_t$ & $PWR_A$ & $SE_A$ & $FPR_B$ & $SE_B$ & $MAE_A$ & $SE_A$ & $MAE_B$ & $SE_B$\\
 \midrule
 \addlinespace[0.3em]
 \multicolumn{9}{l}{\textbf{Alt: Equal sample sizes, R=0.2}}\\
