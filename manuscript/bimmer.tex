@@ -51,19 +51,19 @@ bidirectional mediated Mendelian randomization}
 \maketitle
 
 \begin{abstract}
-Inference of directed biological networks from observational genomics datasets is a crucial
+Inference of directed biological networks from observational genomics \todo{this has the flavor of molecular/functional data} datasets is a crucial
 but notoriously difficult challenge. Modern population-scale biobanks, containing simultaneous
 measurements of traits, biomarkers and genetic variation, offer unprecedented opportunity
 to study biological networks. Mendelian randomization (MR) has received attention as a class
 of methods for inferring causal effects in observational data that uses genetic variants (SNPs)
-as instrumental variables, but MR methods rely on assumptions that limit their application
-to complex traits at the biobank-scale. Moreover, MR estimates the total effect of one trait 
+as instrumental variables, but existing MR methods rely on assumptions that limit their application
+to complex traits at the biobank-scale. Moreover, MR estimates the total causal effect of one trait 
 on another, which may be mediated by other factors. Biobanks allow simultaneous measurement 
 of possible mediators, in principle enabling the conversion of MR estimates into direct effects 
 representing a causal network.
 Here, we show that this can be accomplished by a flexible two stage procedure we call
 \emph{bidirectional mediated Mendelian randomization} (bimmer). First,
-estimate the effect of every trait on every other. Next, approximately invert the resulting matrix.
+estimate the effect of every trait on every other. Next, approximately invert the resulting matrix \todo{not sure about the imperative here but I don't hate it either}.
 We introduce novel methods for both steps and show via extensive simulations that bimmer is able
 to learn causal network structures even in the presence of non-causal 
 genetic correlation. We apply bimmer to 405 
@@ -73,11 +73,10 @@ recent observational studies.
 \end{abstract}
 
 \section{Introduction}
-Recent developments in the understanding of complex-trait genetics have
-lead to a call for increased study of directed biological networks, because they are
-crucial for detecting core genes in the omnigenic model of complex traits,
+Recent developments in the understanding of complex-trait genetics suggest that 
+understanding directed biological networks is crucial for detecting core genes in the omnigenic model of complex traits,
 understanding risk factors for disease and finding pathways that can be targeted
-for treatment~\cite{Boyle2017,Liu2019,Wray2018}.
+for treatment~\cite{Boyle2017,Liu2019,Wray2018}\todo{cite omni v2 as well?}.
 However, interrogating the causal structure of networks is notoriously difficult,
 owing to factors such as unmeasured confounding and reverse causation~\cite{Parsana2019}.
 In spite of these challenges, modern population-scale biobanks 
@@ -85,7 +84,7 @@ offer unprecedented opportunity to study biological networks
  because they contain measurements of
 traits, biomarkers and genetic variation in the same individuals~\cite{Sudlow2015,Nagai2017}.
 Current methods for estimating biological networks from observational data with confounding
-are severely limited~\cite{Chandrasekaran2012,Frot2019a,Frot2019b,Stegle2011} and have no strategy
+are severely limited~\cite{Chandrasekaran2012,Frot2019a,Frot2019b,Stegle2011}\todo{do we need to say why they're limited?} and have no strategy
 for integrating genetic data.
 
 Mendelian randomization (MR) has recently received increased attention as a class of methods
@@ -95,7 +94,7 @@ association studies (GWAS) as instrumental variables to determine the effect
 of an exposure (A) on an outcome (B). To estimate causal effects,
 MR methods must make strong assumptions that limit their
 ability to be applied at the biobank-scale. Perhaps the most
-controversial assumption is that the SNP only effects B through A
+controversial assumption is that the SNP only affects B through A
 (\textit{i.e.} there is no horizontal pleiotropy). Recent methods such as Egger
 regression and the mode-based-estimator are able to relax this assumption, instead
 assuming there is no correlated pleiotropy or modal pleiotopy, respectively~\cite{Bowden2015,Hartwig2017}.
@@ -110,14 +109,14 @@ Some researchers have instead used bidirectional MR~\cite{Timpson2011, Richmond2
 and effect in each direction, or gwas-pw~\cite{Pickrell2016}, which infers the effect
 direction from the data.
 However, the utility of these approaches for complex traits,
-which might contain non-causal genetic correlation,
+which might exhibit non-causal genetic correlation,
 is questionable~\cite{OConnor2018}.
 
 In mimicking a randomized controlled trial, MR estimates the
-total causal effect (TCE) of A on B~\cite{Burgess2015}. This effect may be mediated by
+\emph{total} causal effect (TCE) of A on B~\cite{Burgess2015}. This effect may be mediated by
 any number of factors. The proliferation of phenome-scale datasets
 allows researchers to measure the effects of many possible mediators,
-in principle enabling the conversion of TCE estimates into direct causal effect (DCE)
+in principle enabling the conversion of TCE estimates into \emph{direct} causal effect (DCE)
 estimates, which are not mediated by any other measured factor.
 However, methods to enact this conversion are limited, either because they require complex
 processing pipelines that limit their scope~\cite{Amar2019} or because they are
@@ -178,14 +177,14 @@ phenotype $j$. We assume that phenotypes do not effect themselves ($G_{i,i} = 0$
 and that the network is sparse ($G$ has many entries that are $0$).
 Our goal is to estimate $G$ given summary statistics
  for the association of the genotypes $X$ with the phenotypes $Y$.
- Our trait model is $Y = Y G + X\beta + \gamma$.
+ Our trait model is then $Y = Y G + X\beta + \gamma$.
 Let $R$ be the matrix of TCE estimates from MR, with $R_{i,j}$ the total
 causal effect of phenotype $i$ on phenotype $j$ and $S_{i,j}$ its standard error.
 We show in section~\ref{methods} that under this model,
 \begin{equation}\label{r_dce_main}
 G = I - R^{-1} D[1 / R^{-1}]
 \end{equation}
-where $D$ is an operator that sets all off-diagonal elements to 0, and $/$
+\todo{this equation is for true not estimated R, right? Need to clarify that}where $D$ is an operator that sets all off-diagonal elements to 0, and $/$
 represents element-wise division.
 
 In practice, the matrix $R$ need not be well-conditioned or
@@ -193,7 +192,7 @@ In practice, the matrix $R$ need not be well-conditioned or
 to challenges when calculating $G$ via~\eqref{r_dce_main}. Instead of calculating an exact
 or psuedo-inverse, we exploit the assumption that the underlying
 DCE matrix is sparse. Specifically, we seek matrices $U$ and $V$ such that $VU=I$, $U \approx R$
-and $V$ is sparse. We find them by solving the following constrained optimization problem,
+and $V$ is sparse by solving the constrained optimization problem,
 \begin{equation} \label{opt_main}
 \min_{\{U, V : VU = I\}} \frac{1}{2} ||W \circ (R - U)||_F^2 +
    \lambda \sum_{i\neq j}|V_{ij}|
@@ -202,28 +201,27 @@ where $W = W_{i,j} = 1/S_{i,j}^2$ is a set of per-entry inverse variance weights
 and $\lambda$ is the $L_1$ shrinkage parameter~\cite{Friedman2007,Tishbirani1996}.
 We refer to $U$ as bimmer shrunk estimates of the TCE, and
 use $V \approx R^{-1}$ to solve~\eqref{r_dce_main}.
- Note that in this method, missing entries in $R$ can be accommodated simply
+Missing entries in $R$ can be accommodated simply
 by setting their weights to 0. We use this property to our advantage in choosing the
 regularization parameter. Specifically, we use a novel adaptation of Stability Approach
 to Regularization Selection (StARS)~\cite{Liu2010} where we mask entries of the TCE
 in order to induce variance in the estimated graph during cross-validation.
-For complete details, see section~\ref{methods}.
+For details, see section~\ref{methods}.
 
-Some intuition for~\eqref{r_dce_main} can be gained by considering the problem
-of estimating a matrix of partial correlations for a set of observed variables.
+\todo{would it make more sense to put this paragraph directly after eq 1?}Some intuition for~\eqref{r_dce_main} can be gained by considering estimating a matrix of partial correlations for a set of observed variables.
 Analogous to the DCE, the partial correlation measures the degree to which two
 variables are correlated while controlling for the effect of all other measured
 variables. Given a matrix of observed (standard) correlations, $\Sigma$, the matrix of
 partial correlations is $P = -D[\Sigma^{-1}]^{-1/2} \Sigma^{-1} D[\Sigma^{-1}]^{-1/2}$. One of
-the most common approaches to obtaining a robust estimate of $\Sigma^{-1}$, also called
-the precision matrix, is the graphical lasso (glasso)~\cite{Friedman2007}.
-glasso assumes the data come from a multivariate normal distribution with a sparse
+the most common approaches to obtaining a robust estimate of $\Sigma^{-1}$ (
+the ``precision'' matrix) is the graphical lasso (glasso)~\cite{Friedman2007}.
+glasso assumes the data is multivariate normal distributed with a sparse
 precision matrix, and maximizes the likelihood with a $L_1$ penalty on elements of $\Sigma^{-1}$.
 
-This leaves the problem of producing a reliable estimate for $R$,
+This leaves the problem of producing a reliable estimate for the TCE matrix $R$,
 which can be particularly challenging when there is non-causal genetic correlation or
 differential power across phenotypes. Most MR studies use the set of
-genome-wide significant (GWS, $p \le 5\times 10^{-8}$) SNPs for a trait as instruments.
+genome-wide significant (GWS, $p \le 5\times 10^{-8}$) SNPs for a trait \todo{the exposure?} as instruments.
 Instead, we exploit the observation that in the absence of horizontal pleiotropy, 
 if $A$ causes $B$ and a SNP effects $A$ directly,
 the effect of the SNP on $B$ can be no larger than the effect of the SNP on $A$ times
@@ -232,13 +230,13 @@ $B$ reduced by the network. We use this intuition to construct a novel
 weighting scheme for Egger regression.
 First, we select a $p$-value threshold $p_t$. For every phenotype $i$, we
  construct a set of marginally associated SNPs at threshold $p_t$. Next,
- for every ordered pair of phenotypes $i, j$, we consider only SNPs that reach
+ for every ordered pair of phenotypes $(i, j)$, we consider only SNPs that reach
  signficance level $p_t$ in phenotype $i$ but not $j$. For this set of SNPs, we calculate
  a weight based on the Welch test statistic for a two-sample difference in mean with unequal
  variances,
  and the standard inverse-variance weight. If $\hat{\beta}_{k, i}$ is our estimate
  of the effect of SNP $k$ on phenotype $i$ and $\hat{s}_{k, i}$ its standard error,
- the Welch test statistic is~\cite{Welch1947}
+ the Welch test statistic is~\cite{Welch1947}\todo{still wonder if this should go into the methods section}
 \begin{equation}
 t^{i,j}_k = \frac{|\hat{\beta}_{k, i}| - |\hat{\beta}_{k, j}|}
   {\sqrt{\hat{s}^2_{k, i} + \hat{s}^2_{k, j}}}
@@ -246,15 +244,14 @@ t^{i,j}_k = \frac{|\hat{\beta}_{k, i}| - |\hat{\beta}_{k, j}|}
 and our weight is $w^{i, j}_k = t^{i,j}_k/\bar{t} \hat{s}_{k, j}^2$.
 We use these SNP weights in the Egger regression of $j$ on $i$.
 To avoid bias, we must use two sets of summary
-statistics: one set for SNP selection and weight construction,
+statistics computed on distinct individuals: one set for SNP selection and weight construction,
  and the second set for estimating $R$.
 
 
 \subsection*{Simulations}
 \subsubsection*{Weighted Egger regression improves calibration and power in Mendelian randomization}
-Our first goal was to assess whether our weighted Egger regression approach
-had a well-controlled type-I error rate (FPR) under the two-way null
-(no causal effect in either direction). To this
+We first assessed whether our weighted Egger regression
+has a well-controlled type-I error rate (FPR) when there is no no causal effect in either direction (the ``two-way'' null). To this
 end we simulated GWAS summary statistics for two phenotypes with $M=1,000,000$
 independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
  the SNP discovery and effect estimation cohorts. In each simulation, there
@@ -307,13 +304,12 @@ independent SNPs, $20\%$ heritability and $N = 100,000$ individuals in both
   \label{figure1}
 \end{figure}
 
-Next, we wanted to asses the power of our approach under the one-way alternate
-hypothesis for various true effect sizes. We again conduct thee simulations,
-calculating the power for effect sizes ranging from $0.05$ to $0.7$.
+Next, we assessed the power of our approach when there is a true causal effect in only one direction (the one-way alternate
+hypothesis) for effect sizes ranging from $0.05$ to $0.7$. We again conduct three simulations.
 In the first, the cohorts had equal sample sizes ($N = 100,000$). In the second, the exposure
 cohort has larger sample size ($N_1 = 200,000$, $N_2 = 50,000$),
 and in the third the outcome cohort has a larger sample size ($N_1 = 50,000$, $N_2 = 200,000$).
-In all settings, our weighted Egger approach shows
+In all settings, our weighting scheme shows
 a substantial gain in power over standard Egger regression. This is especially
 notable for smaller effect sizes, and when the outcome GWAS is larger.
 In this latter setting, the power of standard Egger regression is only slightly
@@ -336,7 +332,6 @@ methods had lower power when $R_{12} \approx -R_{21}$ and vice versa, especially
 $R_{12}$ has large absolute value. Indeed, as $R_{12} \rightarrow -R_{21} \rightarrow 1$, the model
 becomes unidentifiable. This setting is actually a violation of the \emph{faithfulness}
 assumption commonly employed in causal inference~\cite{Pearl2000}.
-
 
 In these simulations, we used a $p$-value threshold of $5\times 10^{-6}$
 for all weighted Egger regression analyses, but the conclusions held across a range
@@ -401,7 +396,7 @@ a matrix of NA values (Figure~S3).
 
 \subsubsection*{bimmer robustly recovers direct causal effect networks}
 
-Our final goal was to show that bi-directional Mendelian randomization
+Our final\todo{you have another final goal later} goal was to show that bi-directional Mendelian randomization
 could be combined with inspre to fit networks of simulated phenotypes
 from phenome-scale GWAS summary statistics. At the time of this writing
 we are not aware of any other methods for this specific problem. However,
