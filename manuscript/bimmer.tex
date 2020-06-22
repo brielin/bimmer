@@ -53,17 +53,18 @@ bidirectional mediated Mendelian randomization}
 \begin{abstract}
 Inference of directed biological networks from observational genomics datasets is a crucial
 but notoriously difficult challenge. Modern population-scale biobanks, containing simultaneous
-measurements of traits, biomarkers and genetic variation, offer unprecedented opportunity
+measurements of traits, biomarkers, and genetic variation, offer an unprecedented opportunity
 to study biological networks. Mendelian randomization (MR) has received attention as a class
-of methods for inferring causal effects in observational data that uses genetic variants (SNPs)
+of methods for inferring causal effects in observational data that uses genetic variants
 as instrumental variables, but MR methods rely on assumptions that limit their application
 to complex traits at the biobank-scale. Moreover, MR estimates the total effect of one trait 
-on another, which may be mediated by other factors. Biobanks allow simultaneous measurement 
-of possible mediators, in principle enabling the conversion of MR estimates into direct effects 
+on another, which may be mediated by other factors. Biobanks include measurements 
+of many potential mediators, in principle enabling the conversion of MR estimates into direct effects 
 representing a causal network.
 Here, we show that this can be accomplished by a flexible two stage procedure we call
-\emph{bidirectional mediated Mendelian randomization} (bimmer). First,
-estimate the effect of every trait on every other. Next, approximately invert the resulting matrix.
+\emph{bidirectional mediated Mendelian randomization} (bimmer). First, bimmer
+estimates the effect of every trait on every other. Next, bimmer finds
+a parsimonious network that explains these effects using direct and mediated causal paths.
 We introduce novel methods for both steps and show via extensive simulations that bimmer is able
 to learn causal network structures even in the presence of non-causal 
 genetic correlation. We apply bimmer to 405 
@@ -74,16 +75,16 @@ recent observational studies.
 
 \section{Introduction}
 Recent developments in the understanding of complex-trait genetics have
-lead to a call for increased study of directed biological networks, because they are
+lead to a call for increased study of directed biological networks because they are
 crucial for detecting core genes in the omnigenic model of complex traits,
-understanding risk factors for disease and finding pathways that can be targeted
+understanding risk factors for disease, and finding pathways that can be targeted
 for treatment~\cite{Boyle2017,Liu2019,Wray2018}.
-However, interrogating the causal structure of networks is notoriously difficult,
+However, interrogating the causal structure of networks is notoriously difficult
 owing to factors such as unmeasured confounding and reverse causation~\cite{Parsana2019}.
 In spite of these challenges, modern population-scale biobanks 
-offer unprecedented opportunity to study biological networks
+offer an unprecedented opportunity to study biological networks
  because they contain measurements of
-traits, biomarkers and genetic variation in the same individuals~\cite{Sudlow2015,Nagai2017}.
+traits, biomarkers, and genetic variation in the same individuals~\cite{Sudlow2015,Nagai2017}.
 Current methods for estimating biological networks from observational data with confounding
 are severely limited~\cite{Chandrasekaran2012,Frot2019a,Frot2019b,Stegle2011} and have no strategy
 for integrating genetic data.
@@ -107,7 +108,7 @@ the other as the exposure. Pre-specifying the effect direction is sound when the
 is clearly biologically downstream of the exposure, but in some cases it is better
 to learn the direction of the effect from the data.
 Some researchers have instead used bidirectional MR~\cite{Timpson2011, Richmond2014}, which tests for
-and effect in each direction, or gwas-pw~\cite{Pickrell2016}, which infers the effect
+an effect in each direction, or gwas-pw~\cite{Pickrell2016}, which infers the effect
 direction from the data.
 However, the utility of these approaches for complex traits,
 which might contain non-causal genetic correlation,
@@ -116,8 +117,8 @@ is questionable~\cite{OConnor2018}.
 In mimicking a randomized controlled trial, MR estimates the
 total causal effect (TCE) of A on B~\cite{Burgess2015}. This effect may be mediated by
 any number of factors. The proliferation of phenome-scale datasets
-allows researchers to measure the effects of many possible mediators,
-in principle enabling the conversion of TCE estimates into direct causal effect (DCE)
+allows researchers to measure the effects of many possible mediators.
+In principle, this enables the conversion of TCE estimates into direct causal effect (DCE)
 estimates, which are not mediated by any other measured factor.
 However, methods to enact this conversion are limited, either because they require complex
 processing pipelines that limit their scope~\cite{Amar2019} or because they are
@@ -128,8 +129,8 @@ that the underlying causal network
 lacks cycles, which are thought to be an important part of real biological networks~\cite{Zhu2007}.
 
 Here, we show that directed causal graphs can be estimated from phenome-scale GWAS summary
-statistics using a simple two-stage framework. First, calculate the TCE of every phenotype
-on every other. Next, approximately invert that matrix to produce a causal graph.
+statistics using a simple two-stage framework: first calculate the TCE of every phenotype
+on every other, then approximately invert that matrix to produce a causal graph.
 We call this framework \emph{bi-directional mediated Mendelian randomization} (bimmer),
 and introduce novel methods for both components. To calculate the TCE matrix, we
 use a new weighting scheme for Egger regression that reduces the
@@ -245,8 +246,8 @@ t^{i,j}_k = \frac{|\hat{\beta}_{k, i}| - |\hat{\beta}_{k, j}|}
 and our weight is $w^{i, j}_k = t^{i,j}_k/\bar{t} \hat{s}_{k, j}^2$.
 We use these SNP weights in the Egger regression of $j$ on $i$.
 To avoid bias, we must use two sets of summary
-statistics: one set for SNP selection and weight construction,
- and the second set for estimating $R$.
+statistics. The first set is for SNP selection and weight construction,
+ and the second set is for estimating $R$.
 
 
 \subsection*{Simulations}
@@ -347,11 +348,12 @@ at the expense of reduced power. Likewise, higher cut-offs yield higher power
 while reducing control of the type-I error rate
 (Table~S3 and Table~S4). 
 
-\subsubsection*{inspre is competitive with glasso while handling missingness and directed graphs}
+\subsubsection*{inspre is competitive with glasso while handling missing entries and directed graphs}
 As detailed above, both inspre and glasso can be viewed as methods
 for finding a sparse, approximate inverse to a noisily measured matrix.
-Therefore, we sought to compare these two methods when data are simulated
-from an undirected graph with normally-distributed observations (the glasso model). We used the \emph{huge}~\cite{Zhao2012} package to generate data
+Therefore, we sought to compare these two methods with data simulated
+from an undirected graph with normally-distributed observations (the glasso model).
+We used the \emph{huge}~\cite{Zhao2012} package to generate data
 from a multivariate-normal distribution with a sparse precision matrix
 for various graph structures, sample sizes, and numbers of features.
 We considered three kinds of graph structures: 1) Erd\"os-R\'eyni (random) graphs,
@@ -382,7 +384,7 @@ both methods having very similar performance for scale-free graphs
 (Figure~S2a-c). Next, we simulated  data with $100$
 features and $500$ samples. Here our random graphs included each edge with
 probability $p=0.02$ and our hub graphs had $5$ hubs. In this setting, glasso outperformed inspre on
-random graphs, inspre outperformed glasso on hub graphs, and both methods again
+random graphs and inspre outperformed glasso on hub graphs. Again both methods
 had similar performance on scale-free graphs, with a slight edge towards
 glasso (Figure~S2d-f).
 
@@ -397,7 +399,7 @@ a number between $0$ and $m$ uniformly at random and set that proportion of the 
 samples as missing. We then calculated the sample correlation matrix using only
 samples where both features were measured per pair of features.
 In this setting, inspre was able to continue producing accurate
-results even with when the maximum missingness was high. On the other
+results even when the maximum missingness was high. On the other
 hand, glasso was not able to produce results at all when there was high
 missingness. Instead, the glasso algorithm diverged and the program returned
 a matrix of NA values (Figure~S3).
@@ -419,11 +421,11 @@ applied~\cite{Zuber2020}.
 
 First, we simulated summary
 statistics for $50$ phenotypes with $1,000$ shared and $2,000$ private
-causal effect SNPs per pair of phenotypes, $125,000$ total SNPs. Each
+causal effect SNPs per pair of phenotypes: $125,000$ total SNPs. Each
 phenotype had $20\%$ heritability. The causal
 network underlying the phenotypes came from an Erd\"os-R\'eyni random graph with
 randomly oriented edges. We found that MR-BMA performed comparably to
-elnet-Egger, but that they both performed poorly compared to bimmer.
+elnet-Egger, but they both performed poorly compared to bimmer.
 Moreover, MR-BMA took about $20$ times longer than bimmer to run with
 default parameter settings (Figure~S4).
 
@@ -446,13 +448,13 @@ orientations considered, while
 elnet-Egger consistently had poor performance (Figure~\ref{figure4}d-i, Figure~S5).
  For Erdos-Reyni graphs, we found that edge orientation did not have an effect on the
  performance of bimmer. This is possibly because the node degree distribution
- doesn't have enough variance to have nodes that consistently pull edges towards
+ does not have enough variance to have nodes that consistently pull edges towards
  or away from them in the latter scenarios. For scale-free and hub graphs, we
  found that bimmer performed better when high-degree nodes had edges oriented
  away from them (Figure~\ref{figureS3}). This is particularly interesting as
  it corresponds to the most likely real-world scenario~\cite{Barabasi1999}. Indeed, bimmer
  performed worst in the least realistic scenario: hub graphs with edges oriented
- towards the hubs (Figure~\ref{figure4}e). However even in this challenging setting, bimmer
+ towards the hubs (Figure~\ref{figure4}e). However, even in this challenging setting bimmer
  is able to accurately infer the causal graph.
 
 \begin{figure}
@@ -479,7 +481,8 @@ performs quite poorly compared to bimmer.}
 \subsection*{Application to 405 traits from the UK Biobank}
 \subsubsection*{bimmer identifies thousands of direct causal effects in complex pathways}
 We obtained summary statistics for sex-split UK Biobank phenotypes from
-the Neale lab~\cite{NealeUKBB}. For ease of interpretation,
+the Neale lab, who corrected for age, age\textsuperscript{2} and 20 principal components
+of the genotype matrix~\cite{NealeUKBB}. For ease of interpretation,
 we transformed all effect sizes to the per-variance scale.
  As previously suggested~\cite{BulikSullivan2015,NealeUKBB},
 we used only phenotypes with $Z$-score above $4$ and at least ``medium'' confidence.
@@ -534,10 +537,11 @@ significant connections have an average shrunk TCE of $0.029$ and median DCE net
  ($3,831$ connections, $63.7\%$) of significant TCEs result from indirect paths in the DCE network.
 The effect explained by the shortest path between two nodes is often only a small
 fraction of the total effect; there are typically multiple paths
-between two nodes contribute to the TCE (Figure~\ref{figure6}c-d). This finding is especially pronounced 
-when looking at all connections, where  the median percentage of TCE explained
-by shortest path is $0.35\%$ (Figure~\ref{figure6}c) rather than FDR $5\%$-significant connections,
-where the  median percentage of TCE explained
+between two nodes that contribute to the TCE (Figure~\ref{figure6}c-d).
+ This finding is especially pronounced 
+when looking at all connections, where the median percentage of TCE explained
+by shortest path is $0.35\%$ (Figure~\ref{figure6}c). For FDR $5\%$-significant connections,
+the median percentage of TCE explained
 by shortest path is $0.52\%$ (Figure~\ref{figure6}d).
 Interestingly, the percentage of the TCE explained
 by shortest path is sometimes greater than 1, i.e. the
@@ -551,7 +555,8 @@ support as TCEs, but are required in order to explain other highly significant e
 example of this is an effect of ``time spent watching television'' (TSWT) on body mass index (BMI).
 This has no initial statistical support ($R = 0.008 \pm 0.1$, $p = 0.94$) but bimmer
 infers a strong effect ($G = 0.110$) in order to explain strong effects of TSWT on numerous downstream
-phenotypes such as ``usual walking pace'' ($p < 2 \times 10^{-5}$, $U = -0.022$),  wheezing in the chest
+phenotypes such as ``usual walking pace'' ($p < 2 \times 10^{-5}$, $U = -0.022$),
+``wheezing in the chest''
 ($p < 4\times 10^{-5}$, $U = 0.018$) and ``father's age at death'' ($p < 5\times 10^{-4}$, $U = -0.010$).
 This gives evidence of a direct causal effect of a sedentary lifestyle on higher BMI, contradicting
 an earlier study using bi-directional Mendelian randomization that found a causal effect of
@@ -566,7 +571,13 @@ but is required by the network to explain observed effects of AFSI on the aforem
 While this may not represent a literal causal effect, the network structure lends
 insight into the results and may lend additional evidence to recent work
 showing that BMI-associated loci are involved
-in neuronal pathways linked to reward~\cite{Ndiaye2020}. Taken together, we consider
+in neuronal pathways linked to reward~\cite{Ndiaye2020}, or result from a latent effect of
+early puberty~\cite{Hulanicka2007,Solorzano2010}.
+It is important to note that our analysis naturally controls for confounding by
+socioeconomic status (SES). MR itself accounts for non-genetic confounding
+by SES, and bimmer does not infer that the genetic effect is either mediated
+by or jointly caused by ``Townsend deprivation index at recruitment''.
+Taken together, we consider
 this evidence of a complex relationship between BMI and lifestyle with causal effects
 likely flowing in both directions.
 
@@ -616,9 +627,11 @@ for further analysis, corresponding to traits associated with 1) morphology (Fig
 and 4)  heart-disease (Figure~\ref{figure5b}d).
 In all cases, every node within the sub-network is reachable from every other node. 
 These sub-networks also tend to include traits that are related by definition. In many of these cases,
-bimmer puts a bi-directed edge between the two nodes, for example between BMI and weight,
-between mean sphered cell volume and mean reticulyte volume, and between
-sitting height and predicted forced expiratory volume in one second. While this does not happen universally,
+bimmer puts a bi-directed edge between the two nodes, for example between BMI and weight.
+bimmer also puts a bi-directed edge between between mean sphered cell volume
+and mean reticulyte volume, as well as between
+sitting height and ``predicted forced expiratory volume in one second''.
+While this does not happen universally,
 bimmer generally succeeds at identifying groups of traits which could be analyzed jointly. 
 
 \begin{figure}
@@ -681,7 +694,7 @@ $215$ direct effects, and $175$ FDR $5\%$ significant TCEs.
 Many of the strongest downstream effects of BMI are dietary
 in nature, including vegetable intake ($G = 0.09$, $p < 1\times 10^{-16}$),
 milk-type ($G = 0.15$, $p < 1\times 10^{-16}$), and dietary variation ($G = 0.115$, $p < 1\times 10^{-16}$).
-These findings lend additional support to the recent literature on BMI the cause of
+These findings lend additional support to the recent literature on BMI as the cause of
 traits thought to lead to higher BMI (e.g. exercise~\cite{Richmond2014}) and the observation that
 BMI-increasing genetic variants tend to be linked to genes with a role in brain
 function~\cite{Locke2015,Zhu2016,Ndiaye2020}. We consider this further evidence that causal effects between
@@ -732,20 +745,20 @@ method to the UK Biobank, we lend causal support to several recent observational
 
 Generally speaking, causal claims should be backed by thorough analysis resulting from
 multiple studies with differing assumptions and input from domain experts. This raises the question
-of whether phenome-scale causal inference, where the number of pairs of to be tested
+of whether phenome-scale causal inference, where the number of pairs of traits to be tested
 renders this unrealistic, is even possible. Instead, in this setting one should focus on
 causal network discovery, learning putatively causal structures that can suggest avenues for further
 work. We have demonstrated that causal discovery is invaluable for understanding
 the results of phenome-wide Mendelian randomization. Simultaneous inference of edges in
 the causal graph can prioritize seemingly-insignificant connections that are globally relevant,
 remove false-positives with significant TCE $p$-values that
-cannot be coherently incorporated into the network, and enables interpretation of
+cannot be coherently incorporated into the network, and enable interpretation of
  surprising TCEs in the context of the network structure.
 
 Our approach is conceptually simple and can be viewed both as a method and a framework.
 First, we calculate a TCE matrix.
 This is analogous to a correlation matrix, except that it is not symmetric and its entries
-represent causal effects rather than correlations. Then, we find a sparse approximate inverse
+represent apparent causal effects rather than correlations. Then, we find a sparse approximate inverse
 to this matrix, which represents a causal graph.
 This is analogous to glasso, except that we produce a directed graph instead
 of an undirected one. This means that bimmer can use any MR method
@@ -755,7 +768,7 @@ the setting they work in. It also allows bimmer to naturally accommodate other p
 approaches to convert the TCE matrix into a causal network.
 While we are not aware of other methods for this specific problem, our method contributes to the
 extensive fields of biological and causal network discovery.
-For example, \cite{Frot2019a} combines a low-rank plus sparse decomposition
+For example, Frot \emph{et al.}~\cite{Frot2019a} combines a low-rank plus sparse decomposition
 of the covariance matrix~\cite{Frot2019b,Chandrasekaran2012} with
 the algorithm \emph{intervention calculus when the
 DAG is absent}~\cite{Maathuis2009} to learn directed acyclic causal graphs. There, the low-rank
@@ -766,9 +779,10 @@ extended to include a low-rank component which could help capture residual confo
 Our method is also related to \emph{silencing}~\cite{Barzel2013}. There,
 the authors use physical arguments pertaining to perturbations at equilibrium to derive
 a formula similar to~\eqref{r_dce_main}. However, they use an exact inversion which
-leads to poor performance in practice~\cite{Pachter}. Finally,~\cite{Dahl2013} and~\cite{Stegle2011}
+leads to poor performance in practice~\cite{Pachter}. Finally, Dahl \emph{et al.}~\cite{Dahl2013}
+and Stegle \emph{et al.}~\cite{Stegle2011}
 model a low rank component in the observed data to capture population structure and latent
-gene expression factors, respectively. However these methods require access to the primary data,
+gene expression factors, respectively. These methods require access to the primary data,
 learn undirected graphs, and do not scale to biobanks.
 
 

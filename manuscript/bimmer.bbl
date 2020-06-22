@@ -1556,6 +1556,52 @@
       \field{title}{{Causality: Models, Reasoning, and Inference}}
       \field{year}{2000}
     \endentry
+    \entry{Zhao2012}{report}{}
+      \name{author}{5}{}{%
+        {{hash=5aabe643c77f92846adf1b83e9c78387}{%
+           family={Zhao},
+           familyi={Z\bibinitperiod},
+           given={Tuo},
+           giveni={T\bibinitperiod}}}%
+        {{hash=1fd24db54860bcc68afc8ed6e58bfa9a}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Han},
+           giveni={H\bibinitperiod}}}%
+        {{hash=05b461b94ae0c05f5f954c648ee571d9}{%
+           family={Roeder},
+           familyi={R\bibinitperiod},
+           given={Kathryn},
+           giveni={K\bibinitperiod}}}%
+        {{hash=88426f033c21f91cad168597555d363d}{%
+           family={Lafferty},
+           familyi={L\bibinitperiod},
+           given={John},
+           giveni={J\bibinitperiod}}}%
+        {{hash=6b27f4592197d058b81cb25b0b285942}{%
+           family={Wasserman},
+           familyi={W\bibinitperiod},
+           given={Larry},
+           giveni={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{deabf1eb54f74e22d17cb979d27b6946}
+      \strng{fullhash}{4d52af2a6811966b3cac3ee0803dd2cd}
+      \strng{bibnamehash}{deabf1eb54f74e22d17cb979d27b6946}
+      \strng{authorbibnamehash}{deabf1eb54f74e22d17cb979d27b6946}
+      \strng{authornamehash}{deabf1eb54f74e22d17cb979d27b6946}
+      \strng{authorfullhash}{4d52af2a6811966b3cac3ee0803dd2cd}
+      \field{sortinit}{1}
+      \field{sortinithash}{2174f786c6195e7fe2ee1c229b416e29}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{We describe an R package named huge which provides easy-to-use functions for estimating high dimensional undirected graphs from data. This package implements recent results in the literature, including Friedman et al. [2007b], Liu et al. [2009] and Liu et al. [2010]. Compared with the existing graph estimation package glasso, the huge package provides extra features: (1) instead of using Fortan, it is written in C, which makes the code more portable and easier to modify; (2) besides fitting Gaussian graphical models, it also provides functions for fitting high dimensional semiparametric Gaussian copula models; (3) more functions like data-dependent model selection, data generation and graph visualization; (4) a minor convergence problem of the graphical lasso algorithm is corrected; (5) the package allows the user to apply both lossless and lossy screening rules to scale up large-scale problems, making a tradeoff between computational and statistical efficiency.}
+      \field{title}{{The huge Package for High-dimensional Undirected Graph Estimation in R}}
+      \field{type}{techreport}
+      \field{year}{2012}
+      \verb{file}
+      \verb :home/brielin/.local/share/data/Mendeley Ltd./Mendeley Desktop/Downloaded/Zhao et al. - 2012 - The huge Package for High-dimensional Undirected Graph Estimation in R.pdf:pdf
+      \endverb
+    \endentry
     \entry{Barabasi1999}{article}{}
       \name{author}{2}{}{%
         {{hash=7286b44b1f1ba854e19b99a1ec63fc7e}{%
@@ -3457,6 +3503,106 @@
       \verb 10.1038/s41366-019-0428-7
       \endverb
     \endentry
+    \entry{Hulanicka2007}{article}{}
+      \name{author}{4}{}{%
+        {{hash=54ec94c1e1bccad498fa439c2d09e59a}{%
+           family={Hulanicka},
+           familyi={H\bibinitperiod},
+           given={Barbara},
+           giveni={B\bibinitperiod}}}%
+        {{hash=2ec1d887559f40973428e4abca092fe3}{%
+           family={Lipowicz},
+           familyi={L\bibinitperiod},
+           given={Anna},
+           giveni={A\bibinitperiod}}}%
+        {{hash=7b67707511fecf79573a344e974dd191}{%
+           family={Kozie\l{}},
+           familyi={K\bibinitperiod},
+           given={S\l{}awomir},
+           giveni={S\bibinitperiod}}}%
+        {{hash=f4532906167e0296fe31d1a381c0a0f8}{%
+           family={Kowalisko},
+           familyi={K\bibinitperiod},
+           given={Alicja},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {North-Holland}%
+      }
+      \strng{namehash}{6cb1b8f678251571b909657895d4d92d}
+      \strng{fullhash}{f7ec1875fcc760b26e97b9c70c7aafce}
+      \strng{bibnamehash}{6cb1b8f678251571b909657895d4d92d}
+      \strng{authorbibnamehash}{6cb1b8f678251571b909657895d4d92d}
+      \strng{authornamehash}{6cb1b8f678251571b909657895d4d92d}
+      \strng{authorfullhash}{f7ec1875fcc760b26e97b9c70c7aafce}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{The objective of this paper is to evaluate: (a) the association between BMI in childhood and adolescence and BMI at age 50, and (b) the association between timing of maturation at puberty and BMI at age 50 and the occurrence of high blood pressure. We explore whether differences in somatic and physiological factors observed among children with early or late onset of puberty indicates that this period of life could be critical for appearance of some CVD risk factors later in the life cycle. Our data include 135 males and 148 females, born in 1953, participants in the Wroc\l{}aw Longitudinal Study. Data pertaining to their growth and several indices of sexual and skeletal maturation were collected yearly between age 8 and 18. Subsequently, their anthropometric traits were measured and cardiovascular health status was assessed at age 50. We find that BMI at distinct stages in the life cycle were positively correlated. Also BMI at 50 were positively associated with blood pressure at 50. Moreover, earlier maturation at puberty is associated with higher values of BMI at age 50. We also find that earlier pubertal maturation is an independent factor that influences the appearance of high blood pressure in adulthood. {{$\copyright$}} 2007 Elsevier B.V. All rights reserved.}
+      \field{issn}{1570677X}
+      \field{journaltitle}{Economics and Human Biology}
+      \field{month}{3}
+      \field{number}{1}
+      \field{title}{{Relationship between early puberty and the risk of hypertension/overweight at age 50: Evidence for a modified Barker hypothesis among Polish youth}}
+      \field{volume}{5}
+      \field{year}{2007}
+      \field{pages}{48\bibrangedash 60}
+      \range{pages}{13}
+      \verb{doi}
+      \verb 10.1016/j.ehb.2006.12.001
+      \endverb
+      \keyw{Adolescence,BMI,Barker hypothesis,Blood pressure,CVD,Cardiovascular health,Early maturers,Health,Hypertension,Poland,Puberty}
+    \endentry
+    \entry{Solorzano2010}{misc}{}
+      \name{author}{2}{}{%
+        {{hash=08ef2cc8da6f90555736a538bfb6395b}{%
+           family={{Burt Solorzano}},
+           familyi={B\bibinitperiod},
+           given={Christine\bibnamedelima M.},
+           giveni={C\bibinitperiod\bibinitdelim M\bibinitperiod}}}%
+        {{hash=17664be2f347915c1e5cf4b6915c878f}{%
+           family={McCartney},
+           familyi={M\bibinitperiod},
+           given={Christopher\bibnamedelima R.},
+           giveni={C\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {NIH Public Access}%
+      }
+      \strng{namehash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{fullhash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{bibnamehash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{authorbibnamehash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{authornamehash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{authorfullhash}{1b0e52ea7281dca459eff42358d6733e}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Childhood obesity has become a major health concern in recent decades, especially with regard to metabolic abnormalities that impart a high risk for future cardiovascular disease. Recent data suggest that excess adiposity during childhood may influence pubertal development as well. In particular, excess adiposity during childhood may advance puberty in girls and delay puberty in boys. Obesity in peripubertal girls may also be associated with hyperandrogenemia and a high risk of adolescent polycystic ovary syndrome. How obesity may perturb various hormonal aspects of pubertal development remains unclear, but potential mechanisms are discussed herein. Insulin resistance and compensatory hyperinsulinemia may represent a common thread contributing to many of the pubertal changes reported to occur with childhood obesity. Our understanding of obesity's impact on pubertal development is in its infancy, and more research into pathophysiological mechanisms and longer-term sequelae is important. {{$\copyright$}} 2010 Society for Reproduction and Fertility.}
+      \field{booktitle}{Reproduction}
+      \field{issn}{14701626}
+      \field{month}{9}
+      \field{number}{3}
+      \field{title}{{Obesity and the pubertal transition in girls and boys}}
+      \field{volume}{140}
+      \field{year}{2010}
+      \field{pages}{399\bibrangedash 410}
+      \range{pages}{12}
+      \verb{doi}
+      \verb 10.1530/REP-10-0119
+      \endverb
+      \verb{file}
+      \verb ::
+      \endverb
+      \verb{urlraw}
+      \verb /pmc/articles/PMC2931339/?report=abstract https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2931339/
+      \endverb
+      \verb{url}
+      \verb /pmc/articles/PMC2931339/?report=abstract%20https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2931339/
+      \endverb
+    \endentry
     \entry{MacMahon1990}{article}{}
       \name{author}{13}{}{%
         {{hash=c8fa23eaebed5cd022700ef163dc360f}{%
@@ -4131,8 +4277,8 @@
       \strng{authorbibnamehash}{c68d2405af86b6ced370d62d24d22929}
       \strng{authornamehash}{c68d2405af86b6ced370d62d24d22929}
       \strng{authorfullhash}{c68d2405af86b6ced370d62d24d22929}
-      \field{sortinit}{3}
-      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{issn}{0098-7484}
@@ -4176,8 +4322,8 @@
       \strng{authorbibnamehash}{8459b178972985d86c0146d6c914cbf7}
       \strng{authornamehash}{8459b178972985d86c0146d6c914cbf7}
       \strng{authorfullhash}{8459b178972985d86c0146d6c914cbf7}
-      \field{sortinit}{3}
-      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Psychosomatic interactions leading to the development of Coronary Heart Disease (CHD) have yet to be clarified. This study explores further whether and how an important CHD risk factor, relative weight, affects the relationships between psychological and bioclinical parameters. A principal factorial components solution (linear procedure) and an extension of the median test (non-linear procedure) were run on the scores of self-reported anxiety (IPAT Anxiety Scale) and depression (Zung Self-rating Scale), the indices of anxiety expression style, and the bioclinical measures (systolic and diastolic blood pressure, fasting blood glucose, urea and lip concentrations). The statistical procedures were carried out separately in the six subgroups which subdivide 1,694 male volunteers to a CHD detection examination, according to age (under- and over-45 yr) and relative weight (obese, normal and lean subjects). Results indicate that the relationship between psychological and bioclinical measures are specific to the subgroup considered: they are recurrent in obese and lean individuals, and more frequent in older than in younger subjects. The composition of the first factorial component is psycho-bioclinical in the under-45 obese subgroup; the second factorial component is biopsychological in the obese and lean, under- as well as over-45-yr old, subgroups. The expression style indices and the lipid concentrations are associated when the statistical method does not presuppose linearity. Present theories on psychological and bioclinical determinants of relative weight are reported, since the experimental data upon which these theories are based parallel interestingly the results of our correlational study. Indeed, both approaches suggest that cognitive factors, operationally defined by response tendencies and anxiety expression style, are different in obese and nonobese humans, and that these differences determine psycho-bioclinical relationships which are specific to these relative weight groups. Could these mechanisms of action be specified, an important step would be made in the understanding of the CHD etiology. {{$\copyright$}} 1976.}
@@ -4366,8 +4512,8 @@
       \strng{authorbibnamehash}{cbeb19d1c0ac2bd217d7616c17d3e44c}
       \strng{authornamehash}{cbeb19d1c0ac2bd217d7616c17d3e44c}
       \strng{authorfullhash}{bbe2434211fc3a0ddcea558f735ce11b}
-      \field{sortinit}{3}
-      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{sortinit}{4}
+      \field{sortinithash}{11cdaee3b18e01d77f3f428b13c1fc76}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{abstract}{Background: Urea, the end product of protein metabolism, has been considered to have negligible toxicity for a long time. Our previous study showed a depression phenotype in urea transporter (UT) B knockout mice, which suggests that abnormal urea metabolism may cause depression. The purpose of this study was to determine if urea accumulation in brain is a key factor causing depression using clinical data and animal models. Methods: A meta-analysis was used to identify the relationship between depression and chronic diseases. Functional Magnetic Resonance Imaging (fMRI) brain scans and common biochemical indexes were compared between the patients and healthy controls. We used behavioural tests, electrophysiology, and molecular profiling techniques to investigate the functional role and molecular basis in mouse models. Findings: After performing a meta-analysis, we targeted the relevance between chronic kidney disease (CKD) and depression. In a CKD mouse model and a patient cohort, depression was induced by impairing the medial prefrontal cortex. The enlarged cohort suggested that urea was responsible for depression. In mice, urea was sufficient to induce depression, interrupt long-term potentiation (LTP) and cause loss of synapses in several models. The mTORC1-S6K pathway inhibition was necessary for the effect of urea. Lastly, we identified that the hydrolysate of urea, cyanate, was also involved in this pathophysiology. Interpretation: These data indicate that urea accumulation in brain is an independent factor causing depression, bypassing the psychosocial stress. Urea or cyanate carbamylates mTOR to inhibit the mTORC1-S6K dependent dendritic protein synthesis, inducing impairment of synaptic plasticity in mPFC and depression-like behaviour. CKD patients may be able to attenuate depression only by strict management of blood urea.}
@@ -13445,7 +13591,6 @@
       \endverb
     \endentry
   \enddatalist
-  \missing{Zhao2012}
 \endrefsection
 \endinput
 
