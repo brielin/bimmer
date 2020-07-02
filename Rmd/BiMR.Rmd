@@ -3,7 +3,6 @@ require(tidyverse)
 require(foreach)
 require(scales)
 require(devtools)
-require(scales)
 require(egg)
 devtools::load_all()
 ```
