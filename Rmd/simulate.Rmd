@@ -17,8 +17,6 @@ require(devtools)
 require(huge)
 require(GGally)
 require(network)
-require(sna)
-require(RColorBrewer)
 require(egg)
 devtools::load_all()
 ```

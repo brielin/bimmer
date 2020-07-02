@@ -9,22 +9,18 @@ License: file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
-    Matrix,
     stats,
-    methods,
-    mr.raps,
-    glmnet,
-    dplyr,
+    tidyverse,
     foreach,
-    tibble,
-    MASS,
-    readr,
-    purrr,
-    tidyr,
-    irlba,
-    plyr,
     MendelianRandomization,
     igraph
 Suggests: 
-    testthat (>= 2.1.0)
+    testthat (>= 2.1.0),
+    mr.raps,
+    mvtnorm,
+    scales,
+    egg,
+    GGally,
+    combinant,
+    hash
 RoxygenNote: 7.0.2
