@@ -3503,6 +3503,106 @@
       \verb 10.1038/s41366-019-0428-7
       \endverb
     \endentry
+    \entry{Hulanicka2007}{article}{}
+      \name{author}{4}{}{%
+        {{hash=54ec94c1e1bccad498fa439c2d09e59a}{%
+           family={Hulanicka},
+           familyi={H\bibinitperiod},
+           given={Barbara},
+           giveni={B\bibinitperiod}}}%
+        {{hash=2ec1d887559f40973428e4abca092fe3}{%
+           family={Lipowicz},
+           familyi={L\bibinitperiod},
+           given={Anna},
+           giveni={A\bibinitperiod}}}%
+        {{hash=7b67707511fecf79573a344e974dd191}{%
+           family={Kozie\l{}},
+           familyi={K\bibinitperiod},
+           given={S\l{}awomir},
+           giveni={S\bibinitperiod}}}%
+        {{hash=f4532906167e0296fe31d1a381c0a0f8}{%
+           family={Kowalisko},
+           familyi={K\bibinitperiod},
+           given={Alicja},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {North-Holland}%
+      }
+      \strng{namehash}{6cb1b8f678251571b909657895d4d92d}
+      \strng{fullhash}{f7ec1875fcc760b26e97b9c70c7aafce}
+      \strng{bibnamehash}{6cb1b8f678251571b909657895d4d92d}
+      \strng{authorbibnamehash}{6cb1b8f678251571b909657895d4d92d}
+      \strng{authornamehash}{6cb1b8f678251571b909657895d4d92d}
+      \strng{authorfullhash}{f7ec1875fcc760b26e97b9c70c7aafce}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{The objective of this paper is to evaluate: (a) the association between BMI in childhood and adolescence and BMI at age 50, and (b) the association between timing of maturation at puberty and BMI at age 50 and the occurrence of high blood pressure. We explore whether differences in somatic and physiological factors observed among children with early or late onset of puberty indicates that this period of life could be critical for appearance of some CVD risk factors later in the life cycle. Our data include 135 males and 148 females, born in 1953, participants in the Wroc\l{}aw Longitudinal Study. Data pertaining to their growth and several indices of sexual and skeletal maturation were collected yearly between age 8 and 18. Subsequently, their anthropometric traits were measured and cardiovascular health status was assessed at age 50. We find that BMI at distinct stages in the life cycle were positively correlated. Also BMI at 50 were positively associated with blood pressure at 50. Moreover, earlier maturation at puberty is associated with higher values of BMI at age 50. We also find that earlier pubertal maturation is an independent factor that influences the appearance of high blood pressure in adulthood. {{$\copyright$}} 2007 Elsevier B.V. All rights reserved.}
+      \field{issn}{1570677X}
+      \field{journaltitle}{Economics and Human Biology}
+      \field{month}{3}
+      \field{number}{1}
+      \field{title}{{Relationship between early puberty and the risk of hypertension/overweight at age 50: Evidence for a modified Barker hypothesis among Polish youth}}
+      \field{volume}{5}
+      \field{year}{2007}
+      \field{pages}{48\bibrangedash 60}
+      \range{pages}{13}
+      \verb{doi}
+      \verb 10.1016/j.ehb.2006.12.001
+      \endverb
+      \keyw{Adolescence,BMI,Barker hypothesis,Blood pressure,CVD,Cardiovascular health,Early maturers,Health,Hypertension,Poland,Puberty}
+    \endentry
+    \entry{Solorzano2010}{misc}{}
+      \name{author}{2}{}{%
+        {{hash=08ef2cc8da6f90555736a538bfb6395b}{%
+           family={{Burt Solorzano}},
+           familyi={B\bibinitperiod},
+           given={Christine\bibnamedelima M.},
+           giveni={C\bibinitperiod\bibinitdelim M\bibinitperiod}}}%
+        {{hash=17664be2f347915c1e5cf4b6915c878f}{%
+           family={McCartney},
+           familyi={M\bibinitperiod},
+           given={Christopher\bibnamedelima R.},
+           giveni={C\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {NIH Public Access}%
+      }
+      \strng{namehash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{fullhash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{bibnamehash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{authorbibnamehash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{authornamehash}{1b0e52ea7281dca459eff42358d6733e}
+      \strng{authorfullhash}{1b0e52ea7281dca459eff42358d6733e}
+      \field{sortinit}{3}
+      \field{sortinithash}{a4b52e5432884761f50fb9571273b93e}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{Childhood obesity has become a major health concern in recent decades, especially with regard to metabolic abnormalities that impart a high risk for future cardiovascular disease. Recent data suggest that excess adiposity during childhood may influence pubertal development as well. In particular, excess adiposity during childhood may advance puberty in girls and delay puberty in boys. Obesity in peripubertal girls may also be associated with hyperandrogenemia and a high risk of adolescent polycystic ovary syndrome. How obesity may perturb various hormonal aspects of pubertal development remains unclear, but potential mechanisms are discussed herein. Insulin resistance and compensatory hyperinsulinemia may represent a common thread contributing to many of the pubertal changes reported to occur with childhood obesity. Our understanding of obesity's impact on pubertal development is in its infancy, and more research into pathophysiological mechanisms and longer-term sequelae is important. {{$\copyright$}} 2010 Society for Reproduction and Fertility.}
+      \field{booktitle}{Reproduction}
+      \field{issn}{14701626}
+      \field{month}{9}
+      \field{number}{3}
+      \field{title}{{Obesity and the pubertal transition in girls and boys}}
+      \field{volume}{140}
+      \field{year}{2010}
+      \field{pages}{399\bibrangedash 410}
+      \range{pages}{12}
+      \verb{doi}
+      \verb 10.1530/REP-10-0119
+      \endverb
+      \verb{file}
+      \verb ::
+      \endverb
+      \verb{urlraw}
+      \verb /pmc/articles/PMC2931339/?report=abstract https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2931339/
+      \endverb
+      \verb{url}
+      \verb /pmc/articles/PMC2931339/?report=abstract%20https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2931339/
+      \endverb
+    \endentry
     \entry{MacMahon1990}{article}{}
       \name{author}{13}{}{%
         {{hash=c8fa23eaebed5cd022700ef163dc360f}{%
