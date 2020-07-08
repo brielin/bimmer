@@ -7,7 +7,7 @@
 fit_inspre(
   R_tce,
   W = NULL,
-  rho = 1,
+  rho = 10,
   lambda = NULL,
   lambda_min_ratio = 0.01,
   nlambda = 20,
@@ -18,8 +18,8 @@ fit_inspre(
   verbose = 1,
   train_prop = 0.8,
   cv_folds = 0,
-  mu = 5,
-  tau = 1.5,
+  mu = 10,
+  tau = 2,
   solve_its = 3,
   ncores = 1,
   warm_start = TRUE
@@ -73,9 +73,8 @@ for each U and V update.}
 
 \item{ncores}{Integer, number of cores to use.}
 
-\item{symmetrize}{True to force the output to be symmetric. If the input
-is symmetric, the output isn't always perfectly symmetric due to numerical
-issues.}
+\item{warm_start}{Logical. Whether to use previous lambda value result as
+starting point for next fit.}
 }
 \description{
 See also inspre::inspre() for more details.

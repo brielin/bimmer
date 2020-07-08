@@ -7,9 +7,8 @@
 fit_tce(
   sumstats,
   selected_snps,
-  mr_method = c("raps", "ps", "aps", "egger", "egger_p", "mbe"),
+  mr_method = "egger_w",
   min_instruments = 5,
-  shrink = FALSE,
   verbose = FALSE,
   ...
 )

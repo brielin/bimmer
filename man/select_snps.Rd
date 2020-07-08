@@ -9,7 +9,8 @@ select_snps(
   snps_to_use = NULL,
   p_thresh = 1e-04,
   welch_thresh = 0.1,
-  verbose = FALSE
+  verbose = FALSE,
+  weight = TRUE
 )
 }
 \arguments{
@@ -26,8 +27,11 @@ the result of clumping to avoid correlated SNPs.}
 betas.}
 
 \item{verbose}{Bool. If true, print phenotype label during iteration.}
+
+\item{weight}{Bool. True to track weights using Welch test statistic rather
+than pass/fail of test statistic.}
 }
 \description{
 Notes: sumstats passed to this function must be computed on the per-variance
-scale. This function does twice as much work as necessary.
+scale.
 }

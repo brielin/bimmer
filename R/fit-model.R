@@ -84,27 +84,33 @@ welch_test <- function(beta1, se1, beta2, se2, welch_thresh = 0.05) {
 
 
 egger_w <- function(b_exp, b_out, se_exp, se_out, weights){
-  lm_res <- summary(lm(sign(b_exp)*b_out ~ abs(b_exp), weights = weights/(mean(weights)*(se_out**2))))
+  lm_res <- summary(stats::lm(
+    sign(b_exp)*b_out ~ abs(b_exp),
+    weights = weights/(mean(weights)*(se_out**2))))
   beta_hat <- lm_res$coefficients[2, 1]
   beta_se <- lm_res$coefficients[2, 2]/min(lm_res$sigma, 1)
-  beta_p <- 2*(1-pnorm(abs(beta_hat/beta_se)))
-  return(list("beta.hat" = beta_hat, "beta.se" = beta_se, "beta.p.value" = beta_p))
+  beta_p <- 2 * (1 - stats::pnorm(abs(beta_hat / beta_se)))
+  return(
+    list("beta.hat" = beta_hat, "beta.se" = beta_se, "beta.p.value" = beta_p))
 }
 
 
 egger <- function(b_exp, b_out, se_exp, se_out, weights){
-  lm_res <- summary(lm(sign(b_exp)*b_out ~ abs(b_exp), weights = 1/se_out**2))
+  lm_res <- summary(stats::lm(
+    sign(b_exp)*b_out ~ abs(b_exp),
+    weights = 1/se_out**2))
   beta_hat <- lm_res$coefficients[2, 1]
   beta_se <- lm_res$coefficients[2, 2]/min(lm_res$sigma, 1)
-  beta_p <- 2*(1-pnorm(abs(beta_hat/beta_se)))
-  return(list("beta.hat" = beta_hat, "beta.se" = beta_se, "beta.p.value" = beta_p))
+  beta_p <- 2 * (1 - stats::pnorm(abs(beta_hat / beta_se)))
+  return(
+    list("beta.hat" = beta_hat, "beta.se" = beta_se, "beta.p.value" = beta_p))
 }
 
 
 #' Selects SNPs for inclusion in MR by comparing per-variance effect sizes.
 #'
 #' Notes: sumstats passed to this function must be computed on the per-variance
-#' scale. This function does twice as much work as necessary.
+#' scale.
 #'
 #' @param sumstats List with elements "beta_hat", "se_hat", "n_mat", and
 #'   "p_value", each M x D matrices.
@@ -115,9 +121,11 @@ egger <- function(b_exp, b_out, se_exp, se_out, weights){
 #' @param welch_thresh Float or NULL, p-value threshold for Welch test of equal
 #'   betas.
 #' @param verbose Bool. If true, print phenotype label during iteration.
+#' @param weight Bool. True to track weights using Welch test statistic rather
+#'   than pass/fail of test statistic.
 #' @export
 select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
-                        welch_thresh = 0.1, verbose = FALSE, weight = FALSE) {
+                        welch_thresh = 0.1, verbose = FALSE, weight = TRUE) {
   z_scores <- as.matrix(abs(sumstats$beta_hat / sumstats$se_hat))
   p_vals <- 2 * (1 - stats::pnorm(z_scores))
   sig_p_vals <- dplyr::as_tibble(p_vals < p_thresh)
@@ -200,15 +208,22 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
 #' @param verbose Bpplean. True to print progress.
 #' @param ... Additional parameters to pass to mr_method.
 #' @export
-fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", "egger", "egger_p", "mbe"),
+fit_tce <- function(sumstats, selected_snps, mr_method = "egger_w",
                     min_instruments = 5, verbose = FALSE, ...) {
   mr_method_func <- switch(mr_method,
-    ps = mr.raps::mr.raps,
-    aps = function(...) {
-      mr.raps::mr.raps(over.dispersion = TRUE, suppress.warning = TRUE, ...)
+    ps = function(b_exp, b_out, se_exp, se_out, weight){
+      mr.raps::mr.raps(
+        b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out)
     },
-    raps = function(...) {
-      mr.raps::mr.raps(over.dispersion = TRUE, loss.function = "huber", suppress.warning = TRUE, ...)
+    aps = function(b_exp, b_out, se_exp, se_out, weight) {
+      mr.raps::mr.raps(
+        b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out,
+        over.dispersion = TRUE, suppress.warning = TRUE)
+    },
+    raps = function(weight, ...) {
+      mr.raps::mr.raps(
+        b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out,
+        over.dispersion = TRUE, loss.function = "huber", suppress.warning = TRUE)
     },
     egger_p = function(b_exp, b_out, se_exp, se_out, ...) {
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
@@ -321,6 +336,7 @@ delta_cde <- function(R_tce_inv, SE_tce, na.rm = FALSE) {
   return(sqrt(t(t(var_cde) / diag(R_tce_inv))))
 }
 
+
 #' Helper function to do basic filtering of the TCE matrix.
 #'
 #' Large values of R, entries with a high SE, and row/columns with many nans
@@ -329,6 +345,7 @@ delta_cde <- function(R_tce_inv, SE_tce, na.rm = FALSE) {
 #' @param R_tce Matrix or data.frame. Estimates of TCE.
 #' @param SE_tce Matrix or data.frame. Standard errors of the entries in R_tce.
 #' @param max_R Float. Set all entries where `abs(R_tce) > max_R` to `NA`.
+#' @param max_SE Float. Set all entries whwere `SE > max_SE` tp `NA`.
 #' @param max_nan_perc Float. Remove columns and rows that are more than
 #'   `max_nan_perc` NAs.
 #' @export
@@ -336,8 +353,6 @@ filter_tce <- function(R_tce, SE_tce, max_R = 1, max_SE = 0.5, max_nan_perc = 0.
   R_tce[is.nan(SE_tce)] <- NA
   SE_tce[is.nan(SE_tce)] <- NA
 
-  R_tce <- tce_res$R_tce
-  SE_tce <- tce_res$SE_tce
   R_too_large <- abs(R_tce) > max_R
   R_tce[R_too_large] <- NA
   SE_tce[R_too_large] <- NA
@@ -367,11 +382,16 @@ filter_tce <- function(R_tce, SE_tce, max_R = 1, max_SE = 0.5, max_nan_perc = 0.
   return(list("R_tce" = R_tce, "SE_tce" = SE_tce))
 }
 
+
 #' Creates an igraph from CDE matrix.
+#'
+#' @param R_cde Matrix of causal effects.
+#' @param min_edge_value Minimum edge strength for pruning.
+#' @param max_edge_value Set edges above this number to this.
 make_igraph <- function(R_cde, min_edge_value = 0.01, max_edge_value = 0.999){
   adj_matrix <- R_cde
   adj_matrix[abs(adj_matrix) < min_edge_value] = 0
-  adj_matrix[abs(adj_matrix) > max_edge_value] = 0.999
+  adj_matrix[abs(adj_matrix) > max_edge_value] = max_edge_value
   zeros <- adj_matrix == 0
   adj_matrix <- -log(abs(adj_matrix))
   adj_matrix[zeros] = 0

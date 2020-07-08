@@ -2,5 +2,6 @@
 .RData
 .Rproj.user
 R/.old.R
+R/.summary_mvMR_SSS.R
 ukbb_analysis/#*#
 ukbb_analysis/*~

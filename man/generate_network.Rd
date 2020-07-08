@@ -4,27 +4,36 @@
 \alias{generate_network}
 \title{Generates and optionally normalizes causal graph.}
 \usage{
-generate_network(D, p = 0.1, normalize = TRUE, epsilon = 0.1, sd = 1)
+generate_network(
+  D,
+  graph = "random",
+  orient = "random",
+  prob = 2/D,
+  g = D/20,
+  v = 0.2
+)
 }
 \arguments{
 \item{D}{Integer. Number of phenotypes to simulate.}
 
-\item{p}{Float. Proportion of non-zero edges.}
+\item{graph}{String, one of "random", "hub" or "scale-free". Specifies the
+kind of graph to be generated.}
 
-\item{normalize}{Bool. TRUE to normalize the generated matrix to have
-eigenvalues with modulus between -1 and 1.}
+\item{orient}{String, one of "random", "towards" or "away". Specifies the
+edge orientation strategy. Randomly, towards high degree nodes, or away
+from high degree nodes.}
 
-\item{epsilon}{Float. Number to add to maximum eigenvalue to better-condition
-normalization.}
+\item{prob}{Float between 0 and 1. Specifies the probability of edge
+inclusion for "random" graphs. Default is 2/D.}
 
-\item{sd}{Float. Standard deviation of network edge weights. NA for binary
-matrices with equal probability of}
-}
-\value{
-A DxD sparse matrix.
+\item{g}{Integer between 1 and D. Specifies the number of hubs for hub
+graphs. Default is D/20.}
+
+\item{v}{Float between 0 and 1. Roughly corresponds to edge weight, see
+huge.generator for more information. Default 0.3.}
 }
 \description{
-Generates a DxD sparse matrix with normally distributed edge weights.
-Optionally normalize the matrix to have eigenvalues with modulus between
--1 and 1.
+This is a wrapper around the huge.generator function from that package. After
+generating the adjacency matrix, this orients the sign randomly and then the
+edges according to the specified method.
 }

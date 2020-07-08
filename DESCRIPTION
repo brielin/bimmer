@@ -10,10 +10,16 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     stats,
-    tidyverse,
+    dplyr,
+    plyr,
+    purrr,
+    tidyr,
+    tibble,
+    readr,
     foreach,
     MendelianRandomization,
-    igraph
+    igraph,
+    inspre
 Suggests: 
     testthat (>= 2.1.0),
     mr.raps,
@@ -21,6 +27,8 @@ Suggests:
     scales,
     egg,
     GGally,
-    combinant,
-    hash
+    huge,
+    network,
+    methods,
+    glmnet
 RoxygenNote: 7.0.2
