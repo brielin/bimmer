@@ -10,7 +10,11 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     stats,
-    tidyverse,
+    dplyr,
+    purrr,
+    tidyr,
+    tibble,
+    readr,
     foreach,
     MendelianRandomization,
     igraph
@@ -21,6 +25,6 @@ Suggests:
     scales,
     egg,
     GGally,
-    combinant,
-    hash
+    huge,
+    network
 RoxygenNote: 7.0.2

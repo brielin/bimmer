@@ -14,7 +14,11 @@ packages:
 
 - R (> 3.6)
 - [inspre](https://github.com/brielin/inspre)
-- tidyverse
+- dyplyr
+- purrr
+- tidyr
+- tibble
+- readr
 - foreach
 - MendelianRandomization
 - igraph
@@ -27,8 +31,7 @@ packages are required:
 - egg
 - GGally
 - huge
-- combinant (for MR-BMA)
-- hash (for MR-BMA)
+- network
 
 To run the tests you will also need the testthat package.
 
@@ -37,8 +40,8 @@ To run the tests you will also need the testthat package.
 main files are `sumstats.R`, which contains functions for loading and preprocessing
 GWAS summary statistics, and `fit-model.R`, which contains functions for fitting
 the model to data
-- `Rmd` contains the `*.Rmd` files with sections corresponding to the simulations
-reported in the manuscript, plus data plotting functions
+- `Rmd` contains the `*.Rmd` files with sections corresponding to the processing
+of the UKBB data and simulations reported in the manuscript
 - `ukbb_analysis` contains helper scripts used in the analysis of the UK
 biobank data for the manuscript
 - `tests` contains tests for the functions in `fit-model.R` and `simulate.R`
