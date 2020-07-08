@@ -15,6 +15,7 @@ packages:
 - R (> 3.6)
 - [inspre](https://github.com/brielin/inspre)
 - dyplyr
+- plyr
 - purrr
 - tidyr
 - tibble
@@ -32,6 +33,7 @@ packages are required:
 - GGally
 - huge
 - network
+- glmnet
 
 To run the tests you will also need the testthat package.
 

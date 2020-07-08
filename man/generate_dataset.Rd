@@ -7,15 +7,15 @@
 generate_dataset(
   N,
   D,
+  R,
   M_total,
   M_s,
   M_p,
   prop_shared,
   rho,
   noise,
-  p_net,
-  sd_net,
-  fix_R = NULL,
+  p_net = NULL,
+  sd_net = NULL,
   fix_beta = NULL
 )
 }
@@ -23,6 +23,8 @@ generate_dataset(
 \item{N}{Integer or array of integers of length D. Number of individuals to simulate.}
 
 \item{D}{Integer. Number of phenotypes to simulate.}
+
+\item{R}{D x D matrix. Causal graph to simulate.}
 
 \item{M_total}{Integer. Total number of SNPs to simulate.}
 
@@ -42,9 +44,6 @@ measurement noise.}
 \item{p_net}{Float. Proportion of non-zero network edges.}
 
 \item{sd_net}{Float. Standard deviation of network edge weights.}
-
-\item{fix_R}{Null or DxD matrix. Use to provide R in order to repeatedly
-resample from the same model.}
 
 \item{fix_beta}{Null or MxD matrix. Use to provide beta in order to
 repeatedly resample from the same model.}

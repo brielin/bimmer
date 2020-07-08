@@ -17,6 +17,8 @@ fit_exact <- function(R_tce) {
 #'
 #' @param sumstats_fit List with elements beta_hat and se_hat.
 #' @param snps_to_use List of per-phenotype pair SNP to use.
+#' @param max_iter Integer. Number of BMA iterations to run, default 1000.
+#' @param verbose Boolean. True to print progress.
 fit_mrbma <- function(sumstats_fit, snps_to_use, max_iter = 1000,
                       verbose = FALSE){
   snps_to_use <- purrr::transpose(snps_to_use)
@@ -40,8 +42,9 @@ fit_mrbma <- function(sumstats_fit, snps_to_use, max_iter = 1000,
       betaYse <- sumstats_fit$se_hat[exp_snps, out]
       names(betaY) <- rownames(betaXse)
 
-      mrinput <- new("mvMRInput", betaX = betaX, betaY = as.matrix(betaY),
-                     betaXse = betaXse, betaYse = as.matrix(betaYse))
+      mrinput <- methods::new(
+        "mvMRInput", betaX = betaX, betaY = as.matrix(betaY),
+        betaXse = betaXse, betaYse = as.matrix(betaYse))
       mr_res <- summarymvMR_SSS(
         mrinput, kmin = 1, kmax = length(pheno_names) - 1, max_iter = max_iter,
         print = verbose)@BestModel_Estimate
@@ -120,7 +123,8 @@ fit_glmnet <- function(sumstats_fit, snps_to_use){
       betaYse <- sumstats_fit$se_hat[exp_snps, out]
       names(betaY) <- rownames(betaXse)
 
-      glm_coef <- coef(cv.glmnet(betaX, betaY, alpha = 0.5), s = "lambda.1se")
+      glm_coef <- stats::coef(glmnet::cv.glmnet(
+        betaX, betaY, alpha = 0.5), s = "lambda.1se")
       glm_coef <- as.vector(glm_coef[2:length(glm_coef)])
 
       names(glm_coef) <- exp_phenos
@@ -252,9 +256,9 @@ generate_network <- function(D, graph = "random", orient = "random",
   for( i in 1:(D-1) ){
     for(j in (i+1):D){
       if(R[i, j] > 1e-10){
-        R_ij <- dplyr::if_else(runif(1) > 0.5, R[i, j], -R[i, j])
+        R_ij <- dplyr::if_else(stats::runif(1) > 0.5, R[i, j], -R[i, j])
         if(orient == "random"){
-          if(runif(1) > 0.5){
+          if(stats::runif(1) > 0.5){
             R[i, j] = 0
             R[j, i] = R_ij
           } else{
@@ -262,7 +266,7 @@ generate_network <- function(D, graph = "random", orient = "random",
             R[i, j] = R_ij
           }
         } else if(orient == "away"){
-          if(runif(1) > node_degree[i]/(node_degree[i] + node_degree[j])){
+          if(stats::runif(1) > node_degree[i]/(node_degree[i] + node_degree[j])){
             R[i, j] = 0
             R[j, i] = R_ij
           } else{
@@ -270,7 +274,7 @@ generate_network <- function(D, graph = "random", orient = "random",
             R[i, j] = R_ij
           }
         } else if(orient == "towards"){
-          if(runif(1) > node_degree[j]/(node_degree[i] + node_degree[j])){
+          if(stats::runif(1) > node_degree[j]/(node_degree[i] + node_degree[j])){
             R[i, j] = 0
             R[j, i] = R_ij
           } else{

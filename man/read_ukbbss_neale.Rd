@@ -7,7 +7,11 @@
 read_ukbbss_neale(file_pattern = NULL, file_list = NULL, chunk_size = 20)
 }
 \arguments{
-\item{file_pattern}{A glob string specifying the files to read.}
+\item{file_pattern}{A glob string specifying the files to read or NULL to
+use file_list instread.}
+
+\item{file_list}{A list of file names to use, or NULL to use file_pattern
+instead.}
 
 \item{chunk_size}{Number of phenotypes to pivot at a time.}
 }

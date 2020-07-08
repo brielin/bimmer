@@ -11,13 +11,15 @@ LazyData: true
 Imports:
     stats,
     dplyr,
+    plyr,
     purrr,
     tidyr,
     tibble,
     readr,
     foreach,
     MendelianRandomization,
-    igraph
+    igraph,
+    inspre
 Suggests: 
     testthat (>= 2.1.0),
     mr.raps,
@@ -26,5 +28,7 @@ Suggests:
     egg,
     GGally,
     huge,
-    network
+    network,
+    methods,
+    glmnet
 RoxygenNote: 7.0.2

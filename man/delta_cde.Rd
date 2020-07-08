@@ -10,6 +10,8 @@ delta_cde(R_tce_inv, SE_tce, na.rm = FALSE)
 \item{R_tce_inv}{DxD matrix. Inverse or approximate inverse of the TCE.}
 
 \item{SE_tce}{DxD matrix. Standard error of the TCE.}
+
+\item{na.rm}{Logical. Pass through to sum if SE_tce matrix has NA values.}
 }
 \description{
 Uses delta method to calculate CDE standard error.
