@@ -1,4 +1,6 @@
-dataset <- generate_dataset(N = 100, D = 3, M_total = 20, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
+R <- generate_network(D = 3, g = 1)
+dataset <- generate_dataset(
+  N = 100, D = 3, R = R, M_total = 20, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
 R <- dataset$R_cde
 sumstats <- dataset$sumstats_select
 D <- nrow(R)
@@ -25,9 +27,9 @@ test_that("welch_test_works", {
   b2 <- 0.1
   s1 <- 0.01
   s2 <- 0.01
-  expect_equal(welch_test(b1, s1, b2, s2), -1)
-  expect_equal(welch_test(b2, s2, b1, s1), 1)
-  expect_equal(welch_test(b1, 10*s1, b2, 10*s2), 0)
+  expect_equal(welch_test(b1, s1, b2, s2)$pass, -1)
+  expect_equal(welch_test(b2, s2, b1, s1)$pass, 1)
+  expect_equal(welch_test(b1, 10*s1, b2, 10*s2)$pass, 0)
 })
 
 
@@ -93,8 +95,8 @@ test_that("filter_tce_filters", {
 
 
 test_that("filter_tce_drops", {
-  R_tce <- matrix(c(1, 0, 0, NA), nrow = 2)
-  SE_tce <- matrix(c(1, 1, 1, 1), nrow = 2)
+  R_tce <- matrix(c(rep(0, 8), NA), nrow = 3)
+  SE_tce <- matrix(rep(0, 9), nrow = 3)
   filt_res <- filter_tce(R_tce, SE_tce, max_nan_perc = 0.1)
-  expect_equal(filt_res$R_tce, 1)
+  expect_equal(filt_res$R_tce, matrix(0L, nrow = 2, ncol = 2))
 })

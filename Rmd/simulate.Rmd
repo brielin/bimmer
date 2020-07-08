@@ -23,6 +23,9 @@ devtools::load_all()
 
 
 ```{r}
+# Note: to use the method "mrbma", you must have the function `summarymvMR_SSS`
+# available. This can be obtained by sourcing the file
+# https://github.com/verena-zuber/demo_AMD/blob/master/summary_mvMR_SSS.R
 run_methods <- function(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, graph, prob, g, v, orient, methods){
   R <- generate_network(D = D, graph = graph, prob = prob, g = g, v = v, orient = orient)
   dataset <- generate_dataset(N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, fix_R = R)
@@ -353,6 +356,10 @@ load("~/Work/saved_rdata/bimmer_sim_10.Rdata")
 
 ```{r}
 # Tenth simulation: include MR-BMA.
+#
+# Note: to use the method "mrbma", you must have the function `summarymvMR_SSS`
+# available. This can be obtained by sourcing the file
+# https://github.com/verena-zuber/demo_AMD/blob/master/summary_mvMR_SSS.R
 n_iter = 8
 n_cores = 8
 N = 100000

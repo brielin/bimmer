@@ -1,15 +1,18 @@
-
-
-
 test_that("get_direct_observed_works", {
-  dataset <- generate_dataset(N = 100, D = 3, M_total = 20, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
+  R <- generate_network(3, g = 1)
+  dataset <- generate_dataset(N = 100, D = 3, R = R, M_total = 20, M_s = 5,
+                              M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5,
+                              p_net = 1, sd_net = 0.1)
   expect_equal(matrix(get_direct(get_observed(dataset$R_cde))), matrix(dataset$R_cde))
 })
 
+
 # TODO(brielin): Why isn't this exact??
 # test_that("get_tce_fit_exact_works", {
-#   dataset <- generate_dataset(N = 100, D = 3, M_total = 20, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
-#   expect_equal(matrix(fit_exact(get_tce(get_observed(dataset$R_cde)))$R_hat), matrix(dataset$R_cde), tolerance = 0.01)
+#   dataset <- generate_dataset(N = 100, D = 3, M_total = 20, M_s = 5, M_p = 5,
+#      prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
+#   expect_equal(matrix(fit_exact(get_tce(get_observed(dataset$R_cde)))$R_hat),
+#      matrix(dataset$R_cde), tolerance = 0.01)
 # })
 
 
@@ -28,22 +31,27 @@ test_that("generate_beta_runs", {
 
 
 test_that("generate_network_runs", {
-  D <- 10
-  p <- 0.5
-  R <- generate_network(D, p, normalize = FALSE)
-  expect_equal(dim(R), c(D, D))
+  D <- 100
+  for(graph in c("random", "hub", "scale-free")){
+    for(orient in c("random", "towards", "away")){
+      R <- generate_network(D, graph = graph, orient = orient)
+      expect_equal(dim(R), c(D, D))
+    }
+  }
 })
 
 test_that("generate_network_normalizes", {
-  D <- 10
-  p <- 0.5
-  R <- generate_network(D, p)
+  D <- 20
+  R <- generate_network(D)
   eigenvalues <- eigen(R, only.values = TRUE)$values
   expect_lte(max(abs(eigenvalues)), 1.0 + 1e-8)
 })
 
 test_that("generate_dataset_runs", {
-  dataset <- generate_dataset(N = 100, D = 3, M_total = 30, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
+  R <- generate_network(3, g = 1)
+  dataset <- generate_dataset(
+    N = 100, D = 3, R = R, M_total = 30, M_s = 5, M_p = 5, prop_shared = NULL,
+    rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
 
   expect_equal(dim(dataset$sumstats_select$beta_hat), c(30,3))
   expect_equal(dim(dataset$sumstats_select$se_hat), c(30,3))
@@ -56,7 +64,10 @@ test_that("generate_dataset_runs", {
 
 
 test_that("select_snps_oracle_works", {
-  dataset <- generate_dataset(N = 100, D = 3, M_total = 30, M_s = 5, M_p = 5, prop_shared = NULL, rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
+  R <- generate_network(3, g = 1)
+  dataset <- generate_dataset(
+    N = 100, D = 3, R = R,  M_total = 30, M_s = 5, M_p = 5, prop_shared = NULL,
+    rho = 0, noise = 0.5, p_net = 1, sd_net = 0.1)
 
   snps <- select_snps_oracle(dataset$beta)
   expect_is(snps, "list")

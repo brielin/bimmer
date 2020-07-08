@@ -17,35 +17,39 @@ fit_exact <- function(R_tce) {
 #'
 #' @param sumstats_fit List with elements beta_hat and se_hat.
 #' @param snps_to_use List of per-phenotype pair SNP to use.
-fit_mrbma <- function(sumstats_fit, snps_to_use, max_iter = 1000, verbose = FALSE){
+fit_mrbma <- function(sumstats_fit, snps_to_use, max_iter = 1000,
+                      verbose = FALSE){
   snps_to_use <- purrr::transpose(snps_to_use)
   snp_names <- snps_to_use$names
   snps_to_use$names <- NULL
   pheno_names <- names(snps_to_use)
 
   out = NULL
-  R_hat <- as.matrix(foreach::foreach(out = pheno_names, .combine = dplyr::bind_rows) %do% {
-    if(verbose){
-      print(out)
-    }
-    exp_snps <- dplyr::setdiff(unique(unlist(snp_names[names(snp_names) != out])),  snp_names[[out]])
-    exp_phenos <- pheno_names[pheno_names != out]
-    betaX <- as.matrix(sumstats_fit$beta_hat[exp_snps, exp_phenos])
-    betaXse <- as.matrix(sumstats_fit$se_hat[exp_snps, exp_phenos])
-    betaY <- sumstats_fit$beta_hat[exp_snps, out]
-    names(betaY) <- rownames(betaX)
-    betaYse <- sumstats_fit$se_hat[exp_snps, out]
-    names(betaY) <- rownames(betaXse)
+  R_hat <- as.matrix(
+    foreach::foreach(out = pheno_names, .combine = dplyr::bind_rows) %do% {
+      if(verbose){
+        print(out)
+      }
+      exp_snps <- dplyr::setdiff(
+        unique(unlist(snp_names[names(snp_names) != out])),  snp_names[[out]])
+      exp_phenos <- pheno_names[pheno_names != out]
+      betaX <- as.matrix(sumstats_fit$beta_hat[exp_snps, exp_phenos])
+      betaXse <- as.matrix(sumstats_fit$se_hat[exp_snps, exp_phenos])
+      betaY <- sumstats_fit$beta_hat[exp_snps, out]
+      names(betaY) <- rownames(betaX)
+      betaYse <- sumstats_fit$se_hat[exp_snps, out]
+      names(betaY) <- rownames(betaXse)
 
-
-    # mrinput <- MendelianRandomization::mr_mvinput(bx = betaX, bxse = betaXse, by = betaY, byse = betaYse)
-    mrinput <- new("mvMRInput", betaX = betaX, betaY = as.matrix(betaY), betaXse = betaXse, betaYse = as.matrix(betaYse))
-    mr_res <- summarymvMR_SSS(mrinput, kmin = 1, kmax = length(pheno_names) - 1, max_iter = max_iter, print = verbose)@BestModel_Estimate
-    names(mr_res) <- exp_phenos
-    self <- c(0.0)
-    names(self) = out
-    return(c(self, mr_res))
-  })
+      mrinput <- new("mvMRInput", betaX = betaX, betaY = as.matrix(betaY),
+                     betaXse = betaXse, betaYse = as.matrix(betaYse))
+      mr_res <- summarymvMR_SSS(
+        mrinput, kmin = 1, kmax = length(pheno_names) - 1, max_iter = max_iter,
+        print = verbose)@BestModel_Estimate
+      names(mr_res) <- exp_phenos
+      self <- c(0.0)
+      names(self) = out
+      return(c(self, mr_res))
+    })
 
   rownames(R_hat) <- colnames(R_hat)
   return(list("R_hat" = R_hat))
@@ -65,24 +69,26 @@ fit_mvmr <- function(sumstats_fit, snps_to_use){
   pheno_names <- names(snps_to_use)
 
   out = NULL
-  R_hat <- as.matrix(foreach::foreach(out = pheno_names, .combine = dplyr::bind_rows) %do% {
-    exp_snps <- dplyr::setdiff(unique(unlist(snp_names[names(snp_names) != out])),  snp_names[[out]])
-    exp_phenos <- pheno_names[pheno_names != out]
-    betaX <- as.matrix(sumstats_fit$beta_hat[exp_snps, exp_phenos])
-    betaXse <- as.matrix(sumstats_fit$se_hat[exp_snps, exp_phenos])
-    betaY <- sumstats_fit$beta_hat[exp_snps, out]
-    names(betaY) <- rownames(betaX)
-    betaYse <- sumstats_fit$se_hat[exp_snps, out]
-    names(betaY) <- rownames(betaXse)
+  R_hat <- as.matrix(
+    foreach::foreach(out = pheno_names, .combine = dplyr::bind_rows) %do% {
+      exp_snps <- dplyr::setdiff(
+        unique(unlist(snp_names[names(snp_names) != out])),  snp_names[[out]])
+      exp_phenos <- pheno_names[pheno_names != out]
+      betaX <- as.matrix(sumstats_fit$beta_hat[exp_snps, exp_phenos])
+      betaXse <- as.matrix(sumstats_fit$se_hat[exp_snps, exp_phenos])
+      betaY <- sumstats_fit$beta_hat[exp_snps, out]
+      names(betaY) <- rownames(betaX)
+      betaYse <- sumstats_fit$se_hat[exp_snps, out]
+      names(betaY) <- rownames(betaXse)
 
-
-    mrinput <- MendelianRandomization::mr_mvinput(bx = betaX, bxse = betaXse, by = betaY, byse = betaYse)
-    mr_res <- as.vector(MendelianRandomization::mr_mvegger(mrinput)$Estimate)
-    names(mr_res) <- exp_phenos
-    self <- c(0.0)
-    names(self) = out
-    return(c(self, mr_res))
-  })
+      mrinput <- MendelianRandomization::mr_mvinput(
+        bx = betaX, bxse = betaXse, by = betaY, byse = betaYse)
+      mr_res <- as.vector(MendelianRandomization::mr_mvegger(mrinput)$Estimate)
+      names(mr_res) <- exp_phenos
+      self <- c(0.0)
+      names(self) = out
+      return(c(self, mr_res))
+    })
 
   rownames(R_hat) <- colnames(R_hat)
   return(list("R_hat" = R_hat))
@@ -102,24 +108,26 @@ fit_glmnet <- function(sumstats_fit, snps_to_use){
   pheno_names <- names(snps_to_use)
 
   out = NULL
-  R_hat <- as.matrix(foreach::foreach(out = pheno_names, .combine = dplyr::bind_rows) %do% {
-    exp_snps <- dplyr::setdiff(unique(unlist(snp_names[names(snp_names) != out])),  snp_names[[out]])
-    exp_phenos <- pheno_names[pheno_names != out]
-    betaX <- as.matrix(sumstats_fit$beta_hat[exp_snps, exp_phenos])
-    betaXse <- as.matrix(sumstats_fit$se_hat[exp_snps, exp_phenos])
-    betaY <- sumstats_fit$beta_hat[exp_snps, out]
-    names(betaY) <- rownames(betaX)
-    betaYse <- sumstats_fit$se_hat[exp_snps, out]
-    names(betaY) <- rownames(betaXse)
+  R_hat <- as.matrix(
+    foreach::foreach(out = pheno_names, .combine = dplyr::bind_rows) %do% {
+      exp_snps <- dplyr::setdiff(
+        unique(unlist(snp_names[names(snp_names) != out])),  snp_names[[out]])
+      exp_phenos <- pheno_names[pheno_names != out]
+      betaX <- as.matrix(sumstats_fit$beta_hat[exp_snps, exp_phenos])
+      betaXse <- as.matrix(sumstats_fit$se_hat[exp_snps, exp_phenos])
+      betaY <- sumstats_fit$beta_hat[exp_snps, out]
+      names(betaY) <- rownames(betaX)
+      betaYse <- sumstats_fit$se_hat[exp_snps, out]
+      names(betaY) <- rownames(betaXse)
 
-    glm_coef <- coef(cv.glmnet(betaX, betaY, alpha = 0.5), s = "lambda.1se")
-    glm_coef <- as.vector(glm_coef[2:length(glm_coef)])
+      glm_coef <- coef(cv.glmnet(betaX, betaY, alpha = 0.5), s = "lambda.1se")
+      glm_coef <- as.vector(glm_coef[2:length(glm_coef)])
 
-    names(glm_coef) <- exp_phenos
-    self <- c(0.0)
-    names(self) = out
-    return(c(self, glm_coef))
-  })
+      names(glm_coef) <- exp_phenos
+      self <- c(0.0)
+      names(self) = out
+      return(c(self, glm_coef))
+    })
 
   rownames(R_hat) <- colnames(R_hat)
   return(list("R_hat" = R_hat))
@@ -170,15 +178,18 @@ get_direct <- function(R_obs) {
 #'  simulate per phenotype pair.
 #' @param rho Float [-1, 1]. Correlation of shared SNPs.
 generate_beta_pair <- function(M_s, M_p, rho){
-  beta_s <- mvtnorm::rmvnorm(M_s, mean = c(0, 0), sigma = matrix(c(1, rho, rho, 1), nrow = 2))
+  beta_s <- mvtnorm::rmvnorm(
+    M_s, mean = c(0, 0), sigma = matrix(c(1, rho, rho, 1), nrow = 2))
   if(length(M_p) > 1){
     beta_p1 <- stats::rnorm(M_p[1])
     beta_p2 <- stats::rnorm(M_p[2])
-    beta <- rbind(cbind(beta_p1, rep(0, M_p[1])), cbind(rep(0, M_p[2]), beta_p2), beta_s)
+    beta <- rbind(cbind(beta_p1, rep(0, M_p[1])),
+                  cbind(rep(0, M_p[2]), beta_p2), beta_s)
   } else{
     beta_p1 <- stats::rnorm(M_p)
     beta_p2 <- stats::rnorm(M_p)
-    beta <- rbind(cbind(beta_p1, rep(0, M_p)), cbind(rep(0, M_p), beta_p2), beta_s)
+    beta <- rbind(cbind(beta_p1, rep(0, M_p)),
+                  cbind(rep(0, M_p), beta_p2), beta_s)
   }
   return(beta)
 }
@@ -198,12 +209,14 @@ generate_beta <- function(M_s, M_p, D, rho) {
     for( i in 1:(floor(D/2)-1) ){
       beta_pair <- generate_beta_pair(M_s, M_p, rho)
       beta <- rbind(cbind(beta, matrix(0L, nrow = nrow(beta), ncol = 2)),
-                    cbind(matrix(0L, nrow = nrow(beta_pair), ncol = ncol(beta)), beta_pair))
+                    cbind(matrix(0L, nrow = nrow(beta_pair), ncol = ncol(beta)),
+                          beta_pair))
     }
   }
   if(D%%2==1){
     beta <- rbind(cbind(beta, matrix(0L, nrow = nrow(beta), ncol = 1)),
-                  cbind(matrix(0L, nrow = M_p[1], ncol = ncol(beta)), stats::rnorm(M_p[1])))
+                  cbind(matrix(0L, nrow = M_p[1], ncol = ncol(beta)),
+                        stats::rnorm(M_p[1])))
   }
   colnames(beta) <- paste0("P", 1:ncol(beta))
   rownames(beta) <- paste0("rs", 1:nrow(beta))
@@ -213,20 +226,33 @@ generate_beta <- function(M_s, M_p, D, rho) {
 
 #' Generates and optionally normalizes causal graph.
 #'
-#' Generates a DxD sparse matrix with normally distributed edge weights.
-#' Optionally normalize the matrix to have eigenvalues with modulus between
-#' -1 and 1.
+#' This is a wrapper around the huge.generator function from that package. After
+#' generating the adjacency matrix, this orients the sign randomly and then the
+#' edges according to the specified method.
 #'
 #' @param D Integer. Number of phenotypes to simulate.
-generate_network <- function(D, graph, prob, g, v, orient = "random"){
-  R <- huge.generator(n = D, d = D, graph = graph, prob = prob, g = g, v = v)$omega
+#' @param graph String, one of "random", "hub" or "scale-free". Specifies the
+#'   kind of graph to be generated.
+#' @param orient String, one of "random", "towards" or "away". Specifies the
+#'   edge orientation strategy. Randomly, towards high degree nodes, or away
+#'   from high degree nodes.
+#' @param prob Float between 0 and 1. Specifies the probability of edge
+#'   inclusion for "random" graphs. Default is 2/D.
+#' @param g Integer between 1 and D. Specifies the number of hubs for hub
+#'   graphs. Default is D/20.
+#' @param v Float between 0 and 1. Roughly corresponds to edge weight, see
+#'   huge.generator for more information. Default 0.3.
+generate_network <- function(D, graph = "random", orient = "random",
+                             prob = 2/D, g = D/20, v = 0.2){
+  R <- huge::huge.generator(n = D, d = D, graph = graph, prob = prob, g = g,
+                            v = v, verbose = FALSE)$omega
   diag(R) = 0
   adj <- matrix(abs(R) > 1e-8, nrow = D)
   node_degree <- rowSums(adj)
   for( i in 1:(D-1) ){
     for(j in (i+1):D){
       if(R[i, j] > 1e-10){
-        R_ij <- if_else(runif(1) > 0.5, R[i, j], -R[i, j])
+        R_ij <- dplyr::if_else(runif(1) > 0.5, R[i, j], -R[i, j])
         if(orient == "random"){
           if(runif(1) > 0.5){
             R[i, j] = 0
@@ -292,6 +318,7 @@ generate_sumstats <- function(beta, M_null, N){
 #'
 #' @param N Integer or array of integers of length D. Number of individuals to simulate.
 #' @param D Integer. Number of phenotypes to simulate.
+#' @param R D x D matrix. Causal graph to simulate.
 #' @param M_total Integer. Total number of SNPs to simulate.
 #' @param M_s Integer. Number of shared SNPs to simulate per pair.
 #' @param M_p Integer or sequence of two integers. Number of private SNPs to
@@ -303,12 +330,11 @@ generate_sumstats <- function(beta, M_null, N){
 #' @param sd_net Float. Standard deviation of network edge weights.
 #' @param noise Float. Proportion of variance explained by environmental and
 #'   measurement noise.
-#' @param fix_R Null or DxD matrix. Use to provide R in order to repeatedly
-#'   resample from the same model.
 #' @param fix_beta Null or MxD matrix. Use to provide beta in order to
 #'   repeatedly resample from the same model.
-generate_dataset <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, p_net = NULL, sd_net = NULL,
-                             fix_R = NULL, fix_beta = NULL) {
+generate_dataset <- function(N, D, R, M_total, M_s, M_p, prop_shared, rho,
+                             noise, p_net = NULL, sd_net = NULL,
+                             fix_beta = NULL) {
   if(M_total < D*M_p + floor(D/2)*M_s){
     stop("Total number of SNPs less than combined shared and private SNPs.")
   }
@@ -317,12 +343,6 @@ generate_dataset <- function(N, D, M_total, M_s, M_p, prop_shared, rho, noise, p
   beta <- fix_beta
   if (is.null(beta)) {
     beta <- generate_beta(M_s = M_s, M_p = M_p, D = D, rho = rho)
-  }
-
-  R <- fix_R
-  if (is.null(R)) {
-    stop(":-(")
-    # R <- generate_network(D = D, p = p_net, sd = sd_net)
   }
 
   mix_mat <- solve(diag(D) - R)

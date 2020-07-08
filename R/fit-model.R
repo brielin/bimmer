@@ -200,15 +200,22 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
 #' @param verbose Bpplean. True to print progress.
 #' @param ... Additional parameters to pass to mr_method.
 #' @export
-fit_tce <- function(sumstats, selected_snps, mr_method = c("raps", "ps", "aps", "egger", "egger_p", "mbe"),
+fit_tce <- function(sumstats, selected_snps, mr_method = "egger_w",
                     min_instruments = 5, verbose = FALSE, ...) {
   mr_method_func <- switch(mr_method,
-    ps = mr.raps::mr.raps,
-    aps = function(...) {
-      mr.raps::mr.raps(over.dispersion = TRUE, suppress.warning = TRUE, ...)
+    ps = function(b_exp, b_out, se_exp, se_out, weight){
+      mr.raps::mr.raps(
+        b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out)
     },
-    raps = function(...) {
-      mr.raps::mr.raps(over.dispersion = TRUE, loss.function = "huber", suppress.warning = TRUE, ...)
+    aps = function(b_exp, b_out, se_exp, se_out, weight) {
+      mr.raps::mr.raps(
+        b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out,
+        over.dispersion = TRUE, suppress.warning = TRUE)
+    },
+    raps = function(weight, ...) {
+      mr.raps::mr.raps(
+        b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out,
+        over.dispersion = TRUE, loss.function = "huber", suppress.warning = TRUE)
     },
     egger_p = function(b_exp, b_out, se_exp, se_out, ...) {
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
@@ -321,6 +328,7 @@ delta_cde <- function(R_tce_inv, SE_tce, na.rm = FALSE) {
   return(sqrt(t(t(var_cde) / diag(R_tce_inv))))
 }
 
+
 #' Helper function to do basic filtering of the TCE matrix.
 #'
 #' Large values of R, entries with a high SE, and row/columns with many nans
@@ -336,8 +344,6 @@ filter_tce <- function(R_tce, SE_tce, max_R = 1, max_SE = 0.5, max_nan_perc = 0.
   R_tce[is.nan(SE_tce)] <- NA
   SE_tce[is.nan(SE_tce)] <- NA
 
-  R_tce <- tce_res$R_tce
-  SE_tce <- tce_res$SE_tce
   R_too_large <- abs(R_tce) > max_R
   R_tce[R_too_large] <- NA
   SE_tce[R_too_large] <- NA
@@ -366,6 +372,7 @@ filter_tce <- function(R_tce, SE_tce, max_R = 1, max_SE = 0.5, max_nan_perc = 0.
   }
   return(list("R_tce" = R_tce, "SE_tce" = SE_tce))
 }
+
 
 #' Creates an igraph from CDE matrix.
 make_igraph <- function(R_cde, min_edge_value = 0.01, max_edge_value = 0.999){
