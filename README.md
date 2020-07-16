@@ -43,11 +43,11 @@ available on CRAN eventually.
 
 If you would like to install and run tests,
 ```
-devtools::install_github("brielin/bimmer", INSTALL_opts="--install-tests")
-install.packages("mvtnorm")  # If not already installed.
-library(testthat)
-library(bimmer)
-test_package("bimmer")
+> devtools::install_github("brielin/bimmer", INSTALL_opts="--install-tests")
+> install.packages("mvtnorm")  # If not already installed.
+> library(testthat)
+> library(bimmer)
+> test_package("bimmer")
 ```
 
 ## Overview of the repository
