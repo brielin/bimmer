@@ -12,7 +12,7 @@ pre-processing through model selection.
 bimmer is written in the R programming language and depends on the following
 packages:
 
-- R (> 3.6)
+- R (> 3.5.0)
 - [inspre](https://github.com/brielin/inspre)
 - dyplyr
 - plyr
@@ -24,7 +24,7 @@ packages:
 - MendelianRandomization
 - igraph
 
-To run the simulations and make the corresponding plots, some additional
+To run the tests, simulations and make the corresponding plots, some additional
 packages are required:
 
 - mvtnorm
@@ -35,7 +35,20 @@ packages are required:
 - network
 - glmnet
 
-To run the tests you will also need the testthat package.
+## Installation
+
+At the moment, the package must be installed with
+`devtools::install_github("brielin/bimmer")`. We aim to make the package
+available on CRAN eventually.
+
+If you would like to install and run tests,
+```
+> devtools::install_github("brielin/bimmer", INSTALL_opts="--install-tests")
+> install.packages("mvtnorm")  # If not already installed.
+> library(testthat)
+> library(bimmer)
+> test_package("bimmer")
+```
 
 ## Overview of the repository
 - `R` contains `*.R` files with functions for preprocessing and loading data. The
