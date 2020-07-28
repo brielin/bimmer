@@ -35,7 +35,7 @@ run_sim <- function(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, 
   
   select_res <- foreach(p_thresh = 0.5*0.1^seq(3, 7), .combine = bind_rows) %do% {
     # Do normal egger.
-    selected <- select_snps(sumstats_select, p_thresh = p_thresh, welch_thresh = NULL)
+    selected <- select_snps(sumstats_select, p_thresh = p_thresh, exclusive = FALSE, weight = FALSE)
     inst_count <- count_instruments(selected)
     tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
     normal_res <- tibble(
@@ -47,7 +47,7 @@ run_sim <- function(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, 
       n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
     
     # Do weighted xor egger.
-    selected <- select_snps(sumstats_select, p_thresh = p_thresh, welch_thresh = 0, weight = TRUE)
+    selected <- select_snps(sumstats_select, p_thresh = p_thresh, exclusive = TRUE, weight = TRUE)
     inst_count <- count_instruments(selected)
     tce_res <- fit_tce(sumstats_fit, selected, mr_method = "egger_w")
     weight_res <- tibble(

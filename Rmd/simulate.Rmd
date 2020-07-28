@@ -39,8 +39,8 @@ run_methods <- function(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, 
   min_self = min(self_norm)
   max_self = max(self_norm)
   
-  selected_bimmer <- select_snps(dataset$sumstats_select, p_thresh = 5e-6, welch_thresh = 0, weight = TRUE)
-  selected_standard <- select_snps(dataset$sumstats_select, p_thresh = 5e-8, welch_thresh = NULL)
+  selected_bimmer <- select_snps(dataset$sumstats_select, p_thresh = 5e-6, exclusive = TRUE, weight = TRUE)
+  selected_standard <- select_snps(dataset$sumstats_select, p_thresh = 5e-8, exclusive = FALSE, weight = FALSE)
   dataset$sumstats_select <- NULL
   gc()
 

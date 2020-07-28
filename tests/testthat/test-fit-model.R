@@ -40,7 +40,7 @@ test_that("select_snps_works", {
   expect_is(get("P1", snps), "list")
   expect_is(get("P2", snps), "list")
   expect_is(get("P3", snps), "list")
-  expect_is(get("P2", get("P1", snps)), "logical")
+  expect_is(get("P2", get("P1", snps)), "numeric")
 })
 
 

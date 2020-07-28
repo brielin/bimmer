@@ -65,10 +65,10 @@ n_cores = 8
 
 # Preprocess summary statistics
 ```{r}
-sumstats <- read_ukbbss_neale(file_list = file_list_gencor_male)
+sumstats <- read_sumstats_neale(file_list = file_list_gencor_male)
 save(sumstats, file = save_select_sumstats)
 rm(sumstats)
-sumstats <- read_ukbbss_neale(file_list = file_list_gencor_female)
+sumstats <- read_sumstats_neale(file_list = file_list_gencor_female)
 save(sumstats, file = save_fit_sumstats)
 rm(sumstats)
 ```
@@ -78,8 +78,7 @@ rm(sumstats)
 ```{r}
 load(save_select_sumstats)
 snps_to_use <- read_snp_list(file_pattern_snp_list)
-selected_snps <- select_snps(sumstats, snps_to_use, p_thresh = p_thresh,
-                             welch_thresh = 0, verbose = TRUE, weight = TRUE)
+selected_snps <- select_snps(sumstats, snps_to_use, p_thresh = p_thresh, verbose = TRUE)
 save(selected_snps, file = save_snps)
 ```
 
