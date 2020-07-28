@@ -6,6 +6,35 @@ read_gz_tsv <- function(filename) {
   return(readr::read_tsv(gzfile(filename)))
 }
 
+#' Reads single sumstats file in the format of the Neale lab UKBB analysis.
+#'
+#' Note that this converts beta values to a normalized scale if they are not
+#' already on one. Note also that this reads the entire dataset into memory.
+#' If the number of SNPs is
+#' large, consider doing some preprocessing of your data to remove SNPs that
+#' are unlikely to be used in the analysis.
+#' Note also that this only keeps the normalized scale beta and SE due to memory
+#' concerns. The number of samples and p-value can be backed out from these.
+#'
+#' @importFrom dplyr %>%
+#'
+#' @param sumstats Tibble. Must include ccolumns "minor_AF",
+#'   "low_confidence_variant", "tstat", "n_complete_samples", "beta", "se"
+#'   and "pval".
+parse_sumstats_neale <- function(sumstats) {
+  # TODO(brielin): Use chunked version to filter on read.
+  print("Parsing...")
+  # Manually set low confidence to NA instead of dropping them to keep the SNP
+  # lists identical.
+  sumstats$tstat[sumstats$low_confidence_variant == TRUE] <- NA
+  sumstats <- sumstats %>%
+    dplyr::filter(!duplicated(sumstats$rsid)) %>%
+    dplyr::mutate(
+      se_hat = 1 / sqrt(n_complete_samples), beta_hat = tstat * se_hat) %>%
+    dplyr::select(rsid, beta_hat, se_hat)
+  return(sumstats)
+}
+
 #' Wrapper for read_gz_tsv to read all files matching pattern.
 #'
 #' One of file_pattern and file_list must be provided.
@@ -31,37 +60,8 @@ read_files <- function(file_pattern = NULL, file_list = NULL) {
   })
   files <- stats::setNames(as.list(files), names)
   return(lapply(files, function(file) {
-    parse_ukbbss_neale(read_gz_tsv(file))
+    parse_sumstats_neale(read_gz_tsv(file))
   }))
-}
-
-#' Reads single sumstats file in the format of the Neale lab UKBB analysis.
-#'
-#' Note that this converts beta values to a normalized scale if they are not
-#' already on one. Note also that this reads the entire dataset into memory.
-#' If the number of SNPs is
-#' large, consider doing some preprocessing of your data to remove SNPs that
-#' are unlikely to be used in the analysis.
-#' Note also that this only keeps the normalized scale beta and SE due to memory
-#' concerns. The number of samples and p-value can be backed out from these.
-#'
-#' @importFrom dplyr %>%
-#'
-#' @param sumstats Tibble. Must include ccolumns "minor_AF",
-#'   "low_confidence_variant", "tstat", "n_completet_samples", "beta", "se"
-#'   and "pval".
-parse_ukbbss_neale <- function(sumstats) {
-  # TODO(brielin): Use chunked version to filter on read.
-  print("Parsing...")
-  # Manually set low confidence to NA instead of dropping them to keep the SNP
-  # lists identical.
-  sumstats$tstat[sumstats$low_confidence_variant == TRUE] <- NA
-  sumstats <- sumstats %>%
-    dplyr::filter(!duplicated(sumstats$rsid)) %>%
-    dplyr::mutate(
-      se_hat = 1 / sqrt(n_complete_samples), beta_hat = tstat * se_hat) %>%
-    dplyr::select(rsid, beta_hat, se_hat)
-  return(sumstats)
 }
 
 #' Parses a list of sumstats tibbles, returning a list of matrices.
@@ -96,8 +96,10 @@ parse_sumstats_multi_trait <- function(sumstats) {
 #' @param file_list A list of file names to use, or NULL to use file_pattern
 #'   instead.
 #' @param chunk_size Number of phenotypes to pivot at a time.
-read_ukbbss_neale <- function(file_pattern = NULL, file_list = NULL,
-                              chunk_size = 20) {
+#' @param  verbose Boolean. True to print progress.
+#' @export
+read_sumstats_neale <- function(file_pattern = NULL, file_list = NULL,
+                              chunk_size = 20, verbose = TRUE) {
   sumstats <- read_files(file_pattern, file_list)
 
   # Ideally, we would rbind sumstats and then pivot off the columns we want
@@ -107,10 +109,12 @@ read_ukbbss_neale <- function(file_pattern = NULL, file_list = NULL,
   # functions via the namespace, we need to modify the sumstats object in
   # the place that it was created.
   pivot_chunk <- function(nread) {
-    print("Pivot chunk!")
     ss_chunk <- sumstats[1:nread]
     sumstats[1:nread] <<- NULL # Remove the elements we just popped.
-    print(length(sumstats))
+    if(verbose){
+      sprintf(
+        "Pivoting a chunk of files. %d files remaining.\n", length(sumstats))
+    }
     ss_chunk <- dplyr::bind_rows(ss_chunk, .id = "trait")
     beta_chunk <- ss_chunk %>%
       dplyr::select("rsid", "trait", "beta_hat") %>%
@@ -129,7 +133,10 @@ read_ukbbss_neale <- function(file_pattern = NULL, file_list = NULL,
   } else {
     nread_seq <- rep(chunk_size, num_stats %/% chunk_size)
   }
-  print(length(sumstats))
+
+  if(verbose){
+    sprintf("%d files detected in input, beginning to parse.\n", length(sumstats))
+  }
   pivoted_chunks <- purrr::map(nread_seq, pivot_chunk)
   pivoted_chunks <- purrr::transpose(pivoted_chunks)
   # This is a hack to check that the rsids in each chunk match.
@@ -163,6 +170,7 @@ read_ukbbss_neale <- function(file_pattern = NULL, file_list = NULL,
 #' @param file_pattern A file pattern corresponding to a set of files, one for
 #'   each phenotype. Each file should contain a list of potential SNPs to use as
 #'   instruments for that phenotype.
+#' @export
 read_snp_list <- function(file_pattern) {
   files <- Sys.glob(file_pattern)
   names <- sapply(strsplit(sapply(

@@ -7,15 +7,14 @@
 select_snps(
   sumstats,
   snps_to_use = NULL,
-  p_thresh = 1e-04,
-  welch_thresh = 0.1,
-  verbose = FALSE,
-  weight = TRUE
+  p_thresh = 5e-06,
+  exclusive = TRUE,
+  weight = TRUE,
+  verbose = FALSE
 )
 }
 \arguments{
-\item{sumstats}{List with elements "beta_hat", "se_hat", "n_mat", and
-"p_value", each M x D matrices.}
+\item{sumstats}{List with elements "beta_hat", "se_hat", both M x D matrices.}
 
 \item{snps_to_use}{List or NULL. A list named by phenotypes where each list
 entry is a list of SNPs that can be used for that phenotype. Usually
@@ -23,13 +22,12 @@ the result of clumping to avoid correlated SNPs.}
 
 \item{p_thresh}{Float, p-value threshold to use for SNP inclusion.}
 
-\item{welch_thresh}{Float or NULL, p-value threshold for Welch test of equal
-betas.}
+\item{exclusive}{Bool. True to only use SNPs significant for one phenotype
+but *not* the other.}
+
+\item{weight}{Bool. True to store welch-test weights for regression.}
 
 \item{verbose}{Bool. If true, print phenotype label during iteration.}
-
-\item{weight}{Bool. True to track weights using Welch test statistic rather
-than pass/fail of test statistic.}
 }
 \description{
 Notes: sumstats passed to this function must be computed on the per-variance

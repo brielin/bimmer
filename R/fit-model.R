@@ -112,20 +112,18 @@ egger <- function(b_exp, b_out, se_exp, se_out, weights){
 #' Notes: sumstats passed to this function must be computed on the per-variance
 #' scale.
 #'
-#' @param sumstats List with elements "beta_hat", "se_hat", "n_mat", and
-#'   "p_value", each M x D matrices.
+#' @param sumstats List with elements "beta_hat", "se_hat", both M x D matrices.
 #' @param snps_to_use List or NULL. A list named by phenotypes where each list
 #'   entry is a list of SNPs that can be used for that phenotype. Usually
 #'   the result of clumping to avoid correlated SNPs.
 #' @param p_thresh Float, p-value threshold to use for SNP inclusion.
-#' @param welch_thresh Float or NULL, p-value threshold for Welch test of equal
-#'   betas.
+#' @param exclusive Bool. True to only use SNPs significant for one phenotype
+#'   but *not* the other.
+#' @param weight Bool. True to store welch-test weights for regression.
 #' @param verbose Bool. If true, print phenotype label during iteration.
-#' @param weight Bool. True to track weights using Welch test statistic rather
-#'   than pass/fail of test statistic.
 #' @export
-select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
-                        welch_thresh = 0.1, verbose = FALSE, weight = TRUE) {
+select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 5e-6,
+                        exclusive = TRUE, weight = TRUE, verbose = FALSE) {
   z_scores <- as.matrix(abs(sumstats$beta_hat / sumstats$se_hat))
   p_vals <- 2 * (1 - stats::pnorm(z_scores))
   sig_p_vals <- dplyr::as_tibble(p_vals < p_thresh)
@@ -166,26 +164,31 @@ select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 1e-4,
       s1 <- sumstats$se_hat[keep, pheno1]
       s2 <- sumstats$se_hat[keep, pheno2]
 
-      welch_res <- welch_test(b1, s1, b2, s2, welch_thresh)
-      if(is.null(welch_thresh)){
+      welch_res <- welch_test(b1, s1, b2, s2)
+      if(exclusive){
         if(weight){
-          selected_snps[[pheno1]][[pheno2]] = -ifelse(welch_res$t[candidate1[keep]] < -1.6, welch_res$t[candidate1[keep]], 0)
-          selected_snps[[pheno2]][[pheno1]] = ifelse(welch_res$t[candidate2[keep]] > 1.6, welch_res$t[candidate2[keep]], 0)
-        } else {
-          selected_snps[[pheno1]][[pheno2]] <- rep(TRUE, sum(candidate1))
-          selected_snps[[pheno2]][[pheno1]] <- rep(TRUE, sum(candidate2))
-        }
-      } else if(welch_thresh == 0){
-        if(weight){
-          selected_snps[[pheno1]][[pheno2]] = -ifelse(welch_res$t[candidate1[keep]] < -1.6, welch_res$t[candidate1[keep]], 0) * !sig2[candidate1]
-          selected_snps[[pheno2]][[pheno1]] = ifelse(welch_res$t[candidate2[keep]] > 1.6, welch_res$t[candidate2[keep]], 0) * !sig1[candidate2]
+          selected_snps[[pheno1]][[pheno2]] = -ifelse(
+            welch_res$t[candidate1[keep]] < -1.6, welch_res$t[candidate1[keep]],
+            0.0) * as.numeric(!sig2[candidate1])
+          selected_snps[[pheno2]][[pheno1]] = ifelse(
+            welch_res$t[candidate2[keep]] > 1.6, welch_res$t[candidate2[keep]],
+            0.0) * as.numeric(!sig1[candidate2])
         } else {
           selected_snps[[pheno1]][[pheno2]] <- !sig2[candidate1]
           selected_snps[[pheno2]][[pheno1]] <- !sig1[candidate2]
         }
       } else {
-        selected_snps[[pheno1]][[pheno2]] <- welch_res$pass[candidate1[keep]] == 1
-        selected_snps[[pheno2]][[pheno1]] <- welch_res$pass[candidate2[keep]] == -1
+        if(weight){
+          selected_snps[[pheno1]][[pheno2]] = -ifelse(
+            welch_res$t[candidate1[keep]] < -1.6,
+            welch_res$t[candidate1[keep]], 0.0)
+          selected_snps[[pheno2]][[pheno1]] = ifelse(
+            welch_res$t[candidate2[keep]] > 1.6,
+            welch_res$t[candidate2[keep]], 0.0)
+        } else {
+          selected_snps[[pheno1]][[pheno2]] <- rep(TRUE, sum(candidate1))
+          selected_snps[[pheno2]][[pheno1]] <- rep(TRUE, sum(candidate2))
+        }
       }
     }
   }
