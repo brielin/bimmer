@@ -56,6 +56,7 @@ gencor_descriptions = "/gpfs/commons/projects/UKBB/sumstats/gencor_descriptions.
 gencor_values = "/gpfs/commons/projects/UKBB/sumstats/geno_correlation_all.txt"
 save_pheno_data = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/pheno_data.Rdata"
 save_all_data = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/all_data.Rdata"
+save_igraph = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/igraph.Rdata"
 
 mr_method = "egger_w"
 p_thresh = 5e-6
@@ -225,6 +226,7 @@ pheno_data$D_tce <- exp_norm
 all_data <- data %>% select(-scale_R, -scale_U)
 save(pheno_data, file = save_pheno_data)
 save(all_data, file = save_all_data)
+save(graph, file = save_igraph)
 write_csv(pheno_data, str_replace(save_pheno_data, ".Rdata", ".csv"))
 write_csv(all_data, str_replace(save_all_data,  ".Rdata", ".csv"))
 ```
@@ -246,7 +248,7 @@ b <- ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=R_tce)) +
   scale_x_discrete(limits = phenotypes[ord_rho], labels = NULL) +
   scale_y_discrete(limits = phenotypes[rev(ord_rho)], labels = NULL) +
   scale_fill_gradient2(limits = c(-1, 1)) +
-  labs(x = NULL, y = NULL, fill = "Effect", title = "b) Weighted Egger total causal effect") +
+  labs(x = NULL, y = NULL, fill = "Effect", title = "b) Weighted Egger total causal effect (R)") +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed()
 c <- ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_U)) +
   scale_x_discrete(limits = phenotypes[ord_rho], labels = NULL) +
@@ -259,14 +261,14 @@ d <- ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_R)) +
   scale_x_discrete(limits = phenotypes[ord_rho], labels = NULL) +
   scale_y_discrete(limits = phenotypes[rev(ord_rho)], labels = NULL) +
   scale_fill_manual(values = cols, breaks = breaks, labels =labels) +
-  labs(x = NULL, y = NULL, fill = "Effect", title = "d) Bimmer inferred causal direct effect (R)") +
+  labs(x = NULL, y = NULL, fill = "Effect", title = "d) Bimmer inferred direct causal effect (G)") +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed()
 
 ggarrange(a, b, c, d, ncol = 2, left = "Exposure", bottom = "Outcome")
 ```
 
 
-```{r, fig.width=10, fig.height=9}
+```{r, fig.height=9}
 out_deg <- rowSums(abs(R_hat) > 0.01)
 ord <- hclust(dist(abs(U_hat)))$order
 nz_out_deg <- phenotypes[ord][out_deg[ord] > 0]
@@ -284,7 +286,7 @@ b <- ggplot(nzod_data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=R_tce)) 
   scale_x_discrete(limits = xlabels, labels = NULL) +
   scale_y_discrete(limits = rev(nz_out_deg), labels = NULL) +
   scale_fill_gradient2(limits = c(-1, 1)) +
-  labs(x = NULL, y = NULL, fill = "Effect", title = "b) Weighted Egger total causal effect") +
+  labs(x = NULL, y = NULL, fill = "Effect", title = "b) Weighted Egger total causal effect (R)") +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed() + guides(fill = FALSE)
 c <- ggplot(nzod_data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_U)) +
   scale_x_discrete(limits = xlabels, labels = NULL) +
@@ -297,9 +299,13 @@ d <- ggplot(nzod_data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_R)
   scale_x_discrete(limits = xlabels, labels = NULL) +
   scale_y_discrete(limits = rev(nz_out_deg), labels = NULL) +
   scale_fill_manual(values = cols, breaks = breaks, labels =labels) +
-  labs(x = NULL, y = NULL, fill = "Effect", title = "d) bimmer inferred causal direct effect (R)") +
+  labs(x = NULL, y = NULL, fill = "Effect", title = "d) bimmer inferred direct causal effect (G)") +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed() + guides(fill = FALSE)
 
+ggarrange(a, b, c, d, ncol = 1, left = "Exposure", bottom = "Outcome")
+```
+
+```{r, fig.width=10}
 group1 = c(nz_out_deg[1:5], nz_out_deg[99:102])
 group2 = nz_out_deg[6:24]
 group3 = c(nz_out_deg[25:27], nz_out_deg[29], nz_out_deg[31:34])
@@ -320,7 +326,7 @@ names[4] = "FEV1 (predicted)"
 R_sub <- R_g[code, code]
 e <- ggnet2(network::network(R_sub, directed = TRUE), arrow.size = arrow_size,
             arrow.gap = arrow_gap, node.size = node_size, label = names,
-            label.size = label_size, layout.exp = layout_exp) + labs(title = "e) Morphology network") + theme(plot.title = element_text(size=10))
+            label.size = label_size, layout.exp = layout_exp) + labs(title = "a) Morphology network") + theme(plot.title = element_text(size=10))
 
 pheno_sub <- filter(pheno_omni, pheno %in% group2)
 code <- pheno_sub$pheno
@@ -329,7 +335,7 @@ names[11] = "Glycated haemoglobin"
 R_sub <- R_g[code, code]
 f <- ggnet2(network::network(R_sub, directed = TRUE), arrow.size = arrow_size,
             arrow.gap = arrow_gap, node.size = node_size, label = names,
-            label.size = label_size, layout.exp = layout_exp) + labs(title = "f) Blood biomarker network") + theme(plot.title = element_text(size=10))
+            label.size = label_size, layout.exp = layout_exp) + labs(title = "b) Blood biomarker network") + theme(plot.title = element_text(size=10))
 
 pheno_sub <- filter(pheno_omni, pheno %in% group3)
 code <- pheno_sub$pheno
@@ -341,7 +347,7 @@ names[6] = "Erythrocyte distribution width"
 R_sub <- R_g[code, code]
 g <- ggnet2(network::network(R_sub, directed = TRUE), arrow.size = arrow_size,
             arrow.gap = arrow_gap, node.size = node_size, label = names,
-            label.size = label_size, layout.exp = layout_exp) + labs(title = "g) Red blood cell network") + theme(plot.title = element_text(size=10))
+            label.size = label_size, layout.exp = layout_exp) + labs(title = "c) Red blood cell network") + theme(plot.title = element_text(size=10))
 
 pheno_sub <- filter(pheno_omni, pheno %in% group4)
 code <- pheno_sub$pheno
@@ -354,9 +360,9 @@ names[7] = "Systolic blood pressure"
 R_sub <- R_g[code, code]
 h <- ggnet2(network::network(R_sub, directed = TRUE), arrow.size = arrow_size,
             arrow.gap = arrow_gap, node.size = node_size, label = names,
-            label.size = label_size, layout.exp = layout_exp) + labs( title = "g) Heart disease network") + theme(plot.title = element_text(size=10))
+            label.size = label_size, layout.exp = layout_exp) + labs( title = "d) Heart disease network") + theme(plot.title = element_text(size=10))
 
-ggarrange(a, e, b, f, c, g, d, h, ncol = 2, widths = c(4, 1.5))
+ggarrange(e, f, g, h, ncol = 2)
 ```
 
 
@@ -364,16 +370,18 @@ ggarrange(a, e, b, f, c, g, d, h, ncol = 2, widths = c(4, 1.5))
 ```{r, fig.width=10}
 a <- data %>% filter(!is.na(path_length), !is.na(p_fdr)) %>%
   ggplot(aes(x=path_length)) + geom_bar() +
-  labs( title = "a) Length of shortest path between connected nodes (all)", x = "Path length", y = "Count") + theme(plot.title = element_text(size=10))
+  labs( title = "a) Length of shortest path between connected nodes (all)", x = "Path length", y = NULL) + 
+  theme(plot.title = element_text(size=10)) + scale_x_continuous(breaks = scales::pretty_breaks(n=6))
 b <- data %>% filter(!is.na(path_length), p_fdr < 0.05) %>%
   ggplot(aes(x=path_length)) + geom_bar() + 
-  labs(title = "b) Length of shortest path between connected nodes (FDR 5%)", x = NULL, y = NULL) + theme(plot.title = element_text(size=10))
+  labs(title = "b) Length of shortest path between connected nodes (FDR 5%)", x = NULL, y = NULL) +
+  theme(plot.title = element_text(size=10)) + scale_x_continuous(breaks = scales::pretty_breaks(n=6))
 
 c <- data %>% filter(!is.na(eff_explained)) %>% ggplot(aes(x=eff_explained)) +
-  geom_density() + xlim(0, 2) +
-  labs(title = "c) Proportion of total effect explained by the shortest path (all)", x = "Percentage of effect explained by shortest path", y = "Density") + theme(plot.title = element_text(size=10))
+  geom_histogram(bins = 50) + xlim(0, 2) + ylim(0, 3000) +
+  labs(title = "c) Proportion of total effect explained by the shortest path (all)", x = "Percentage of effect explained by shortest path", y = NULL) + theme(plot.title = element_text(size=10))
 d <- data %>% filter(!is.na(eff_explained), p_fdr < 0.05) %>%
-  ggplot(aes(x=eff_explained)) + geom_density() + xlim(0, 2) + 
+  ggplot(aes(x=eff_explained)) + geom_histogram(bins = 50) + xlim(0, 2) + ylim(0, 300) +
   labs(title = "d) Proportion of total effect explained by the shortest path (FDR 5%)", x = NULL, y = NULL) + theme(plot.title = element_text(size=10))
 
 # data %>% filter(!is.na(eff_explained)) %>% ggplot(aes(x=omnigenicity)) + geom_density()
@@ -381,6 +389,6 @@ d <- data %>% filter(!is.na(eff_explained), p_fdr < 0.05) %>%
 
 # data %>% filter(p_fdr < 0.05) %>% select(exp_desc, out_desc, omnigenicity) %>% arrange((abs(omnigenicity)))
 
-ggarrange(a, b, c, d, ncol = 2)
+ggarrange(a, b, c, d, ncol = 2, left = "Count")
 ```
 
