@@ -236,8 +236,42 @@ fit_tce <- function(sumstats, selected_snps, mr_method = "egger_w",
     egger = egger,
     mbe = function(b_exp, b_out, se_exp, se_out, ...){
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
-      mbe_res <- MendelianRandomization::mr_mbe(input, seed = NA, iterations = 0)
+      mbe_res <- MendelianRandomization::mr_mbe(input, seed = NA, stderror = "simple")
       return(list("beta.hat" = mbe_res$Estimate, "beta.se" = mbe_res$StdError, "beta.p.value" = mbe_res$Pvalue))
+    },
+    median = function(b_exp, b_out, se_exp, se_out, ...){
+      input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
+      median_res <- MendelianRandomization::mr_median(input)
+      return(list("beta.hat" = median_res$Estimate, "beta.se" = median_res$StdError, "beta.p.value" = median_res$Pvalue))
+    },
+    ivw = function(b_exp, b_out, se_exp, se_out, ...){
+      input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
+      ivw_res <- MendelianRandomization::mr_ivw(input)
+      return(list("beta.hat" = ivw_res$Estimate, "beta.se" = ivw_res$StdError, "beta.p.value" = ivw_res$Pvalue))
+    },
+    mr_presso = function(b_exp, b_out, se_exp, se_out, ...){
+      input <- data.frame("b_exp" = b_exp, "b_out" = b_out, "se_exp" = se_exp, "se_out" = se_out)
+      mr_presso_res <- MRPRESSO::mr_presso(data = input, BetaOutcome = "b_out", BetaExposure = "b_exp", SdOutcome = "se_out", SdExposure = "se_exp",
+                                           OUTLIERtest = TRUE, DISTORTIONtest = TRUE, NbDistribution = 1000)$`Main MR results`
+      return(list("beta.hat" = mr_presso_res$`Causal Estimate`[[2]], "beta.se" = mr_presso_res$Sd[[2]], "beta.p.value" = mr_presso_res$`P-value`[[2]]))
+    },
+    mr_mix = function(b_exp, b_out, se_exp, se_out, ...){
+      # TODO(brielin): This seems to flip the result?? Double check this.
+      mrmix_res <- MRMix::MRMix(b_exp, -b_out, se_exp, se_out)
+      return(list("beta.hat" = mrmix_res$theta, "beta.se" = mrmix_res$SE_theta, "beta.p.value" = mrmix_res$pvalue_theta))
+    },
+    # TODO(brielin): current implementation (probably) won't work on real data
+    # because the global SNP matrix is not LD pruned (just per-phenotype).
+    # The SE is also asuming the posterior is normal which is probably wrong.
+    cause = function(X, variants){
+      params <- cause::est_cause_params(X, X$snp)
+      cause_res <- cause::cause(X=X, variants = variants, param_ests = params)
+      summary_cause <- summary(cause_res)
+      quants <- summary_cause$quants[[2]]
+      beta.hat <- quants[1, "gamma"]
+      beta.se <- (quants[3, "gamma"] - quants[2, "gamma"])/(2*1.96)
+      beta.p.value <- summary_cause$p
+      return(list("beta.hat" = beta.hat, "beta.se" = beta.se, "beta.p.value" = beta.p.value))
     },
     egger_w = egger_w
   )
@@ -272,14 +306,26 @@ fit_tce <- function(sumstats, selected_snps, mr_method = "egger_w",
       } else {
         tryCatch(
           {
-            mr_res <- mr_method_func(
-              b_exp = beta_exp[snp_mask],
-              b_out = beta_out[snp_mask],
-              se_exp = se_exp[snp_mask],
-              se_out = se_out[snp_mask],
-              weight = mask_or_weight[snp_mask],
-              ...
-            )
+            if(mr_method != "cause"){
+              mr_res <- mr_method_func(
+                b_exp = beta_exp[snp_mask],
+                b_out = beta_out[snp_mask],
+                se_exp = se_exp[snp_mask],
+                se_out = se_out[snp_mask],
+                weight = mask_or_weight[snp_mask],
+                ...
+              )
+            } else {
+              X <- tibble::as_tibble(tibble::rownames_to_column(sumstats$beta_hat[, c(exp, out)], var = "snp"))
+              X <- X %>% dplyr::rename(beta_hat_1 = exp, beta_hat_2 = out)
+              X$seb1 <- sumstats$se_hat[,exp]
+              X$seb2 <- sumstats$se_hat[,out]
+              X$A1 <- "A"
+              X$A2 <- "G"
+              variants <- dplyr::filter(X, snp %in% snps_to_use$names[snp_mask])$snp
+              mr_res <- mr_method_func(X, variants)
+            }
+
             return(list("R" = mr_res$beta.hat, "SE" = mr_res$beta.se,
                         "N" = n_instruments, "p" = mr_res$beta.p.value))
           },
