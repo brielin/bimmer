@@ -10,75 +10,93 @@ devtools::load_all()
 
 ```{r}
 run_sim <- function(iter, N, D, M_total, M_s, M_p, prop_shared, rho, noise, r1, r2, n_cores){
-  fix_R =  matrix(c(0, r2, r1, 0), nrow = 2, ncol = 2)
-  dataset <- generate_dataset(N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, p_net = 0, sd_net = 1, fix_R = fix_R)
+  R =  matrix(c(0, r2, r1, 0), nrow = 2, ncol = 2)
+  dataset <- generate_dataset(N = N, D = D, R = R, M_total = M_total,
+                              M_s = M_s, M_p = M_p, prop_shared = prop_shared,
+                              rho = rho, noise = noise, p_net = 0, sd_net = 1)
   sumstats_select <- dataset$sumstats_select
   sumstats_fit <- dataset$sumstats_fit
   R_cde <- dataset$R_cde
   R_tce <- dataset$R_tce
   beta <- dataset$beta
   
-  # First do oracle SNPs and Egger
-  mr_method = "egger"
-  selected <- select_snps_oracle(beta)
-  inst_count <- count_instruments(selected)
-  metrics <- instrument_metrics(selected, beta)
-  tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
-  
-  oracle_res <- tibble(
-    iter=iter, mr_method = mr_method, p_thresh = NA, w_thresh = NA, 
-    r1_sim = r1, r2_sim = r2, r1 = R_tce[1,2], r2 = R_tce[2, 1],
-    r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
-    se1_hat = tce_res$SE_tce[1, 2], se2_hat = tce_res$SE_tce[1, 2],
-    p1 = tce_res$p_val[1,2], p2 = tce_res$p_val[2,1],
-    n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
-  
-  select_res <- foreach(p_thresh = 0.5*0.1^seq(3, 7), .combine = bind_rows) %do% {
-    # Do normal egger.
-    selected <- select_snps(sumstats_select, p_thresh = p_thresh, exclusive = FALSE, weight = FALSE)
-    inst_count <- count_instruments(selected)
-    tce_res <- fit_tce(sumstats_fit, selected, mr_method = mr_method)
-    normal_res <- tibble(
-      iter=iter, mr_method = mr_method, p_thresh = p_thresh, w_thresh = NA, 
-      r1_sim = r1, r2_sim = r2, r1 = R_tce[1,2], r2 = R_tce[2, 1],
-      r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
-      se1_hat = tce_res$SE_tce[1, 2], se2_hat = tce_res$SE_tce[1, 2],
-      p1 = tce_res$p_val[1,2], p2 = tce_res$p_val[2,1],
-      n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
-    
-    # Do weighted xor egger.
-    selected <- select_snps(sumstats_select, p_thresh = p_thresh, exclusive = TRUE, weight = TRUE)
-    inst_count <- count_instruments(selected)
-    tce_res <- fit_tce(sumstats_fit, selected, mr_method = "egger_w")
-    weight_res <- tibble(
-      iter=iter, mr_method =  "egger_w", p_thresh = p_thresh, w_thresh = 0, 
-      r1_sim = r1, r2_sim = r2, r1 = R_tce[1,2], r2 = R_tce[2, 1],
-      r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
-      se1_hat = tce_res$SE_tce[1, 2], se2_hat = tce_res$SE_tce[1, 2],
-      p1 = tce_res$p_val[1,2], p2 = tce_res$p_val[2,1],
-      n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
-    
-    return(bind_rows(normal_res, weight_res))
+  mr_methods = c("egger", "egger_wx", "egger_wa", "ivw", "aps",
+                 "mbe", "median", "mr_presso", "mr_mix", "cause")
+  p_thresh = list("5e-6" = 5e-6, "5e-8" = 5e-8)
+
+  select_std <- purrr::map(p_thresh, ~ select_snps(sumstats_select, p_thresh = .x, exclusive = FALSE, weight = FALSE))
+  if("cause" %in% mr_methods){
+    select_cause <- list("1e-4" = select_snps(sumstats_select, p_thresh = 1e-4, exclusive = FALSE, weight = FALSE))
   }
-  result <- bind_rows(oracle_res, select_res)
-  result <- unite(
-    result, "thresh", c("p_thresh", "w_thresh"), sep = "_", remove = FALSE)
-  result <- unite(
-    result, "method", c("mr_method", "thresh"), sep = "_", remove = FALSE)
-  return(result)
+  if("egger_wx" %in% mr_methods){
+    select_wx <- purrr::map(p_thresh, ~ select_snps(sumstats_select, p_thresh = .x, exclusive = TRUE, weight = TRUE))
+  }
+  if("egger_wa" %in% mr_methods){
+    select_wa <- purrr::map(p_thresh, ~ select_snps(sumstats_select, p_thresh = .x, exclusive = FALSE, weight = TRUE))
+  }
+  
+  select_res <- foreach(mr_method = mr_methods, .combine = bind_rows) %do% {
+    selected <- switch(mr_method, cause = select_cause, egger_wx = select_wx, egger_wa = select_wa, select_std)
+    pv_res <- foreach(selected = selected, p_thresh = names(selected), .combine = bind_rows) %do% {
+      print(c(iter, mr_method, p_thresh))
+      inst_count <- count_instruments(selected)
+      start.time <- proc.time()[[3]]
+      tce_res <- fit_tce(sumstats_fit, selected, mr_method = switch(mr_method, egger_wx = "egger_w", egger_wa = "egger_w", mr_method))
+      runtime <- proc.time()[[3]] - start.time
+      tibble(
+        iter=iter, mr_method = mr_method, p_thresh = p_thresh, runtime = runtime,
+        r1_sim = r1, r2_sim = r2, r1 = R_tce[1,2], r2 = R_tce[2, 1],
+        r1_hat = tce_res$R_tce[1, 2], r2_hat = tce_res$R_tce[2, 1],
+        se1_hat = tce_res$SE_tce[1, 2], se2_hat = tce_res$SE_tce[1, 2],
+        p1 = tce_res$p_val[1,2], p2 = tce_res$p_val[2,1],
+        n1 = inst_count[1,2][[1]], n2 = inst_count[2,1][[1]])
+    }
+  }
+  select_res <- unite(
+    select_res, "method", c("mr_method", "p_thresh"), sep = "_", remove = FALSE)
+  return(select_res)
+}
+
+se <- function(x, na.rm = FALSE){
+  sqrt(var(x, na.rm = na.rm)/length(x))
+}
+
+make_summary_tibble <- function(plot_tibble){
+  summary_tibble <- plot_tibble %>% group_by(method, r1_sim, r2_sim) %>% 
+    mutate(stat1 = mean(p1 < 0.05, na.rm=T), stat2 = mean(p2 < 0.05, na.rm=T),
+           se_stat1 := se(p1 < 0.05, na.rm=T), se_stat2 := se(p2 < 0.05, na.rm=T),
+           mae1 = mean(abs(r1 - r1_hat), na.rm=T), mae2 = mean(abs(r2 - r2_hat), na.rm=T),
+           se_mae1 = se(abs(r1 - r1_hat), na.rm=T), se_mae2 = se(abs(r2 - r2_hat), na.rm=T),
+           r1_hat = mean(r1_hat, na.rm=T), r2_hat = mean(r2_hat, na.rm=T),
+           se1_hat = mean(se1_hat, na.rm=T), se2_hat = mean(se2_hat, na.rm=T),
+           n1_mean = mean(n1), n2_mean = mean(n2), se_n1 = se(n1), se_n2 = se(n2),
+           obs1 = mean(!is.na(r1_hat)), obs2 = mean(!is.na(r2_hat)),
+           se_obs1 = se(!is.na(r1_hat)), se_obs2 = se(!is.na(r2_hat)),
+           r1 = mean(r1), r2 = mean(r2)) %>% ungroup() %>%
+    distinct(method, mr_method, p_thresh, r1, r2, stat1, stat2,
+             se_stat1, se_stat2, mae1, mae2, se_mae1, se_mae2, r1_hat, r2_hat, se1_hat, se2_hat, n1_mean, n2_mean,
+             se_n1, se_n2, obs1, obs2, se_obs1, se_obs2, r1_sim, r2_sim)
+  return(summary_tibble)
+}
+
+reverselog_trans <- function(base = exp(1)) {
+    trans <- function(x) -log(x, base)
+    inv <- function(x) base^(-x)
+    trans_new(paste0("reverselog-", format(base)), trans, inv,
+                      log_breaks(base = base), domain = c(1e-100, Inf))
 }
 ```
 
 
 ```{r}
 # First simulation: NULL, equal sample sizes, unccorrelated pleiotropy.
-n_iter = 1000
-n_cores = 24
+n_iter = 100
+n_cores = 8
 N = 100000
 M_s = 1000
 M_p = 4000
 prop_shared = NULL
-M_total = 1000000
+M_total = 500000
 D = 2
 
 rho = 0
@@ -89,15 +107,19 @@ doMC::registerDoMC(cores = n_cores)
 plot_tibble_1 = foreach(iter = 1:n_iter, .combine = bind_rows) %dopar% {
   run_sim(iter = iter, N = N, D = D, M_total = M_total, M_s = M_s, M_p = M_p, prop_shared = prop_shared, rho = rho, noise = noise, r1 = r1, r2 = r2)
 }
-save(plot_tibble_1, file = "~/ukbb_network/plot_data/bimr_sim_1.Rdata")
+# save(plot_tibble_1, file = "~/ukbb_network/plot_data/bimr_sim_1.Rdata")
+```
+
+```{r}
+make_summary_tibble(plot_tibble_1)
 ```
 
 
 ```{r}
 # Second simulation: NULL, equal sample sizes, correlated pleiotropy.
-n_iter = 1000
+n_iter = 100
 N = 100000
-n_cores = 24
+n_cores = 8
 M_s = 1000
 M_p = 4000
 prop_shared = NULL
@@ -266,36 +288,7 @@ save(plot_tibble_8, file = "~/ukbb_network/plot_data/bimr_sim_8.Rdata")
 ```
 
 
-```{r}
-se <- function(x, na.rm = FALSE){
-  sqrt(var(x, na.rm = na.rm)/length(x))
-}
 
-make_summary_tibble <- function(plot_tibble){
-  summary_tibble <- plot_tibble %>% group_by(method, r1_sim, r2_sim) %>% 
-    mutate(stat1 = mean(p1 < 0.05, na.rm=T), stat2 = mean(p2 < 0.05, na.rm=T),
-           se_stat1 := se(p1 < 0.05, na.rm=T), se_stat2 := se(p2 < 0.05, na.rm=T),
-           mae1 = mean(abs(r1 - r1_hat), na.rm=T), mae2 = mean(abs(r2 - r2_hat), na.rm=T),
-           se_mae1 = se(abs(r1 - r1_hat), na.rm=T), se_mae2 = se(abs(r2 - r2_hat), na.rm=T),
-           r1_hat = mean(r1_hat, na.rm=T), r2_hat = mean(r2_hat, na.rm=T),
-           se1_hat = mean(se1_hat, na.rm=T), se2_hat = mean(se2_hat, na.rm=T),
-           n1_mean = mean(n1), n2_mean = mean(n2), se_n1 = se(n1), se_n2 = se(n2),
-           obs1 = mean(!is.na(r1_hat)), obs2 = mean(!is.na(r2_hat)),
-           se_obs1 = se(!is.na(r1_hat)), se_obs2 = se(!is.na(r2_hat)),
-           r1 = mean(r1), r2 = mean(r2)) %>% ungroup() %>%
-    distinct(method, mr_method, thresh, p_thresh, w_thresh, r1, r2, stat1, stat2,
-             se_stat1, se_stat2, mae1, mae2, se_mae1, se_mae2, r1_hat, r2_hat, se1_hat, se2_hat, n1_mean, n2_mean,
-             se_n1, se_n2, obs1, obs2, se_obs1, se_obs2, r1_sim, r2_sim)
-  return(summary_tibble)
-}
-
-reverselog_trans <- function(base = exp(1)) {
-    trans <- function(x) -log(x, base)
-    inv <- function(x) base^(-x)
-    trans_new(paste0("reverselog-", format(base)), trans, inv,
-                      log_breaks(base = base), domain = c(1e-100, Inf))
-}
-```
 
 ```{r}
 # Load data and make summaries.

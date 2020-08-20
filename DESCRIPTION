@@ -23,6 +23,9 @@ Imports:
 Suggests: 
     testthat (>= 2.1.0),
     mr.raps,
+    MRMix,
+    MRPRESSO,
+    cause,
     mvtnorm,
     scales,
     egg,
