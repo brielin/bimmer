@@ -1,278 +1,446 @@
----
-title: "UKBB Analysis."
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-# Load Packages
-
 ```{r}
 # install.packages("/gpfs/commons/home/bbrown/ukbb_network/inspre", repos = NULL, type = "source")
-require(inspre)
-require(tidyverse)
-require(foreach)
-require(igraph)
-require(devtools)
-require(egg)
-require(GGally)
-devtools::load_all()
+library(inspre)
+library(readr)
+library(dplyr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(bimmer)
+library(igraph)
+library(tibble)
+library(purrr)
+library(egg)
+library(network)
+library(GGally)
 ```
 
-# Data Locations and analysis parameters.
-# First analysis is focused on gencor comparison.
 
 ```{r}
-pivot_tce <- function(R_tce, SE_tce, N_obs){
-  plot_data <- tidyr::pivot_longer(
-    as_tibble(R_tce, rownames="Exposure"), -Exposure,
-    names_to="Outcome", values_to = "R_tce")
-  plot_data$SE_tce <- tidyr::pivot_longer(
-    as_tibble(SE_tce, rownames="Exposure"), -Exposure,
-    names_to="Outcome", values_to = "SE_tce")[["SE_tce"]]
-  plot_data$N_obs <- tidyr::pivot_longer(
-    as_tibble(N_obs, rownames="Exposure"), -Exposure,
-    names_to="Outcome", values_to = "N_obs")[["N_obs"]]
-  plot_data <- plot_data %>% dplyr::mutate(
-    Z_scores = R_tce/SE_tce, p_vals = 2 * (1 - stats::pnorm(abs(Z_scores))))
-  plot_data$p_vals[is.infinite(plot_data$Z_scores)] = NA
-  return(plot_data)
+wwer_result_zenodo = "https://zenodo.org/record/4605239/files/wwer_ukbb_results.csv.gz"
+wwer_save_file = "/gpfs/commons/home/bbrown/ukbb_network/bimmer/wwer_ukbb_results.csv.gz"
+save_cde_res_wide = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/cde_res_wide.Rdata"
+save_cde_res_narrow = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/cde_res_narrow.Rdata"
+selected_phenos_file <- "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/selected_phenotypes_sd.Rdata"
+save_pheno_data <- "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/pheno_data.Rdata"
+save_all_data <- "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/all_data.Rdata"
+save_igraph <- "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/saved_igraph.Rdata"
+beta = 0.025
+
+tibble_to_matrix <- function(tib, values_col, rownames_col, colnames_col){
+  tib <- tib %>% dplyr::select(rownames_col, colnames_col, values_col) %>% 
+    tidyr::pivot_wider(names_from = colnames_col, values_from = values_col)
+  row_names <- dplyr::pull(tib, rownames_col)
+  mat <- tib %>% select(-rownames_col) %>% as.matrix()
+  rownames(mat) <- row_names
+  return(mat)
 }
 
-
-file_list_gencor_male = readLines("/gpfs/commons/projects/UKBB/sumstats/gencor_files.male.txt")
-file_list_gencor_female = readLines("/gpfs/commons/projects/UKBB/sumstats/gencor_files.female.txt")
-file_pattern_snp_list = "/gpfs/commons/projects/UKBB/sumstats/clumped/*/snps_to_use.txt"
-save_snps = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_selected_snps.Rdata"
-save_select_sumstats = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_select_sumstats.Rdata"
-save_fit_sumstats = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_fit_sumstats.Rdata"
-save_tce_res = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_tce_res.Rdata"
-save_cde_res_wide = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_cde_res_wide.Rdata"
-save_cde_res_narrow = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/gencor_cde_res_narrow.Rdata"
-gencor_descriptions = "/gpfs/commons/projects/UKBB/sumstats/gencor_descriptions.txt"
-gencor_values = "/gpfs/commons/projects/UKBB/sumstats/geno_correlation_all.txt"
-save_pheno_data = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/pheno_data.Rdata"
-save_all_data = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/all_data.Rdata"
-save_igraph = "/gpfs/commons/home/bbrown/ukbb_network/saved_rdata/igraph.Rdata"
-
-mr_method = "egger_w"
-p_thresh = 5e-6
-beta = 0.025
-n_cores = 8
+concord <- function(U1, U2, min_nz = 1e-3){
+  U1[abs(U1) < min_nz] = 0
+  U2[abs(U2) < min_nz] = 0
+  
+  U1 <- sign(U1)
+  U2 <- sign(U2)
+  
+  r11 <- sum((U1 == 1) & (U2 == 1))
+  r10 <- sum((U1 == 1) & (U2 == 0))
+  r1m1 <- sum((U1 == 1) & (U2 == -1))
+  r01 <- sum((U1 == 0) & (U2 == 1))
+  r00 <- sum((U1 == 0) & (U2 == 0))
+  r0m1 <- sum((U1 == 0) & (U2 == -1))
+  rm11 <- sum((U1 == -1) & (U2 == 1))
+  rm10 <- sum((U1 == -1) & (U2 == 0))
+  rm1m1 <- sum((U1 == -1) & (U2 == -1))
+  
+  res <- matrix(c(c(r11, r10, r1m1), c(r01, r00, r0m1), c(rm11, rm10, rm1m1)), nrow = 3, dimnames = list(c("1", "0", "-1"), c("1", "0", "-1")))
+  return(res)
+}
 ```
 
-
-# Preprocess summary statistics
 ```{r}
-sumstats <- read_sumstats_neale(file_list = file_list_gencor_male)
-save(sumstats, file = save_select_sumstats)
-rm(sumstats)
-sumstats <- read_sumstats_neale(file_list = file_list_gencor_female)
-save(sumstats, file = save_fit_sumstats)
-rm(sumstats)
+download.file(wwer_result_zenodo, wwer_save_file, method = "wget")
 ```
 
-
-# Select instruments
 ```{r}
-load(save_select_sumstats)
-snps_to_use <- read_snp_list(file_pattern_snp_list)
-selected_snps <- select_snps(sumstats, snps_to_use, p_thresh = p_thresh, verbose = TRUE)
-save(selected_snps, file = save_snps)
+data <- readr::read_csv(gzfile(wwer_save_file))
 ```
 
-
-# Fit TCE matrix
 ```{r}
-load(save_fit_sumstats)
-load(save_snps)
-tce_res <- fit_tce(sumstats, selected_snps, mr_method = "egger_w",
-                   min_instruments = 10, verbose = TRUE)
-save(tce_res, file = save_tce_res)
+inst_phenos <- unique(data$Exposure)
+all_phenos <- unique(data$Outcome)
+
+data <- dplyr::filter(data, Outcome %in% inst_phenos)
+R_tce <- tibble_to_matrix(data, "R_tce", "Exposure", "Outcome")
+SE_tce <- tibble_to_matrix(data, "SE_tce", "Exposure", "Outcome")
+
+tce_filt <- bimmer::filter_tce(R_tce, SE_tce, max_R = 1.4, max_SE = 1, max_nan_perc = 0.5)
+R_tce_sm = tce_filt$R_tce
+SE_tce_sm = tce_filt$SE_tce
 ```
 
-# Calculate some descriptive statistics for the TCE results.
 ```{r}
-load(save_tce_res)
-
-tce_filt <- filter_tce(tce_res$R_tce, tce_res$SE_tce, max_R = 1, max_SE = 0.5, max_nan_perc = 0.5)
-R_tce <- tce_filt$R_tce
-SE_tce <- tce_filt$SE_tce
-N_obs <- tce_res$N_obs[rownames(R_tce), rownames(R_tce)]
-
-N_phenos <- nrow(R_tce)
-data <- pivot_tce(R_tce, SE_tce, N_obs)
-
-n_nans = sum(is.na(R_tce))
-perc_nans = n_nans/(N_phenos*N_phenos - N_phenos)
-num_nominal_sig = sum(data$p_vals < 0.05, na.rm = TRUE)
-data$p_fdr <- stats::p.adjust(data$p_vals, method="fdr")
-num_fwer_sig = sum(stats::p.adjust(data$p_vals, method="holm") < 0.05, na.rm=TRUE)
-num_fdr_sig = sum(data$p_fdr < 0.05, na.rm=TRUE)
-
-ggplot(data, aes(x=p_vals)) + geom_density()
-data %>% ggplot(aes(x=N_obs)) + geom_density() + scale_x_continuous(trans="log10")
-ggplot(data, aes(x=SE_tce)) + geom_density() + xlim(0, 1)
-ggplot(data, aes(x=R_tce)) + geom_density() + xlim(-1, 1)
-data %>% filter(p_fdr < 0.05) %>% ggplot(aes(x=R_tce)) + geom_density() + xlim(-1, 1)
-data %>% dplyr::mutate(R_tce = ifelse(SE_tce < 0.5, R_tce, NA)) %>%
-  ggplot(aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=R_tce)) + scale_fill_gradient2()
-```
-
-# Use inspre to find direct effects.
-```{r}
-load(save_tce_res)
-
-tce_filt <- filter_tce(tce_res$R_tce, tce_res$SE_tce, max_R = 1, max_SE = 0.5, max_nan_perc = 0.5)
-R_tce <- tce_filt$R_tce
-SE_tce <- tce_filt$SE_tce
-
-weights <- make_weights(SE_tce, max_min_ratio = 10000)
-
-cde_res_wide <- fit_inspre(R_tce, W = weights, verbose = 1, cv_folds = 10, ncores = 8, warm_start = FALSE)
+weights <- inspre::make_weights(SE_tce_sm, max_med_ratio = 50)
+lambda <- exp(seq(log(0.5), log(0.05), length.out = 20))
+cde_res_wide <- fit_inspre(R_tce_sm, W = weights, verbose = 1, cv_folds = 10, ncores = 8, warm_start = FALSE, delta_target = 1e-4, lambda = lambda)
 save(cde_res_wide, file = save_cde_res_wide)
-lambda_max <- cde_res_wide$lambda[which(cde_res_wide$D_hat > 0.005)[1]]
+```
+
+
+```{r}
+load(save_cde_res_wide)
+weights <- inspre::make_weights(SE_tce_sm, max_med_ratio = 50)
+lambda_max <- cde_res_wide$lambda[which(cde_res_wide$D_hat > 0.01)[1]]
 lambda_min <- cde_res_wide$lambda[which(cde_res_wide$D_hat > 0.05)[1]-1]
 lambda <- exp(seq(log(lambda_max), log(lambda_min), length.out = 20))
-cde_res_narrow <- fit_inspre(R_tce, W = weights, verbose = 1, cv_folds = 10, lambda = lambda, ncores = 8, warm_start = FALSE)
+cde_res_narrow <- fit_inspre(R_tce_sm, W = weights, verbose = 1, cv_folds = 10, lambda = lambda, ncores = 8, warm_start = FALSE, delta_target = 1e-4)
 save(cde_res_narrow, file = save_cde_res_narrow)
 ```
 
+
 ```{r}
 load(save_cde_res_narrow)
-load(save_tce_res)
-selected_index <- which(cde_res_narrow$D_hat > beta)[1] - 1
-lambda <- cde_res_narrow$lambda[selected_index]
-R_hat <- cde_res_narrow$R_hat[ , , selected_index]
-U_hat <- cde_res_narrow$U[,,selected_index]
-diag(U_hat) <- 1
-tce_filt <- filter_tce(tce_res$R_tce, tce_res$SE_tce, max_R = 1, max_SE = 0.5, max_nan_perc = 0.5)
-R_tce <- tce_filt$R_tce
-SE_tce <- tce_filt$SE_tce
-N_obs <- tce_res$N_obs[rownames(R_tce), rownames(R_tce)]
-phenotypes <- rownames(R_tce)
-rownames(U_hat) <- phenotypes
-colnames(U_hat) <- phenotypes
+load(selected_phenos_file)
+```
 
-data <- pivot_tce(R_tce, SE_tce, N_obs)
-R_long <- tidyr::pivot_longer(as_tibble(R_hat, rownames="Exposure"), -Exposure,
-                              names_to="Outcome", values_to = "R_hat")
+
+```{r}
+cde_res <- cde_res_narrow
+phenos <- colnames(cde_res$R_hat)
+data <- data %>% dplyr::filter(Exposure %in% phenos, Outcome %in% phenos)
+
+selected_index <- which(cde_res$D_hat > beta)[1]
+lambda <- cde_res$lambda[selected_index]
+xi <- cde_res$xi_mat[, , selected_index]
+G_hat <- cde_res$R_hat[ , , selected_index]
+U_hat <- cde_res$U[,,selected_index]
+diag(U_hat) <- 1
+
+rownames(U_hat) <- phenos
+colnames(U_hat) <- phenos
+
+G_long <- tidyr::pivot_longer(as_tibble(G_hat, rownames="Exposure"), -Exposure,
+                              names_to="Outcome", values_to = "G_hat")
 U_long <- tidyr::pivot_longer(as_tibble(U_hat, rownames = "Exposure"), -Exposure,
                               names_to = "Outcome", values_to = "U_hat")
-rho_long <- read_delim(gencor_values, delim = " ", col_names = c("P1", "P2", "gencor"))
-rho_long <- rho_long %>% filter(P1 %in% phenotypes & P2 %in% phenotypes)
-data <- left_join(data, rho_long, by = c("Exposure" = "P1", "Outcome" = "P2"))
-data <- left_join(data, rho_long, by = c("Exposure" = "P2", "Outcome" = "P1"))
-data <- mutate(data, gencor = if_else(is.na(gencor.x), gencor.y, gencor.x))
-data$gencor.x <- NULL
-data$gencor.y <- NULL
-U_long <- tidyr::pivot_longer(as.tibble(U_hat, rownames = "Exposure"), -Exposure, names_to = "Outcome", values_to = "U_hat")
 data$U_hat <- U_long$U_hat
-R_hat_wide <- tidyr::pivot_longer(as_tibble(R_hat, rownames="Exposure"), -Exposure, names_to="Outcome", values_to = "R_hat")
-data$R_cde <- R_hat_wide$R_hat
-data <- data %>% mutate(scale_R = as.character(if_else(abs(R_cde) > 1e-2, -sign(R_cde)*floor(log10(abs(R_cde))), 0)),
-                        scale_U = as.character(if_else(abs(U_hat) > 1e-2, -sign(U_hat)*floor(log10(abs(U_hat))), 0)))
-data <- data %>% mutate(gencor = if_else(Exposure == Outcome, 0, gencor), R_tce = if_else(Exposure == Outcome, 0, R_tce))
+data$G_hat <- G_long$G_hat
 
-data$p_fdr <- stats::p.adjust(data$p_vals, method="fdr")
+data <- data %>% mutate(scale_G = if_else(abs(G_hat) > 0.001, as.character(-sign(G_hat)*floor(log10(abs(G_hat)))), "0"),
+                        scale_U = if_else(abs(U_hat) > 0.001, as.character(-sign(U_hat)*floor(log10(abs(U_hat)))), "0"))
+data <- data %>% mutate(rg = if_else(Exposure == Outcome, 0, rg), R_tce = if_else(Exposure == Outcome, 0, R_tce))
 
-rho <- matrix(data$gencor, nrow = length(phenotypes))
+rho <- matrix(data$rg, nrow = length(phenos))
 diag(rho) <- 1
 ord_rho <- hclust(as.dist(sqrt(2*(1-abs(rho)))))$order
 
-graph <- make_igraph(R_cde = R_hat, min_edge_value = 0.01)
-pheno_table <- read_delim(gencor_descriptions, "\t")
 
-exp_norm <- diag(solve(diag(length(phenotypes)) - R_hat))
-data <- data %>% 
+exp_norm <- diag(solve(diag(length(phenos)) - G_hat))
+data <- data %>%
   left_join(enframe(exp_norm, value = "exp_norm"),
             by = c("Exposure" = "name")) %>%
   mutate(U_norm = exp_norm * U_hat) %>%
   select(-exp_norm)
 
+graph <- make_igraph(R_cde = G_hat, min_edge_value = 0)
 
 distances <- distances(graph, mode = "out")
 distances_long <- tidyr::pivot_longer(
-  as.tibble(distances, rownames = "Exposure"), -Exposure,
+  as_tibble(distances, rownames = "Exposure"), -Exposure,
   names_to = "Outcome", values_to = "log_dist")
 
-data$R_path <- 1/exp(distances_long$log_dist)
-data$path_length <- pmap_int(
-  select(data, Exposure, Outcome, R_path),
-  function(Exposure, Outcome, R_path){
-    as.integer(ifelse(R_path > 0, length(shortest_paths(graph, Exposure, Outcome, mode = "out")$vpath[[1]]) - 1, NA))
+data$G_path <- 1/exp(distances_long$log_dist)
+data$path_length <- purrr::pmap_int(
+  select(data, Exposure, Outcome, G_path),
+  function(Exposure, Outcome, G_path){
+    as.integer(ifelse(G_path > 0, length(shortest_paths(graph, Exposure, Outcome, mode = "out")$vpath[[1]]) - 1, NA))
   }
 )
 
-data <- data %>% mutate(eff_explained = ifelse((Exposure != Outcome) & (R_path > 0), abs(R_path/U_norm), NA))
-data <- data %>% left_join(rename(select(pheno_table, code, desc), exp_desc = desc), by = c("Exposure" = "code")) %>% 
-  left_join(rename(select(pheno_table, code, desc), out_desc = desc), by = c("Outcome" = "code"))
+data <- data %>% mutate(eff_explained = ifelse((Exposure != Outcome) & (G_path > 0), abs(G_path/U_norm), NA))
 
+# pheno_data <- selected_phenos %>% filter(phenotype %in% phenos) %>% select(phenotype, short_description, Neff)
+# 
+# pheno_data$out_deg <- igraph::degree(graph, mode = "out")[pheno_data$phenotype]
+# pheno_data$in_deg <- igraph::degree(graph, mode = "in")[pheno_data$phenotype]
+# pheno_data$deg <- degree(graph, mode = "all")[pheno_data$phenotype]
+# pheno_data$ord_gc <- sapply(phenos, function(p){which(phenos[ord_rho]==p)}, USE.NAMES = T)[pheno_data$phenotype]
+# pheno_data$D_G <- exp_norm[pheno_data$phenotype]
 
-pheno_data <- data %>% distinct(Exposure, exp_desc) %>%
-  select(pheno = Exposure, desc = exp_desc) %>%
-  left_join(distinct(.data = data, Outcome), by = c("pheno"="Outcome"))
-pheno_data$out_deg <- degree(graph, mode = "out")
-pheno_data$in_deg <- degree(graph, mode = "in")
-pheno_data$deg <- degree(graph, mode = "all")
-pheno_data$ord_gc <- sapply(phenotypes, function(p){which(phenotypes[ord_rho]==p)}, USE.NAMES = T)
-pheno_data$D_tce <- exp_norm
-
-all_data <- data %>% select(-scale_R, -scale_U)
-save(pheno_data, file = save_pheno_data)
+all_data <- data %>% select(-scale_G, -scale_U)
+# save(pheno_data, file = save_pheno_data)
 save(all_data, file = save_all_data)
 save(graph, file = save_igraph)
-write_csv(pheno_data, str_replace(save_pheno_data, ".Rdata", ".csv"))
-write_csv(all_data, str_replace(save_all_data,  ".Rdata", ".csv"))
+# write_csv(pheno_data, stringr::str_replace(save_pheno_data, ".Rdata", ".csv"))
+write_csv(all_data, stringr::str_replace(save_all_data,  ".Rdata", ".csv"))
+
+test <- data %>% select(Exposure, Outcome, short_description.1, short_description.2, R_tce, SE_tce, p_fdr, rg, se, G_hat, U_norm, G_path, path_length, eff_explained)
 ```
 
 
-```{r, fig.width=10}
-cols = c("0" = "white", "2" = "#9ECAE1", "1" = "#3182BD", "-2" = "#FC9272", "-1" = "#DE2D26")
-breaks = c("1", "2", "0", "-2", "-1")
-labels = c("1 to 0.1", "0.01 to 0.1", "-0.01 to 0.01", "-0.01 to -0.1", "-1 to -0.1")
+```{r}
+load(save_pheno_data)
+load(save_all_data)
+load(save_igraph)
+```
 
-a <- ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=gencor)) +
-  scale_x_discrete(limits = phenotypes[ord_rho], labels = NULL) +
-  scale_y_discrete(limits = phenotypes[rev(ord_rho)], labels = NULL) +
+```{r, fig.width=10}
+cols = c("0" = "white", "3" = "#DEEBF7", "2" = "#9ECAE1", "1" = "#3182BD", "-3" = "#FEE0D2", "-2" = "#FC9272", "-1" = "#DE2D26")
+breaks = c("1", "2", "3", "0", "3", "-2", "-1")
+labels = c("1 to 0.1", "0.01 to 0.1", "0.001 to 0.01" , "0", "-0.001 to -0.01", "-0.01 to -0.1", "-1 to -0.1")
+
+# ord_rho <- hclust(as.dist(sign(U_hat)*sqrt(2*(1-abs(U_hat)))))$order
+ord_rho <- hclust(dist(abs(U_hat)))$order
+
+
+ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=rg)) +
+  scale_x_discrete(limits = phenos[ord_rho], labels = NULL) +
+  scale_y_discrete(limits = phenos[rev(ord_rho)], labels = NULL) +
   scale_fill_gradient2(limits = c(-1, 1)) +
   labs(x = NULL, y = NULL, title = "a) Genetic correlation") +
   guides(fill = FALSE) +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed()
-b <- ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=R_tce)) +
-  scale_x_discrete(limits = phenotypes[ord_rho], labels = NULL) +
-  scale_y_discrete(limits = phenotypes[rev(ord_rho)], labels = NULL) +
+
+ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=R_tce)) +
+  scale_x_discrete(limits = phenos[ord_rho], labels = NULL) +
+  scale_y_discrete(limits = phenos[rev(ord_rho)], labels = NULL) +
   scale_fill_gradient2(limits = c(-1, 1)) +
   labs(x = NULL, y = NULL, fill = "Effect", title = "b) Weighted Egger total causal effect (R)") +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed()
-c <- ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_U)) +
-  scale_x_discrete(limits = phenotypes[ord_rho], labels = NULL) +
-  scale_y_discrete(limits = phenotypes[rev(ord_rho)], labels = NULL) +
+
+ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_U)) +
+  scale_x_discrete(limits = phenos[ord_rho], labels = NULL) +
+  scale_y_discrete(limits = phenos[rev(ord_rho)], labels = NULL) +
   scale_fill_manual(values = cols, breaks = breaks, labels =labels) +
   labs(x = NULL, y = NULL, title = "c) bimmer shrunk total causal effect (U)") +
   guides(fill = FALSE) +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed()
-d <- ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_R)) +
-  scale_x_discrete(limits = phenotypes[ord_rho], labels = NULL) +
-  scale_y_discrete(limits = phenotypes[rev(ord_rho)], labels = NULL) +
+
+ggplot(data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_G)) +
+  scale_x_discrete(limits = phenos[ord_rho], labels = NULL) +
+  scale_y_discrete(limits = phenos[rev(ord_rho)], labels = NULL) +
   scale_fill_manual(values = cols, breaks = breaks, labels =labels) +
   labs(x = NULL, y = NULL, fill = "Effect", title = "d) Bimmer inferred direct causal effect (G)") +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed()
 
-ggarrange(a, b, c, d, ncol = 2, left = "Exposure", bottom = "Outcome")
+
+# ggarrange(a, b, c, d, ncol = 2, left = "Exposure", bottom = "Outcome")
+```
+
+```{r}
+arrow_size = 3
+arrow_gap = 0.007
+node_size = 3
+label_size = 0
+layout_exp = 0
+
+palette = c(RColorBrewer::brewer.pal(3, "Blues"),
+            RColorBrewer::brewer.pal(3, "Greens"),
+            RColorBrewer::brewer.pal(3, "Purples"),
+            RColorBrewer::brewer.pal(3, "Oranges"))
+values = c("OT", "ET", "NT", "BH", "DT", "MP", "OD", "HT", "IT", "BT", "BC", "BB")
+long_values = c("Other", "Eye-related", "Neurological", "Behavioral", "Dietary",
+                "Morphological", "Other disease", "Heart-related", "Immune disease",
+                "Blood trait", "Blood composition", "Blood biomarker")
+names(long_values) = values
+pheno_data <- pheno_data %>% dplyr::mutate(long_kind = long_values[Kind])
+names(palette) = long_values
+```
+
+```{r, fig.width=10, fig.height=8}
+keep_phenos = filter(pheno_data, deg > 0)$phenotype
+net <- network::network(G_hat[keep_phenos, keep_phenos], directed = TRUE, names.eval = "weights", ignore.eval = F)
+net %v% "Trait_class" = purrr::map_chr(network.vertex.names(net), ~ filter(pheno_data, phenotype == .x)$long_kind)
+network::set.edge.attribute(net, "color", ifelse(net %e% "weights" > 0, "black", "red"))
+network::set.edge.attribute(net, "size", log1p(abs(net %e% "weights")) + 0.05)
+
+
+ggnet2(net, arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size, mode = "target",
+       layout.exp = layout_exp, color = "Trait_class", palette = palette, edge.color = "color", edge.size = "size")
+```
+
+```{r, fig.width=7}
+data %>% filter(!is.na(path_length), !is.na(p_fdr), Exposure != Outcome) %>%
+  ggplot(aes(x=path_length)) + geom_bar() +
+  labs( title = "a) Length of shortest path between connected nodes (all)", x = "Path length", y = NULL) + 
+  theme(plot.title = element_text(size=10)) + scale_x_continuous(breaks = scales::pretty_breaks(n=6))
+data %>% filter(!is.na(path_length), p_fdr < 0.05) %>%
+  ggplot(aes(x=path_length)) + geom_bar() + 
+  labs(title = "b) Length of shortest path between connected nodes (FDR 5%)", x = NULL, y = NULL) +
+  theme(plot.title = element_text(size=10)) + scale_x_continuous(breaks = scales::pretty_breaks(n=6))
+
+data %>% filter(!is.na(eff_explained)) %>% ggplot(aes(x=eff_explained)) +
+  geom_histogram(bins = 50) + xlim(0, 2) +
+  labs(title = "c) Proportion of total effect explained by the shortest path (all)", x = "Percentage of effect explained by shortest path", y = NULL) + theme(plot.title = element_text(size=10))
+data %>% filter(!is.na(eff_explained), p_fdr < 0.05) %>%
+  ggplot(aes(x=eff_explained)) + geom_histogram(bins = 50) + xlim(0, 2) +
+  labs(title = "d) Proportion of total effect explained by the shortest path (FDR 5%)", x = NULL, y = NULL) + theme(plot.title = element_text(size=10))
+
+pheno_data %>% ggplot(aes(x = in_deg)) + geom_histogram() + labs( x = "In-degree")
+
+pheno_data %>% ggplot(aes(x = out_deg)) + geom_histogram() + labs( x = "Out-degree")
+
+# ggarrange(a, b, c, d, ncol = 2, left = "Count")
+```
+
+```{r, fig.width=15}
+out_deg <- igraph::degree(graph, mode = "out")
+nz_out_deg <- phenos[out_deg > 0]
+# clust <- hclust(dist(U_hat[nz_out_deg,]), )
+clust <-  hclust(dist(abs(U_hat)))
+ord <- clust$order
+
+# pheno_ord <- pheno_data %>% filter(phenotype %in% nz_out_deg) %>% slice(match(nz_out_deg, phenotype)) %>% slice(match(nz_out_deg[ord], phenotype))
+pheno_ord <- pheno_data %>% slice(match(phenos[ord], phenotype))
+plot(clust)
+#view(pheno_ord)
 ```
 
 
-```{r, fig.height=9}
-out_deg <- rowSums(abs(R_hat) > 0.01)
-ord <- hclust(dist(abs(U_hat)))$order
-nz_out_deg <- phenotypes[ord][out_deg[ord] > 0]
-nzod_data <- filter(data, Exposure %in% nz_out_deg)
-xlabels <- c(nz_out_deg, phenotypes[ord][out_deg[ord] == 0])
+```{r, fig.width=8}
+arrow_size = 4
+arrow_gap = 0.015
+node_size = 4
+label_size = 2.5
+layout_exp = 0.2
 
-a <- ggplot(nzod_data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=gencor)) +
+group = filter(pheno_data, Kind == "IT", (out_deg > 0 | in_deg > 0))$phenotype
+nhood_group = unique(c(group, do.call(c, purrr::map(group, ~ names(igraph::neighbors(graph, .x, mode = "all"))))))
+
+
+G_sub <- G_hat[nhood_group, nhood_group]
+names <- purrr::map(nhood_group, ~ filter(pheno_data, phenotype == .x)$short_description)
+net <- network::network(G_sub, directed = TRUE, names.eval = "weights", ignore.eval = F)
+net %v% "Trait_class" = purrr::map_chr(network.vertex.names(net), ~ filter(pheno_data, phenotype == .x)$long_kind)
+network::set.edge.attribute(net, "color", ifelse(net %e% "weights" > 0, "black", "red"))
+network::set.edge.attribute(net, "size", log1p(abs(net %e% "weights")) + 0.05)
+
+
+ggnet2(net, arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size, mode = "target",
+       layout.exp = layout_exp, color = "Trait_class", palette = palette, edge.color = "color", edge.size = "size", label = names)
+```
+
+```{r}
+IT <- filter(pheno_data, Kind == "IT")$phenotype
+# test <- (filter(test, (Exposure %in% IT)|(Outcome %in% IT)) %>% arrange(p_fdr) %>% select(short_description.1, short_description.2, R_tce, SE_tce, G_hat, U_norm) %>% rename(Exposure = short_description.1, Outcome = short_description.2, R_hat = R_tce, SE = SE_tce, U_hat = U_norm))[3:12, ]
+test <- (filter(test, (Exposure %in% IT)|(Outcome %in% IT)) %>% arrange(p_fdr) %>% select(short_description.1, short_description.2, G_hat))[3:100, ]
+```
+
+```{r, fig.width=10}
+arrow_size = 4
+arrow_gap = 0.015
+node_size = 4
+label_size = 2.5
+layout_exp = 0.2
+
+group = filter(pheno_data, Kind == "DT", (out_deg > 0 | in_deg > 0))$phenotype
+nhood_group = unique(c(group, do.call(c, purrr::map(group, ~ names(igraph::neighbors(graph, .x, mode = "all"))))))
+
+G_sub <- G_hat[nhood_group, nhood_group]
+names <- purrr::map(nhood_group, ~ filter(pheno_data, phenotype == .x)$short_description)
+net <- network::network(G_sub, directed = TRUE, names.eval = "weights", ignore.eval = F)
+net %v% "Trait_class" = purrr::map_chr(network.vertex.names(net), ~ filter(pheno_data, phenotype == .x)$long_kind)
+network::set.edge.attribute(net, "color", ifelse(net %e% "weights" > 0, "black", "red"))
+network::set.edge.attribute(net, "size", abs(net %e% "weights") + 0.05)
+
+
+ggnet2(net, arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size, mode = "target",
+       layout.exp = layout_exp, color = "Trait_class", palette = palette, edge.color = "color", edge.size = "size", label = names)
+```
+
+```{r}
+DT <- filter(pheno_data, Kind == "IT")$phenotype
+(filter(data, (Exposure %in% DT)|(Outcome %in% DT)) %>% arrange(p_fdr) %>% select(short_description.1, short_description.2, path_length, U_hat) %>% rename(Exposure = short_description.1, Outcome = short_description.2))
+```
+
+```{r, fig.width=10}
+arrow_size = 4
+arrow_gap = 0.015
+node_size = 4
+label_size = 2.5
+layout_exp = 0.2
+
+group = filter(pheno_data, Kind == "NT", (out_deg > 0 | in_deg > 0))$phenotype
+nhood_group = unique(c(group, do.call(c, purrr::map(group, ~ names(igraph::neighbors(graph, .x, mode = "all"))))))
+
+
+G_sub <- G_hat[nhood_group, nhood_group]
+names <- purrr::map(nhood_group, ~ filter(pheno_data, phenotype == .x)$short_description)
+net <- network::network(G_sub, directed = TRUE, names.eval = "weights", ignore.eval = F)
+net %v% "Trait_class" = purrr::map_chr(network.vertex.names(net), ~ filter(pheno_data, phenotype == .x)$long_kind)
+network::set.edge.attribute(net, "color", ifelse(net %e% "weights" > 0, "black", "red"))
+network::set.edge.attribute(net, "size", abs(net %e% "weights") + 0.05)
+
+
+ggnet2(net, arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size, mode = "target",
+       layout.exp = layout_exp, color = "Trait_class", palette = palette, edge.color = "color", edge.size = "size", label = names)
+```
+
+```{r}
+BH <- filter(pheno_data, Kind == "HT")$phenotype
+(filter(test, (Exposure %in% BH)|(Outcome %in% BH)) %>% arrange(p_fdr) %>% select(short_description.1, short_description.2, R_tce, SE_tce, G_hat, U_norm) %>% rename(Exposure = short_description.1, Outcome = short_description.2, R_hat = R_tce, SE = SE_tce, U_hat = U_norm))
+```
+
+
+```{r, fig.width=10}
+arrow_size = 4
+arrow_gap = 0.015
+node_size = 4
+label_size = 2.5
+layout_exp = 0.2
+
+group = filter(pheno_data, Kind == "HT", (out_deg > 0 | in_deg > 0))$phenotype
+nhood_group = unique(c(group, do.call(c, purrr::map(group, ~ names(igraph::neighbors(graph, .x, mode = "all"))))))
+
+
+G_sub <- G_hat[nhood_group, nhood_group]
+names <- purrr::map(nhood_group, ~ filter(pheno_data, phenotype == .x)$short_description)
+net <- network::network(G_sub, directed = TRUE, names.eval = "weights", ignore.eval = F)
+net %v% "Trait_class" = purrr::map_chr(network.vertex.names(net), ~ filter(pheno_data, phenotype == .x)$long_kind)
+network::set.edge.attribute(net, "color", ifelse(net %e% "weights" > 0, "black", "red"))
+network::set.edge.attribute(net, "size", abs(net %e% "weights") + 0.05)
+
+
+ggnet2(net, arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size, mode = "target",
+       layout.exp = layout_exp, color = "Trait_class", palette = palette, edge.color = "color", edge.size = "size", label = names)
+```
+
+
+```{r, fig.width=10}
+arrow_size = 4
+arrow_gap = 0.015
+node_size = 4
+label_size = 2.5
+layout_exp = 0.2
+
+group = filter(pheno_data, Kind == "HT", (out_deg > 0 | in_deg > 0))$phenotype
+nhood_group = unique(c(group, do.call(c, purrr::map(group, ~ names(igraph::neighbors(graph, .x, mode = "all"))))))
+
+
+G_sub <- G_hat[nhood_group, nhood_group]
+names <- purrr::map(nhood_group, ~ filter(pheno_data, phenotype == .x)$short_description)
+net <- network::network(G_sub, directed = TRUE, names.eval = "weights", ignore.eval = F)
+net %v% "Trait_class" = purrr::map_chr(network.vertex.names(net), ~ filter(pheno_data, phenotype == .x)$long_kind)
+network::set.edge.attribute(net, "color", ifelse(net %e% "weights" > 0, "black", "red"))
+network::set.edge.attribute(net, "size", abs(net %e% "weights") + 0.05)
+
+
+ggnet2(net, arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size, mode = "target",
+       layout.exp = layout_exp, color = "Trait_class", palette = palette, edge.color = "color", edge.size = "size", label = names)
+```
+
+
+```{r}
+nzod_data <- filter(data, Exposure %in% nz_out_deg)
+xlabels <- c(nz_out_deg, phenos[ord][out_deg[ord] == 0])
+
+a <- ggplot(nzod_data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=rg)) +
   scale_x_discrete(limits = xlabels, labels = NULL) +
   scale_y_discrete(limits = rev(nz_out_deg), labels = NULL) +
   scale_fill_gradient2(limits = c(-1, 1)) +
@@ -292,15 +460,62 @@ c <- ggplot(nzod_data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_U)
   labs(x = NULL, y = NULL, title = "c) bimmer shrunk total causal effect (U)") +
   guides(fill = FALSE) +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed()
-d <- ggplot(nzod_data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_R)) +
+d <- ggplot(nzod_data, aes(y=Exposure, x=Outcome)) + geom_tile(aes(fill=scale_G)) +
   scale_x_discrete(limits = xlabels, labels = NULL) +
   scale_y_discrete(limits = rev(nz_out_deg), labels = NULL) +
   scale_fill_manual(values = cols, breaks = breaks, labels =labels) +
   labs(x = NULL, y = NULL, fill = "Effect", title = "d) bimmer inferred direct causal effect (G)") +
   theme(plot.title = element_text(size=10), axis.ticks=element_blank()) + coord_fixed() + guides(fill = FALSE)
 
-ggarrange(a, b, c, d, ncol = 1, left = "Exposure", bottom = "Outcome")
+egg::ggarrange(a, b, c, d, ncol = 1, left = "Exposure", bottom = "Outcome")
 ```
+
+
+```{r}
+arrow_size = 4
+arrow_gap = 0.05
+node_size = 4
+label_size = 2.5
+layout_exp = 0.8
+
+# Morphology traits
+group = pheno_ord$phenotype[c(1:5, 50:55)]
+
+
+G_sub <- G_hat[group, group]
+names <- filter(pheno_ord, phenotype %in% group)$short_description
+
+ggnet2(network::network(G_sub, directed = TRUE), arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size,
+       layout.exp = layout_exp, label = names)
+```
+
+
+```{r}
+arrow_size = 4
+arrow_gap = 0.05
+node_size = 4
+label_size = 2.5
+layout_exp = 0.8
+
+# Blood biomarkers
+bb = pheno_ord$phenotype[c(8:13, 16, 21, 26:28, 37:39, 41, 44:45)]
+# Cell counts
+cc = 
+
+group = bb
+
+
+G_sub <- G_hat[group, group]
+names <- filter(pheno_ord, phenotype %in% group)$short_description
+
+ggnet2(network::network(G_sub, directed = TRUE), arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size,
+       layout.exp = layout_exp, label = names)
+```
+
+
+
 
 ```{r, fig.width=10}
 group1 = c(nz_out_deg[1:5], nz_out_deg[99:102])
@@ -362,30 +577,36 @@ h <- ggnet2(network::network(R_sub, directed = TRUE), arrow.size = arrow_size,
 ggarrange(e, f, g, h, ncol = 2)
 ```
 
+```{r}
+# For K99 Figure.
+
+arrow_size = 4
+arrow_gap = 0.015
+node_size = 4
+label_size = 2.5
+layout_exp = 0.2
+
+group = filter(pheno_data, (Kind == "BT" | Kind == "BC" | Kind == "BB" | Kind == "IT"), (out_deg > 0 | in_deg > 0))$phenotype
+# nhood_group = unique(c(group, do.call(c, purrr::map(group, ~ names(igraph::neighbors(graph, .x, mode = "all"))))))
 
 
-```{r, fig.width=10}
-a <- data %>% filter(!is.na(path_length), !is.na(p_fdr)) %>%
-  ggplot(aes(x=path_length)) + geom_bar() +
-  labs( title = "a) Length of shortest path between connected nodes (all)", x = "Path length", y = NULL) + 
-  theme(plot.title = element_text(size=10)) + scale_x_continuous(breaks = scales::pretty_breaks(n=6))
-b <- data %>% filter(!is.na(path_length), p_fdr < 0.05) %>%
-  ggplot(aes(x=path_length)) + geom_bar() + 
-  labs(title = "b) Length of shortest path between connected nodes (FDR 5%)", x = NULL, y = NULL) +
-  theme(plot.title = element_text(size=10)) + scale_x_continuous(breaks = scales::pretty_breaks(n=6))
+G_sub <- G_hat[group, group]
+names <- purrr::map(group, ~ filter(pheno_data, phenotype == .x)$short_description)
+net <- network::network(G_sub, directed = TRUE, names.eval = "weights", ignore.eval = F)
+net %v% "Trait_class" = purrr::map_chr(network.vertex.names(net), ~ filter(pheno_data, phenotype == .x)$long_kind)
+network::set.edge.attribute(net, "color", ifelse(net %e% "weights" > 0, "black", "red"))
+network::set.edge.attribute(net, "size", abs(net %e% "weights") + 0.05)
 
-c <- data %>% filter(!is.na(eff_explained)) %>% ggplot(aes(x=eff_explained)) +
-  geom_histogram(bins = 50) + xlim(0, 2) + ylim(0, 3000) +
-  labs(title = "c) Proportion of total effect explained by the shortest path (all)", x = "Percentage of effect explained by shortest path", y = NULL) + theme(plot.title = element_text(size=10))
-d <- data %>% filter(!is.na(eff_explained), p_fdr < 0.05) %>%
-  ggplot(aes(x=eff_explained)) + geom_histogram(bins = 50) + xlim(0, 2) + ylim(0, 300) +
-  labs(title = "d) Proportion of total effect explained by the shortest path (FDR 5%)", x = NULL, y = NULL) + theme(plot.title = element_text(size=10))
 
-# data %>% filter(!is.na(eff_explained)) %>% ggplot(aes(x=omnigenicity)) + geom_density()
-# data %>% filter(!is.na(eff_explained) & p_fdr < 0.05) %>% ggplot(aes(x=omnigenicity)) + geom_density()
+ggnet2(net, arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size, mode = "target",
+       layout.exp = layout_exp, color = "Trait_class", palette = palette, edge.color = "color", edge.size = "size", label = NULL)
 
-# data %>% filter(p_fdr < 0.05) %>% select(exp_desc, out_desc, omnigenicity) %>% arrange((abs(omnigenicity)))
-
-ggarrange(a, b, c, d, ncol = 2, left = "Count")
+ggnet2(net, arrow.size = arrow_size,
+       arrow.gap = arrow_gap, node.size = node_size, label.size = label_size, mode = "target",
+       layout.exp = layout_exp, color = "Trait_class", palette = palette, edge.color = "color", edge.size = "size", label = names)
 ```
 
+```{r}
+
+```

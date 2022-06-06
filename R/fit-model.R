@@ -120,80 +120,75 @@ egger <- function(b_exp, b_out, se_exp, se_out, weights){
 #' @param exclusive Bool. True to only use SNPs significant for one phenotype
 #'   but *not* the other.
 #' @param weight Bool. True to store welch-test weights for regression.
+#' @param filter Double of NULL. If not NULL, filter variants with welch
+#'   statistic less than filter.
 #' @param verbose Bool. If true, print phenotype label during iteration.
-#' @export
-select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 5e-6,
-                        exclusive = TRUE, weight = TRUE, verbose = FALSE) {
-  z_scores <- as.matrix(abs(sumstats$beta_hat / sumstats$se_hat))
-  p_vals <- 2 * (1 - stats::pnorm(z_scores))
-  sig_p_vals <- dplyr::as_tibble(p_vals < p_thresh)
-
-  selected_snps <- list()
-  phenos <- colnames(sumstats$beta_hat)
-  D <- length(phenos)
-  snps <- rownames(sumstats$beta_hat)
-
-  for(index in 1:D){
-    pheno1 <- phenos[index]
-    if(verbose){
-      print(pheno1)
-    }
-    mask1 <- rep(TRUE, length(snps))
-    if (!is.null(snps_to_use)) {
-      p1_snps <- get(pheno1, snps_to_use)
-      mask1 <- (snps %in% p1_snps)
-    }
-    sig1 <- dplyr::pull(sig_p_vals, pheno1)
-    candidate1 <- sig1 & mask1
-    candidate1[is.na(candidate1)] <- FALSE
-    selected_snps[[pheno1]]$names <- snps[candidate1]
-    for(pheno2 in phenos[index:D]){
-      mask2 <- rep(TRUE, length(snps))
-      if (!is.null(snps_to_use)) {
-        p2_snps <- get(pheno2, snps_to_use)
-        mask2 <- (snps %in% p2_snps)
-      }
-      sig2 <- dplyr::pull(sig_p_vals, pheno2)
-      candidate2 <- sig2 & mask2
-      candidate2[is.na(candidate2)] <- FALSE
-      selected_snps[[pheno2]]$names <- snps[candidate2]
-
-      keep <- candidate1 | candidate2
-      b1 <- sumstats$beta_hat[keep, pheno1]
-      b2 <- sumstats$beta_hat[keep, pheno2]
-      s1 <- sumstats$se_hat[keep, pheno1]
-      s2 <- sumstats$se_hat[keep, pheno2]
-
-      welch_res <- welch_test(b1, s1, b2, s2)
-      if(exclusive){
-        if(weight){
-          selected_snps[[pheno1]][[pheno2]] = -ifelse(
-            welch_res$t[candidate1[keep]] < -1.6, welch_res$t[candidate1[keep]],
-            0.0) * as.numeric(!sig2[candidate1])
-          selected_snps[[pheno2]][[pheno1]] = ifelse(
-            welch_res$t[candidate2[keep]] > 1.6, welch_res$t[candidate2[keep]],
-            0.0) * as.numeric(!sig1[candidate2])
-        } else {
-          selected_snps[[pheno1]][[pheno2]] <- !sig2[candidate1]
-          selected_snps[[pheno2]][[pheno1]] <- !sig1[candidate2]
-        }
-      } else {
-        if(weight){
-          selected_snps[[pheno1]][[pheno2]] = -ifelse(
-            welch_res$t[candidate1[keep]] < -1.6,
-            welch_res$t[candidate1[keep]], 0.0)
-          selected_snps[[pheno2]][[pheno1]] = ifelse(
-            welch_res$t[candidate2[keep]] > 1.6,
-            welch_res$t[candidate2[keep]], 0.0)
-        } else {
-          selected_snps[[pheno1]][[pheno2]] <- rep(TRUE, sum(candidate1))
-          selected_snps[[pheno2]][[pheno1]] <- rep(TRUE, sum(candidate2))
-        }
-      }
-    }
-  }
-  return(selected_snps)
-}
+# @export
+# select_snps <- function(sumstats, snps_to_use = NULL, p_thresh = 5e-8,
+#                         exclusive = FALSE, weight = TRUE, filter = 1.6, verbose = FALSE) {
+#   z_scores <- as.matrix(abs(sumstats$beta_hat / sumstats$se_hat))
+#   p_vals <- 2 * (1 - stats::pnorm(z_scores))
+#   sig_p_vals <- dplyr::as_tibble(p_vals < p_thresh)
+#
+#   selected_snps <- list()
+#   phenos <- colnames(sumstats$beta_hat)
+#   D <- length(phenos)
+#   snps <- rownames(sumstats$beta_hat)
+#
+#   for(index in 1:D){
+#     pheno1 <- phenos[index]
+#     if(verbose){
+#       print(pheno1)
+#     }
+#     mask1 <- rep(TRUE, length(snps))
+#     if (!is.null(snps_to_use)) {
+#       p1_snps <- get(pheno1, snps_to_use)
+#       mask1 <- (snps %in% p1_snps)
+#     }
+#     sig1 <- dplyr::pull(sig_p_vals, pheno1)
+#     candidate1 <- sig1 & mask1
+#     candidate1[is.na(candidate1)] <- FALSE
+#     selected_snps[[pheno1]]$names <- snps[candidate1]
+#     for(pheno2 in phenos[index:D]){
+#       mask2 <- rep(TRUE, length(snps))
+#       if (!is.null(snps_to_use)) {
+#         p2_snps <- get(pheno2, snps_to_use)
+#         mask2 <- (snps %in% p2_snps)
+#       }
+#       sig2 <- dplyr::pull(sig_p_vals, pheno2)
+#       candidate2 <- sig2 & mask2
+#       candidate2[is.na(candidate2)] <- FALSE
+#       selected_snps[[pheno2]]$names <- snps[candidate2]
+#
+#       keep <- candidate1 | candidate2
+#       b1 <- sumstats$beta_hat[keep, pheno1]
+#       b2 <- sumstats$beta_hat[keep, pheno2]
+#       s1 <- sumstats$se_hat[keep, pheno1]
+#       s2 <- sumstats$se_hat[keep, pheno2]
+#
+#       welch_res <- welch_test(b1, s1, b2, s2)
+#       weights_12 <- -welch_res$t[candidate1[keep]]
+#       weights_21 <- welch_res$t[candidate2[keep]]
+#
+#       if(!is.null(filter)){
+#         weights_12 <- ifelse(weights_12 > filter, weights_12, 0.0)
+#         weights_21 <- ifelse(weights_21 > filter, weights_21, 0.0)
+#       }
+#       if(isFALSE(weight)){
+#         weights_12 <- (weights_12 != 0)
+#         weights_21 <- (weights_21 != 0)
+#       }
+#       if(isTRUE(exclusive)){
+#         weights_12 <- weights_12 * as.numeric(!sig2[candidate1])
+#         weights_21 <- weights_21 * as.numeric(!sig2[candidate1])
+#       }
+#
+#       selected_snps[[pheno1]][[pheno2]] <- weights_12
+#       selected_snps[[pheno2]][[pheno1]] <- weights_21
+#     }
+#   }
+#   return(selected_snps)
+# }
 
 #' Calculates matrix of total causal effects using a specified method.
 #'
@@ -215,18 +210,18 @@ fit_tce <- function(sumstats, selected_snps, mr_method = "egger_w",
                     min_instruments = 5, verbose = FALSE, ...) {
   mr_method_func <- switch(mr_method,
     ps = function(b_exp, b_out, se_exp, se_out, weight){
-      mr.raps::mr.raps(
-        b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out)
+      suppressWarnings(mr.raps::mr.raps(
+        b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out))
     },
     aps = function(b_exp, b_out, se_exp, se_out, weight) {
-      mr.raps::mr.raps(
+      suppressWarnings(mr.raps::mr.raps(
         b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out,
-        over.dispersion = TRUE, suppress.warning = TRUE)
+        over.dispersion = TRUE))
     },
-    raps = function(weight, ...) {
-      mr.raps::mr.raps(
+    raps = function(b_exp, b_out, se_exp, se_out, weight) {
+      suppressWarnings(mr.raps::mr.raps(
         b_exp = b_exp, b_out = b_out, se_exp = se_exp, se_out = se_out,
-        over.dispersion = TRUE, loss.function = "huber", suppress.warning = TRUE)
+        over.dispersion = TRUE, loss.function = "huber"))
     },
     egger_p = function(b_exp, b_out, se_exp, se_out, ...) {
       input <- MendelianRandomization::mr_input(bx = b_exp, bxse = se_exp, by = b_out, byse = se_out)
@@ -253,7 +248,11 @@ fit_tce <- function(sumstats, selected_snps, mr_method = "egger_w",
       input <- data.frame("b_exp" = b_exp, "b_out" = b_out, "se_exp" = se_exp, "se_out" = se_out)
       mr_presso_res <- MRPRESSO::mr_presso(data = input, BetaOutcome = "b_out", BetaExposure = "b_exp", SdOutcome = "se_out", SdExposure = "se_exp",
                                            OUTLIERtest = TRUE, DISTORTIONtest = TRUE, NbDistribution = 1000)$`Main MR results`
-      return(list("beta.hat" = mr_presso_res$`Causal Estimate`[[2]], "beta.se" = mr_presso_res$Sd[[2]], "beta.p.value" = mr_presso_res$`P-value`[[2]]))
+      result_index = 2
+      if(is.na(mr_presso_res$`Causal Estimate`[[result_index]])){
+        result_index = 1
+      }
+      return(list("beta.hat" = mr_presso_res$`Causal Estimate`[[result_index]], "beta.se" = mr_presso_res$Sd[[result_index]], "beta.p.value" = mr_presso_res$`P-value`[[result_index]]))
     },
     mr_mix = function(b_exp, b_out, se_exp, se_out, ...){
       # TODO(brielin): This seems to flip the result?? Double check this.
@@ -264,8 +263,8 @@ fit_tce <- function(sumstats, selected_snps, mr_method = "egger_w",
     # because the global SNP matrix is not LD pruned (just per-phenotype).
     # The SE is also asuming the posterior is normal which is probably wrong.
     cause = function(X, variants){
-      params <- cause::est_cause_params(X, X$snp)
-      cause_res <- cause::cause(X=X, variants = variants, param_ests = params)
+      params <- suppressWarnings(cause::est_cause_params(X, X$snp))
+      cause_res <- suppressWarnings(cause::cause(X=X, variants = variants, param_ests = params, force = TRUE))
       summary_cause <- summary(cause_res)
       quants <- summary_cause$quants[[2]]
       beta.hat <- quants[1, "gamma"]
@@ -385,6 +384,17 @@ delta_cde <- function(R_tce_inv, SE_tce, na.rm = FALSE) {
   return(sqrt(t(t(var_cde) / diag(R_tce_inv))))
 }
 
+#' Filters estimate of the graph G based on edge inclusion in CV.
+#'
+#' @param G D x D matrix
+#' @param xi D x D matrix
+#' @param thresh Entries in G with corresponding xi < thresh are set to 0
+#' @export
+filter_G_on_xi <- function(G, xi, thresh = 0.45){
+  drop = (xi < thresh) & (xi > 0)
+  G[drop] = 0
+  return(G)
+}
 
 #' Helper function to do basic filtering of the TCE matrix.
 #'
@@ -437,6 +447,7 @@ filter_tce <- function(R_tce, SE_tce, max_R = 1, max_SE = 0.5, max_nan_perc = 0.
 #' @param R_cde Matrix of causal effects.
 #' @param min_edge_value Minimum edge strength for pruning.
 #' @param max_edge_value Set edges above this number to this.
+#' @export
 make_igraph <- function(R_cde, min_edge_value = 0.01, max_edge_value = 0.999){
   adj_matrix <- R_cde
   adj_matrix[abs(adj_matrix) < min_edge_value] = 0

@@ -4,49 +4,26 @@
 \alias{generate_dataset}
 \title{Generates dataset.}
 \usage{
-generate_dataset(
-  N,
-  D,
-  R,
-  M_total,
-  M_s,
-  M_p,
-  prop_shared,
-  rho,
-  noise,
-  p_net = NULL,
-  sd_net = NULL,
-  fix_beta = NULL
-)
+generate_dataset(N, D, G, M, p, h, censor_prob = 0, beta = NULL)
 }
 \arguments{
 \item{N}{Integer or array of integers of length D. Number of individuals to simulate.}
 
 \item{D}{Integer. Number of phenotypes to simulate.}
 
-\item{R}{D x D matrix. Causal graph to simulate.}
+\item{G}{D x D matrix. Causal graph to simulate.}
 
-\item{M_total}{Integer. Total number of SNPs to simulate.}
+\item{M}{Integer. Number of SNPs to simulate.}
 
-\item{M_s}{Integer. Number of shared SNPs to simulate per pair.}
+\item{p}{Float between 0 and 1. Per-SNP effect probability.}
 
-\item{M_p}{Integer or sequence of two integers. Number of private SNPs to
-simulate per phenotype pair.}
+\item{h}{Float between 0 and 1. Phenotype heritability.}
 
-\item{prop_shared}{NULL, float between 0 and 1 or sequence thereof of length D.
-proportion of the variance explained by shared SNPs.}
+\item{censor_prob}{Float between 0 and 1. Hide phenotypes to induce
+non-causal genetic correlation. Proportion of phenotype to hide.}
 
-\item{rho}{Float. Correlation of shared SNPs.}
-
-\item{noise}{Float. Proportion of variance explained by environmental and
-measurement noise.}
-
-\item{p_net}{Float. Proportion of non-zero network edges.}
-
-\item{sd_net}{Float. Standard deviation of network edge weights.}
-
-\item{fix_beta}{Null or MxD matrix. Use to provide beta in order to
-repeatedly resample from the same model.}
+\item{beta}{M x D matrix of SNP effects or NULL to generate the effects based
+on the provided parameters.}
 }
 \description{
 Generates a network mendelian randomization dataset with observed phenotypes,

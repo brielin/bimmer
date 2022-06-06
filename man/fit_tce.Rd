@@ -2,7 +2,7 @@
 % Please edit documentation in R/fit-model.R
 \name{fit_tce}
 \alias{fit_tce}
-\title{Calculates matrix of total causal effects using a specified method.}
+\title{Selects SNPs for inclusion in MR by comparing per-variance effect sizes.}
 \usage{
 fit_tce(
   sumstats,
@@ -30,7 +30,22 @@ this many instruments for a pair of phenotypes.}
 \item{verbose}{Bpplean. True to print progress.}
 
 \item{...}{Additional parameters to pass to mr_method.}
+
+\item{snps_to_use}{List or NULL. A list named by phenotypes where each list
+entry is a list of SNPs that can be used for that phenotype. Usually
+the result of clumping to avoid correlated SNPs.}
+
+\item{p_thresh}{Float, p-value threshold to use for SNP inclusion.}
+
+\item{exclusive}{Bool. True to only use SNPs significant for one phenotype
+but *not* the other.}
+
+\item{weight}{Bool. True to store welch-test weights for regression.}
+
+\item{filter}{Double of NULL. If not NULL, filter variants with welch
+statistic less than filter.}
 }
 \description{
-Calculates matrix of total causal effects using a specified method.
+Notes: sumstats passed to this function must be computed on the per-variance
+scale.
 }

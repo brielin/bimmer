@@ -145,10 +145,10 @@ read_sumstats_neale <- function(file_pattern = NULL, file_list = NULL,
   }))) {
     return(list(
       "beta_hat" = dplyr::bind_cols(pivoted_chunks$beta) %>%
-        tibble::column_to_rownames("rsid") %>%
+        tibble::column_to_rownames("rsid...1") %>%
         dplyr::select(-dplyr::starts_with("rsid")),
       "se_hat" = dplyr::bind_cols(pivoted_chunks$se) %>%
-        tibble::column_to_rownames("rsid") %>%
+        tibble::column_to_rownames("rsid...1") %>%
         dplyr::select(-dplyr::starts_with("rsid"))
     ))
   } else {
