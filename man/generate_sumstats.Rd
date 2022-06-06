@@ -4,12 +4,10 @@
 \alias{generate_sumstats}
 \title{Generates sumstats.}
 \usage{
-generate_sumstats(beta, M_null, N)
+generate_sumstats(beta, N)
 }
 \arguments{
 \item{beta}{M x D matrix of effect sizes.}
-
-\item{M_null}{Integer. Adds M_null additional SNPs with null effects.}
 
 \item{N}{Integer or array of integers of length D. Number of samples for each
 phenotype.}

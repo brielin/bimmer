@@ -1,13 +1,14 @@
 #' Fits exact model to data.
 #'
-#' @param R_tce D x D matrix of "total causal effects".
+#' @param R D x D matrix of "total causal effects".
 #' @return D x D matrix with zero diagonal of deconvoluted direct effects.
-fit_exact <- function(R_tce) {
-  D <- dim(R_tce)[1]
-  R_tce[is.na(R_tce)] <- 0
-  R_tce_inv <- solve(R_tce)
-  R_hat <- diag(D) - R_tce_inv / diag(R_tce_inv)
-  return(list("R_hat" = R_hat, "R_tce_inv" = R_tce_inv))
+fit_exact <- function(R) {
+  D <- dim(R)[1]
+  R[is.na(R)] <- 0
+  R_inv <- solve(R)
+  # This is really G
+  R_hat <- diag(D) - R_inv / diag(R_inv)
+  return(list("R_hat" = R_hat, "R_inv" = R_inv))
 }
 
 
@@ -157,11 +158,11 @@ get_tce <- function(R_obs, normalize = NULL) {
 
 #' Gets observed network from direct effects.
 #'
-#' @param R D x D matrix of direct effects.
+#' @param G D x D matrix of direct effects.
 #' @return D x D matrix of observed effects.
-get_observed <- function(R) {
-  D <- dim(R)[1]
-  return(solve(diag(D) - R, R))
+get_observed <- function(G) {
+  D <- dim(G)[1]
+  return(solve(diag(D) - G, G))
 }
 
 
@@ -240,23 +241,28 @@ generate_beta <- function(M_s, M_p, D, rho) {
 #' @param orient String, one of "random", "towards" or "away". Specifies the
 #'   edge orientation strategy. Randomly, towards high degree nodes, or away
 #'   from high degree nodes.
-#' @param prob Float between 0 and 1. Specifies the probability of edge
-#'   inclusion for "random" graphs. Default is 2/D.
-#' @param g Integer between 1 and D. Specifies the number of hubs for hub
-#'   graphs. Default is D/20.
 #' @param v Float between 0 and 1. Roughly corresponds to edge weight, see
 #'   huge.generator for more information. Default 0.3.
-generate_network <- function(D, graph = "random", orient = "random",
-                             prob = 2/D, g = D/20, v = 0.2){
-  R <- huge::huge.generator(n = D, d = D, graph = graph, prob = prob, g = g,
-                            v = v, verbose = FALSE)$omega
+#' @param v_max Float greater than v. Used as max value if pert=T. Default 0.9.
+#' @param v_min Float greater than 0. Minimim value of pert=T. Default 0.01.
+#' @param pert Boolean. TRUE to replace huge produced value with one sampled
+#'   from the betaPERT distribution with mode v and max v_max.
+#' @export
+generate_network <- function(D, graph = "random", orient = "random", v = 0.3,
+                             v_max = 0.9, v_min = 0.01, pert = F){
+  R <- huge::huge.generator(n = D, d = D, graph = graph, v = v, verbose = FALSE)$omega
   diag(R) = 0
   adj <- matrix(abs(R) > 1e-8, nrow = D)
   node_degree <- rowSums(adj)
   for( i in 1:(D-1) ){
     for(j in (i+1):D){
       if(R[i, j] > 1e-10){
-        R_ij <- dplyr::if_else(stats::runif(1) > 0.5, R[i, j], -R[i, j])
+        if(pert) {
+          R_ij <- mc2d::rpert(1, min = v_min, mode = v, max = v_max)
+        } else {
+          R_ij <- R[i, j]
+        }
+        R_ij <- dplyr::if_else(stats::runif(1) > 0.5, R_ij, -R_ij)
         if(orient == "random"){
           if(stats::runif(1) > 0.5){
             R[i, j] = 0
@@ -294,19 +300,67 @@ generate_network <- function(D, graph = "random", orient = "random",
   return(R)
 }
 
+
+
+generate_network_dsfg <- function(D, alpha=0.1, beta=0.5, gamma=0.4,
+                                  delta_in=0.0, delta_out=0.2, v_mode = 0.3,
+                                  v_max = 0.9, v_min = 0.1){
+  A = matrix(c(0, 0, 1, 0), nrow = 2)
+  while(nrow(A) < D){
+    d_in <- colSums(A)
+    d_out <- rowSums(A)
+    choice <- stats::runif(1)
+    D_curr <- nrow(A)
+    if(choice < alpha){ # Edge from new to existing
+      w <- sample(D_curr, 1, prob = d_in + delta_in)
+      a_next <- rep(0, D_curr)
+      a_next[w] <- 1
+      A <- cbind(rbind(A, a_next, deparse.level = 0), rep(0, D_curr + 1))
+    } else if(choice < alpha + beta){ # Edge between existing
+      v <- sample(D_curr, 1, prob = d_out + delta_out)
+      w <- sample(D_curr, 1, prob = d_in + delta_in)
+      if(v != w) A[v, w] = 1
+    } else{ # Edge from existing to new
+      v <- sample(D_curr, 1, prob = d_out + delta_out)
+      a_next <- rep(0, D_curr)
+      a_next[v] <- 1
+      A <- rbind(cbind(A, a_next, deparse.level = 0), rep(0, D_curr + 1))
+    }
+  }
+  G = A
+  G[A != 0] <- sample(c(1, -1), sum(A), replace = T, prob = c(0.6, 0.4)) * mc2d::rpert(sum(A), min = v_min, mode = v_mode, max = v_max)
+  return(G)
+}
+
+#' Turns a fully observed network into a partially observed network.
+#'
+#' This turns a fully observed network matrix into a partially observed one
+#' where TCEs of missing nodes are integrated into pseudo-DCEs for the observed
+#' nodes.
+#'
+#' @param G D x D matrix representing direct causal graph.
+#' @param p Float 0 to 1, proportion of nodes to hide.
+#' @export
+censor_network <- function(G, p){
+  R <- get_tce(get_observed(G))
+  D <- nrow(R)
+  keep_cols <- sort(sample.int(D, size = round((1-p)*D)))
+  R_cens <- R[keep_cols, keep_cols]
+  G_cens <- fit_exact(R_cens)$R_hat
+  return(G_cens)
+}
+
+
 #' Generates sumstats.
 #'
 #' @param beta M x D matrix of effect sizes.
-#' @param M_null Integer. Adds M_null additional SNPs with null effects.
 #' @param N Integer or array of integers of length D. Number of samples for each
 #'   phenotype.
-generate_sumstats <- function(beta, M_null, N){
+generate_sumstats <- function(beta, N){
   M <- nrow(beta)
   D <- ncol(beta)
-  beta_eff <- t(matrix(stats::rnorm(length(beta), mean = t(beta), sd = 1/sqrt(N)), nrow = D))
-  beta_null <- t(matrix(stats::rnorm(M_null * D, mean = 0, sd = 1/sqrt(N)), nrow = D))
-  beta_hat <- rbind(beta_eff, beta_null)
-  se_hat <- t(matrix(rep(1/sqrt(N), D/length(N)*(M + M_null)), nrow = D))
+  beta_hat <- t(matrix(stats::rnorm(length(beta), mean = t(beta), sd = 1/sqrt(N)), nrow = D))
+  se_hat <- t(matrix(rep(1/sqrt(N), D/length(N)*M), nrow = D))
 
   colnames(beta_hat) <- paste0("P", 1:ncol(beta_hat))
   rownames(beta_hat) <- paste0("rs", 1:nrow(beta_hat))
@@ -314,6 +368,58 @@ generate_sumstats <- function(beta, M_null, N){
   rownames(se_hat) <- paste0("rs", 1:nrow(se_hat))
   return(list("beta_hat" = data.frame(beta_hat), "se_hat" = data.frame(se_hat)))
 }
+
+#' Generates dataset.
+#'
+#' Generates a network mendelian randomization dataset with observed phenotypes,
+#' genotypes, true network effects and true effect sizes.
+#'
+#' @param N Integer or array of integers of length D. Number of individuals to simulate.
+#' @param D Integer. Number of phenotypes to simulate.
+#' @param G D x D matrix. Causal graph to simulate.
+#' @param M Integer. Number of SNPs to simulate.
+#' @param p Float between 0 and 1. Per-SNP effect probability.
+#' @param h Float between 0 and 1. Phenotype heritability.
+#' @param censor_prob Float between 0 and 1. Hide phenotypes to induce
+#'   non-causal genetic correlation. Proportion of phenotype to hide.
+#' @param beta M x D matrix of SNP effects or NULL to generate the effects based
+#'   on the provided parameters.
+#' @export
+generate_dataset <- function(N, D, G, M, p, h, censor_prob = 0, beta = NULL) {
+  if(is.null(beta)){
+    beta <- purrr::map(1:D, function(.x){
+      beta_mat <- matrix(0L, M, D)
+      beta_mat[, .x] <- stats::rnorm(n = M, mean = 0, sd = sqrt(h/(M*p))) * stats::rbinom(n = M, size = 1, prob = p)
+      return(beta_mat)
+    })
+    beta <- do.call(rbind, beta)
+    # TODO(brielin): the below code simulates random pleiotropy, which we'll
+    # have plenty of from the network already.
+    # beta <- matrix(stats::rnorm(n = M*D, mean = 0, sd = sqrt(h/(M*p))) *
+    #                  rbinom(n = M*D, size = 1, prob = p), nrow = M, ncol = D)
+  }
+  mix_mat <- solve(diag(D) - G)
+  beta_obs <- beta %*% mix_mat
+  if(censor_prob > 0){
+    R <- get_tce(get_observed(G))
+    keep_cols <- as.logical(rbinom(nrow(R), 1, 1-p))
+    R_cens <- R[keep_cols, keep_cols]
+    G <- fit_exact(R_cens)$R_hat
+  }
+
+  h_obs <- colSums(beta_obs**2)
+
+  sumstats_select <- generate_sumstats(beta_obs, N)
+  sumstats_fit <- generate_sumstats(beta_obs, N)
+  R = get_tce(get_observed(G))
+
+  return(list("sumstats_select" = sumstats_select,
+              "sumstats_fit" = sumstats_fit,
+              "R" = R,
+              "beta" = beta,
+              "h_obs" = h_obs))
+}
+
 
 #' Generates dataset.
 #'
@@ -336,85 +442,87 @@ generate_sumstats <- function(beta, M_null, N){
 #'   measurement noise.
 #' @param fix_beta Null or MxD matrix. Use to provide beta in order to
 #'   repeatedly resample from the same model.
-generate_dataset <- function(N, D, R, M_total, M_s, M_p, prop_shared, rho,
-                             noise, p_net = NULL, sd_net = NULL,
-                             fix_beta = NULL) {
-  if(M_total < D*M_p + floor(D/2)*M_s){
-    stop("Total number of SNPs less than combined shared and private SNPs.")
-  }
+# generate_dataset <- function(N, D, R, M_total, M_s, M_p, prop_shared, rho,
+#                              noise, p_net = NULL, sd_net = NULL,
+#                              fix_beta = NULL) {
+#   if(M_total < D*M_p + floor(D/2)*M_s){
+#     stop("Total number of SNPs less than combined shared and private SNPs.")
+#   }
+#
+#   # Generate the various components.
+#   beta <- fix_beta
+#   if (is.null(beta)) {
+#     beta <- generate_beta(M_s = M_s, M_p = M_p, D = D, rho = rho)
+#   }
+#
+#   mix_mat <- solve(diag(D) - R)
+#   beta_obs <- beta %*% mix_mat
+#
+#   if(!is.null(prop_shared)){
+#     for(i in seq(1, 2*floor(D/2), 2)){
+#       prop_1 = prop_shared[i]
+#       prop_2 = prop_shared[i+1]
+#       eff1 <- (abs(beta[, i]) > 0)
+#       eff2 <- (abs(beta[, i+1]) > 0)
+#       shared <- eff1 & eff2
+#       private_1 = eff1 & !eff2
+#       private_2 = eff2 & !eff1
+#
+#       M_s1_eff <- sum(beta_obs[shared, i]**2)
+#       M_s2_eff <- sum(beta_obs[shared, i+1]**2)
+#       M_p1_eff <- sum(beta_obs[private_1, i]**2)
+#       M_p2_eff <- sum(beta_obs[private_2, i+1]**2)
+#       v1s = M_s1_eff/(M_s1_eff + M_p1_eff)
+#       v1p = M_p1_eff/(M_s1_eff + M_p1_eff)
+#       v2s = M_s2_eff/(M_s2_eff + M_p2_eff)
+#       v2p = M_p2_eff/(M_s2_eff + M_p2_eff)
+#
+#       beta_obs[shared, i] = sqrt(prop_1/v1s)*beta_obs[shared, i]
+#       beta_obs[private_1, i] = sqrt((1-prop_1)/v1p)*beta_obs[private_1, i]
+#       beta_obs[shared, i+1] = sqrt(prop_2/v2s)*beta_obs[shared, i+1]
+#       beta_obs[private_2, i+1] = sqrt((1-prop_2)/v2p)*beta_obs[private_2, i+1]
+#     }
+#   }
+#
+#   Y_var <- colSums(beta_obs**2)
+#   beta_scale <- t(t(beta_obs) / sqrt(Y_var)) * sqrt(1-noise)
+#
+#   colnames(beta_scale) = colnames(beta)
+#   sumstats_select <- generate_sumstats(beta_scale, N)
+#   sumstats_fit <- generate_sumstats(beta_scale, N)
+#
+#   R_tce = get_tce(get_observed(R), normalize=sqrt(Y_var))
+#   R_normed <- fit_exact(R_tce)$R_hat
+#   return(list("sumstats_select" = sumstats_select,
+#               "sumstats_fit" = sumstats_fit,
+#               "R_cde" = R_normed,
+#               "R_tce" = R_tce,
+#               "beta" = beta))
+# }
 
-  # Generate the various components.
-  beta <- fix_beta
-  if (is.null(beta)) {
-    beta <- generate_beta(M_s = M_s, M_p = M_p, D = D, rho = rho)
-  }
 
-  mix_mat <- solve(diag(D) - R)
-  beta_obs <- beta %*% mix_mat
-
-  if(!is.null(prop_shared)){
-    for(i in seq(1, 2*floor(D/2), 2)){
-      prop_1 = prop_shared[i]
-      prop_2 = prop_shared[i+1]
-      eff1 <- (abs(beta[, i]) > 0)
-      eff2 <- (abs(beta[, i+1]) > 0)
-      shared <- eff1 & eff2
-      private_1 = eff1 & !eff2
-      private_2 = eff2 & !eff1
-
-      M_s1_eff <- sum(beta_obs[shared, i]**2)
-      M_s2_eff <- sum(beta_obs[shared, i+1]**2)
-      M_p1_eff <- sum(beta_obs[private_1, i]**2)
-      M_p2_eff <- sum(beta_obs[private_2, i+1]**2)
-      v1s = M_s1_eff/(M_s1_eff + M_p1_eff)
-      v1p = M_p1_eff/(M_s1_eff + M_p1_eff)
-      v2s = M_s2_eff/(M_s2_eff + M_p2_eff)
-      v2p = M_p2_eff/(M_s2_eff + M_p2_eff)
-
-      beta_obs[shared, i] = sqrt(prop_1/v1s)*beta_obs[shared, i]
-      beta_obs[private_1, i] = sqrt((1-prop_1)/v1p)*beta_obs[private_1, i]
-      beta_obs[shared, i+1] = sqrt(prop_2/v2s)*beta_obs[shared, i+1]
-      beta_obs[private_2, i+1] = sqrt((1-prop_2)/v2p)*beta_obs[private_2, i+1]
-    }
-  }
-
-  Y_var <- colSums(beta_obs**2)
-  beta_scale <- t(t(beta_obs) / sqrt(Y_var)) * sqrt(1-noise)
-
-  colnames(beta_scale) = colnames(beta)
-  sumstats_select <- generate_sumstats(beta_scale, M_total - nrow(beta), N)
-  sumstats_fit <- generate_sumstats(beta_scale, M_total - nrow(beta), N)
-
-  R_tce = get_tce(get_observed(R), normalize=sqrt(Y_var))
-  R_normed <- fit_exact(R_tce)$R_hat
-  return(list("sumstats_select" = sumstats_select,
-              "sumstats_fit" = sumstats_fit,
-              "R_cde" = R_normed,
-              "R_tce" = R_tce,
-              "beta" = beta))
-}
-
-
+# TODO(brielin): This is obsolete now that shared effects come from hidden
+#  phenotypes. Stage for removal.
 #' Selects SNPs based on true effect sizes.
 #'
 #' @param beta M x D matrix of true effect sizes.
-select_snps_oracle <- function(beta) {
-  non_pleio_snps <- (rowSums(abs(beta) > 0) == 1)
-  selected <- purrr::imap(as.data.frame(beta), function(b, name){
-    mask <- (abs(b) > 0) & (non_pleio_snps)
-    res <- purrr::map(colnames(beta), function(x) {
-      if(x == name){
-        return(rep(FALSE, sum(mask)))
-      } else{
-        return(rep(TRUE, sum(mask)))
-      }
-    })
-    names(res) <- colnames(beta)
-    res <- purrr::prepend(res, list("names" = rownames(beta)[mask]))
-    return(res)
-  })
-  return(selected)
-}
+# select_snps_oracle <- function(beta) {
+#   non_pleio_snps <- (rowSums(abs(beta) > 0) == 1)
+#   selected <- purrr::imap(as.data.frame(beta), function(b, name){
+#     mask <- (abs(b) > 0) & (non_pleio_snps)
+#     res <- purrr::map(colnames(beta), function(x) {
+#       if(x == name){
+#         return(rep(FALSE, sum(mask)))
+#       } else{
+#         return(rep(TRUE, sum(mask)))
+#       }
+#     })
+#     names(res) <- colnames(beta)
+#     res <- purrr::prepend(res, list("names" = rownames(beta)[mask]))
+#     return(res)
+#   })
+#   return(selected)
+# }
 
 
 #' A simple helper function to count the number of instuments for each pair.
@@ -425,6 +533,7 @@ count_instruments <- function(selected) {
     return(purrr::map(pheno[-1], function(x){sum(x>0, na.rm=T)}))
   })))
 }
+
 
 # TODO(brielin): Not updated for pleitropic SNPs, fix this if we want to
 # revisit these metrics.
@@ -450,11 +559,13 @@ instrument_metrics <- function(selected, beta){
   })
 }
 
+
 #' Calculates metrics for model evaluation.
 #'
 #' @param X DxD matrix of predicted parameters.
 #' @param X_true DxD matrix of true parameters
 #' @param eps float. Absolute values below eps will be considered 0.
+#' @export
 calc_metrics <- function(X, X_true, eps = 1e-10) {
   D <- ncol(X)
   X <- X[!diag(D)]

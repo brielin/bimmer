@@ -2,13 +2,46 @@
 % Please edit documentation in R/simulate.R
 \name{count_instruments}
 \alias{count_instruments}
-\title{A simple helper function to count the number of instuments for each pair.}
+\title{Generates dataset.}
 \usage{
 count_instruments(selected)
 }
 \arguments{
 \item{selected}{A list of lists, output of `select_snps`.}
+
+\item{N}{Integer or array of integers of length D. Number of individuals to simulate.}
+
+\item{D}{Integer. Number of phenotypes to simulate.}
+
+\item{R}{D x D matrix. Causal graph to simulate.}
+
+\item{M_total}{Integer. Total number of SNPs to simulate.}
+
+\item{M_s}{Integer. Number of shared SNPs to simulate per pair.}
+
+\item{M_p}{Integer or sequence of two integers. Number of private SNPs to
+simulate per phenotype pair.}
+
+\item{prop_shared}{NULL, float between 0 and 1 or sequence thereof of length D.
+proportion of the variance explained by shared SNPs.}
+
+\item{rho}{Float. Correlation of shared SNPs.}
+
+\item{p_net}{Float. Proportion of non-zero network edges.}
+
+\item{sd_net}{Float. Standard deviation of network edge weights.}
+
+\item{noise}{Float. Proportion of variance explained by environmental and
+measurement noise.}
+
+\item{fix_beta}{Null or MxD matrix. Use to provide beta in order to
+  repeatedly resample from the same model.
+Selects SNPs based on true effect sizes.}
+
+\item{beta}{M x D matrix of true effect sizes.
+A simple helper function to count the number of instuments for each pair.}
 }
 \description{
-A simple helper function to count the number of instuments for each pair.
+Generates a network mendelian randomization dataset with observed phenotypes,
+genotypes, true network effects and true effect sizes.
 }

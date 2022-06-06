@@ -4,10 +4,10 @@
 \alias{fit_exact}
 \title{Fits exact model to data.}
 \usage{
-fit_exact(R_tce)
+fit_exact(R)
 }
 \arguments{
-\item{R_tce}{D x D matrix of "total causal effects".}
+\item{R}{D x D matrix of "total causal effects".}
 }
 \value{
 D x D matrix with zero diagonal of deconvoluted direct effects.
