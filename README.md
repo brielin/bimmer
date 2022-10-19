@@ -8,36 +8,6 @@ This user documentation is a work in progress. Please check back in the future
 for a complete guide on how to run this software on your data from
 pre-processing through model selection. 
 
-## Requirements
-bimmer is written in the R programming language and depends on the following
-packages:
-
-- R (> 3.5.0)
-- [inspre](https://github.com/brielin/inspre)
-- dyplyr
-- plyr
-- purrr
-- tidyr
-- tibble
-- readr
-- foreach
-- MendelianRandomization
-- igraph
-
-To run the tests, simulations and make the corresponding plots, some additional
-packages are required:
-
-- mvtnorm
-- scales
-- egg
-- GGally
-- huge
-- network
-- glmnet
-
-Please note that parsing a large number of genome-wide summary statistics files
-in R can take substantial time and memory. We recommend at least 64GB and 8
-cores if you wish to process 100s of phenotypes.
 
 ## Installation
 
@@ -70,101 +40,58 @@ biobank data for the manuscript
 # Usage Instructions
 
 ## Data pre-processing considerations
-Bimmer takes GWAS summary statistics as input and currently supports the Neale
-lab summary statistics format. The GWAS summary files should
-be tab separated (`.tsv`) files and must contain the following columns:
 
-- `minor_AF`: the in-sample or reference minor allele frequency
-- `tstat`: the t-statistic associated with the test, sometimes called "Z-score"
-- `n_complete_samples`: the total number of individuals for that SNP-trait
-  association, total case + control for binary phenotypes
-- `beta`: the regression effect size
-- `se`: the regression standard error
-- `pval`: the p-value associated with the test
-- (optional) `low_confidence_variant`: variants marked "TRUE" here
-  will be filtered out when considering analyses involving this phenotype
-  
-Any other columns in the file will be ignored.
-  
-The main function for importing your data is `bimmer::read_sumstats_neale()`. It
-takes as input either 1) a glob file pattern pointing to a set of files on disk
-(argument `file_pattern`) or 2) a list of filenames as an R list object
-(argument `file_list`). It returns a list of two matrices corresponding to
-the harmonized effect size and standard error (`$beta_hat` and `$se_hat`).
-*Please note that this function can consume huge memory*. It helps to make sure
-in advance that your summary statistics files have the *exact* same variant IDs.
-If they do not, this function will raise a warning and may take even longer to
-finish.
-  
-*bimmer requires two sets of summary statistics*. The first set is used to
-select SNPs for inclusion in the model fitting, and the second set is used
-to fit the model itself. There is *no statistically valid option* for a single
-set of summary statistics: it is imperitive that you have two sets.
+The first step in applying *bimmer* is to estimate the phenotype-phenotype
+causal effects. You need two matrices, one containing the effect estimates
+(we refer to this as `R_tce`) and the other containing standard errors
+(we refer to this as `SE_tce`). These are generally asymmetric matrices with
+rows indicating the cause (sometimes called exposure) and columns indicating
+the effect (sometimes called outcome). The effect estimates need to be
+bidirectional, that is, each phenotype should appear as both a cause and
+an effect.
 
-*bimmer requires LD-pruned summary statistics*. If there are variants in LD in
-your summary statistics files, you have two options. 1) remove them using the
-method of your choice, or 2) generate a set of "snps_to_use" files. The latter
-files (one for each phenotype) should contain new-line separated names of
-SNP ids that are not in LD for each phenotype. Then, you can use the function
-`bimmer::read_snp_list()` to parse them into R. This function takes as argument
-a glob-file pattern and a returns a list of lists of the valid SNPs for each
-phenotype.
+In this context, we use genetic instrumental variables
+to estimate the effect using bidirectional Mendelian randomization. In theory
+you can use any MR method that you want, but it is important to consider the
+possibility of correlated horizontal pleiotropy. In the original preprint,
+we introduce a method called *Welch-weighted Egger regression* that can 
+reduce the effects of correlated pleiotropy in large-scale analyses of
+biobank-style data, and that is the method that we recommend using prior
+to network estmation. The WWER github is
+[https://github.com/brielin/WWER](https://github.com/brielin/WWER). The WWER
+package includes several tools for parsing and preprocessing biobank
+summary statistics and includes options for using alternative MR methods.
+Thus, even if you would prefer to use a different MR method, I recommend
+looking at the WWER package for preprocessing your data. For more
+information on WWER specifically, see our 
+[AJHG publication](https://www.sciencedirect.com/science/article/pii/S0002929721003839).
 
-## Fitting the TCE matrix
+If you are using published MR results, you will need to write custom code to
+parse the data into the pair of matrices described above. Keep in mind the scaling
+of the data. *bimmer* assumes that the causal effect estimates are variance-normalized,
+that is, the causal effect estimate `R` represents a per-variance effect of
+the exposure on the outcome. This may require normalizing the estimate by the
+variances of the exposure and outcome.
 
-The next step is to select instruments using the function
-`bimmer::select_snps()`. The primary argument is `sumstats`, simply the output
-of `bimmer::read_sumstats_neale()` on the *first* set of summary statistics.
-If your sumstats contain variants in LD, you
-can use the argument `snps_to_use` and supply it the outpt of
-`bimmer::read_snp_list()`. The argument `p_thresh` can be used to set the
-p-value cutoff for SNP association. Reasonable values range from 10^-5 to
-10^-8, the default is 5*10^-6. The remaining arguments are primarily for
-comparison in simulation.
+## Fitting the network
 
-Next you can use the function `bimmer::fit_tce()` to calculate the TCE of every
-phenotype on every other. The argument `sumstats` should be supplied with the
-output of `bimmer::read_sumstats_neale()` on the *second* set of summary
-statistics. The argument `selected_snps` should be supplied with the output of
-`bimmer::select_snps()` from the previous step. The argument `mr_method` allows
-you to choose the method that you want to use for caculating the TCE. The
-default is `egger_w` for weighted Egger regression as described in the
-manuscript. The currently implemented options are
+Once you have your normalized `R_tce` and `SE_tce` matrices, you are ready to fit
+the network. In some cases, you may consider filtering these matrices for more
+stable network estimates. For example, you may filter pathological `R` values
+(those much greater or less than +-1) or rows/columns of the data matrix with
+many missing entries. We provide a helper function `bimmer::filter_tce()` to
+assisst with this, see for example its use in `Rmd/ukbb_analysis.Rmd`.
 
-- `egger_w` is the recommended option for speed and robustness to
-  correlated pleiotropy
-- `egger` or `egger_p` for standard or penalized Egger regression if you are
-  *not* concerned about correlated pleiotropy
-- `mbe` for the "mode best estimator"
-- `ps`, `aps`, or `raps` for various versions of the "robust adjusted profile 
-  score" which are *very* powerful but *very* susceptible to false positives due
-  to correlated pleiotropy.
-  
-Additional methods for TCE calculation can be added by using a wrapper function
-as demonstrated in the body of `bimmer::fit_tce()`. If you have one you like,
-feel free to submit a pull request implementing the functionality.
-
-If you are analyzing many phenotypes it is optional but recommended for you to
-do some filtering of the TCE matrix using the function `bimmer::filter_tce()`.
-This caps the empirical value of the TCE to 1.0 and removes phenotypes that
-appear to be problematic as either exposures or outcomes.
-
-## Finding the DCEs
-
-Finally, we convert the TCE matrix into a DCE matrix. If you would like to
-use weights (recommended), you must first construct a weight set using
+If you would like to use weights (recommended), you must first construct a weight set using
 `inspre::make_weights()`. The argument `SE` should be the standard error matrix
-(`$SE_tce`) from the output of the function `bimmer::fit_tce()` (or 
-`bimmer::filter_tce()` if you chose to use it). The argument `max_min_ratio`
+`SE_tce`. The argument `max_min_ratio`
 can be used if you have some TCEs with very small SEs to prevent over-fitting
 to a handful of data points. The value used in the manuscript of
-`max_min_ratio=10000` is a reasonable place to start, but *you may have to
-adjust this* if you are having trouble getting a good model fit in the next
+`max_min_ratio=10000` could be a reasonable place to start, but you may have to
+adjust this if you are having trouble getting a good model fit in the next
 step.
 
-The final step is to use `bimmer::fit_inspre()` to fit the DCE matrix. The 
-argument `R_tce` should be set to the TCE matrix (`$R_tce`) output by
-`bimmer::fit_tce()` (or, again, `bimmer::filter_tce()` if you chose to use it).
+The final step is to use `bimmer::fit_inspre()` to fit the network.
 The argument `W` can be `NULL`, to use no weights, or set to the output
 of `inspre::make_weights()`. If you have a multicore machine (recommended)
 you can set `ncores` to speed up the fit but note that this will require a lot
@@ -191,33 +118,21 @@ If you put this all together, your R script, `Rmd` or Rstudio command line shoul
 look something like this,
 
 ```
-sumstats_files_1 <- "/path/to/files/phenotype_*_set_1.tsv"
-sumstats_files_2 <- "/path/to/files/phenotype_*_set_2.tsv"
-clumped_snps <- "/path/to/files/snps_phenotype_*.txt"
+# Given phenotype by phenotype matrixes R_tce, SE_tce
 
-sumstats_1 <- bimmer::read_sumstats_neale(file_pattern = sumstats_files_1)
-snps_to_use <- bimmer::read_snp_list(file_pattern = clumped_snps)
-selected_snps <- bimmer::select_snps(sumstats = sumstats_1, snps_to_use = snps_to_use)
-
-sumstats_2 <- bimmer::read_sumstats_neale(file_pattern = sumstats_files_2)
-tce_result <- bimmer::fit_tce(sumstats = sumstats_2, selected_snps = selected_snps)
-tce_filtered <- bimmer::filter_tce(tce_result$R_tce, tce_result$SE_tce)
-
-weights <- inspre::make_weights(SE = tce_filtered$SE_tce, max_min_ratio = 10000)
-dce_result <- bimmer::fit_inspre(R_tce = tce_filtered$R_tce, W = weights, cv_folds = 10)
-selected_index <- which(cde_res_narrow$D_hat > beta)[1] - 1
+beta = 0.025
+weights <- inspre::make_weights(SE = SE_tce, max_min_ratio = 10000)
+network_result <- bimmer::fit_inspre(R_tce = R_tce, W = weights, cv_folds = 10)
+selected_index <- which(network_result$D_hat > beta)[1] - 1
 lambda <- dce_result$lambda[selected_index]
 R_hat <- dce_result$R_hat[ , , selected_index]
 U_hat <- dce_result$U[,,selected_index]
 ```
 
-After this, `R_hat` contains the estimate of the DCEs at the selected index,
+After this, `R_hat` contains the estimate of the network at the selected index,
 `U_hat` contains the shrunken estimates of the TCEs, and `lambda` contains the
 regularization parameter chosen by cross-validation.
 
 Because there are many steps in this process, users are highly encouraged to
 run each step separately and check the output for reasonable behavior after
 every step.
-
-
-
